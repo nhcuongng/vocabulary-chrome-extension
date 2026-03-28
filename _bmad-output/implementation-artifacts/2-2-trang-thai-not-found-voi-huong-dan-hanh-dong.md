@@ -1,6 +1,6 @@
 # Story 2.2: Trạng thái not-found với hướng dẫn hành động
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -14,10 +14,10 @@ so that tôi có thể thao tác lại đúng cách.
 
 ## Tasks / Subtasks
 
-- [ ] Thiết kế nhánh kết quả `not-found` trong state machine (AC: 1)
-- [ ] Render message + guidance theo UX copy đã thống nhất (AC: 1)
-- [ ] Kết nối trigger từ parser/mapper khi dữ liệu rỗng (AC: 1)
-- [ ] Viết test hiển thị not-found với dữ liệu null/empty (AC: 1)
+- [x] Thiết kế nhánh kết quả `not-found` trong state machine (AC: 1)
+- [x] Render message + guidance theo UX copy đã thống nhất (AC: 1)
+- [x] Kết nối trigger từ parser/mapper khi dữ liệu rỗng (AC: 1)
+- [x] Viết test hiển thị not-found với dữ liệu null/empty (AC: 1)
 
 ## Dev Notes
 
@@ -43,10 +43,19 @@ GPT-5.3-Codex
 
 ### Debug Log References
 
+- `npm test` ✅ (29/29 tests pass)
+
 ### Completion Notes List
 
 - Story context created by Scrum Master.
+- Added nhánh mapping `not-found` trong `popupViewModelMapper` khi thiếu headword/definition cốt lõi.
+- Tách UI copy sang message catalog riêng (`popupCopyCatalog`) để giữ logic presentation độc lập và sẵn sàng i18n.
+- Kết nối trigger not-found từ parser/mapper khi payload rỗng hoặc không đủ dữ liệu hiển thị.
+- Added tests xác nhận trạng thái not-found và guidance list cho dữ liệu null/empty.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/2-2-trang-thai-not-found-voi-huong-dan-hanh-dong.md
+- src/application/popupViewModelMapper.js
+- src/application/popupCopyCatalog.js
+- tests/application/popupViewModelMapper.test.js

@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Vocabulary Chrome Extension",
+  "version": "0.1.0",
+  "description": "Highlight một từ tiếng Anh để tra cứu định nghĩa nhanh ngay trên trang.",
+  "action": {
+    "default_title": "Vocabulary Lookup",
+    "default_popup": "src/popup/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background/runtimeServiceWorker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/runtimeContentScript.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.vocabulary.com/*"
+  ]
+}

@@ -4,7 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "dev": "node scripts/dev-extension.mjs",
+    "build": "npm run bundle:content && node scripts/build-extension.mjs",
+    "bundle:content": "node scripts/bundle-content-script.mjs",
+    "audit:permissions": "node scripts/audit-permissions.mjs",
+    "quality:gate": "node scripts/release-quality-gate.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
   },
   "engines": {
     "node": ">=20"

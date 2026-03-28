@@ -19,3 +19,24 @@ test('parser adapter: trích xuất headword, pronunciation, định nghĩa chí
   assert.deepEqual(parsed.definitions, ['A greeting used when meeting someone.']);
   assert.equal(parsed.hasCoreData, true);
 });
+
+test('parser adapter: trích xuất dữ liệu từ trang https://www.vocabulary.com/dictionary/test', () => {
+  const html = `
+    <h1 class="dynamictext">test</h1>
+    <span class="pronunciation">/tɛst/</span>
+    <h3 class="definition">any standardized procedure for measuring sensitivity or memory or intelligence</h3>
+    <div class="word-area">
+      <p class="short">Định nghĩa ngắn</p>
+      <p class="long">Định nghĩa dài hơn</p>
+    </div>
+  `;
+
+  const parsed = parseVocabularyHtml(html);
+  console.log('DEFINITIONS OUTPUT:', parsed.definitions);
+  assert.equal(parsed.headword, 'test');
+  assert.equal(parsed.pronunciation, '/tɛst/');
+  assert.ok(parsed.definitions.includes('any standardized procedure for measuring sensitivity or memory or intelligence'));
+  assert.ok(parsed.definitions.includes('Định nghĩa ngắn'));
+  assert.ok(parsed.definitions.includes('Định nghĩa dài hơn'));
+  assert.equal(parsed.hasCoreData, true);
+});

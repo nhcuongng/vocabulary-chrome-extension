@@ -1,5 +1,5 @@
 # generated: 2026-03-28 13:50:24 +07
-# last_updated: 2026-03-28 13:50:24 +07
+# last_updated: 2026-03-28 22:15:00 +07
 # project: vocabulary-chrome-extension
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-03-28 13:50:24 +07"
-last_updated: "2026-03-28 15:20:00 +07"
+last_updated: "2026-03-28 22:15:00 +07"
 project: vocabulary-chrome-extension
 project_key: NOKEY
 tracking_system: file-system
@@ -51,18 +51,24 @@ development_status:
   epic-1-retrospective: optional
 
   epic-2: in-progress
-  2-1-timeout-va-retry-co-kiem-soat-cho-lookup: ready-for-dev
-  2-2-trang-thai-not-found-voi-huong-dan-hanh-dong: ready-for-dev
-  2-3-trang-thai-error-theo-loai-loi-network-parse: ready-for-dev
+  2-1-timeout-va-retry-co-kiem-soat-cho-lookup: review
+  2-2-trang-thai-not-found-voi-huong-dan-hanh-dong: review
+  2-3-trang-thai-error-theo-loai-loi-network-parse: review
   epic-2-retrospective: optional
 
   epic-3: in-progress
-  3-1-cai-dat-bat-tat-auto-popup: ready-for-dev
-  3-2-luu-va-ap-dung-lai-tuy-chon-qua-cac-phien: ready-for-dev
+  3-1-cai-dat-bat-tat-auto-popup: done
+  3-2-luu-va-ap-dung-lai-tuy-chon-qua-cac-phien: done
   epic-3-retrospective: optional
 
   epic-4: in-progress
-  4-1-telemetry-an-danh-cho-thanh-cong-that-bai-lookup: ready-for-dev
-  4-2-attribution-nguon-du-lieu-va-disclosure-quyen-truy-cap: ready-for-dev
-  4-3-guardrails-tuan-thu-voi-rate-limit-truy-van: ready-for-dev
+  4-1-telemetry-an-danh-cho-thanh-cong-that-bai-lookup: done
+  4-2-attribution-nguon-du-lieu-va-disclosure-quyen-truy-cap: done
+  4-3-guardrails-tuan-thu-voi-rate-limit-truy-van: done
   epic-4-retrospective: optional
+
+  epic-5: in-progress
+  5-1-thiet-lap-baseline-runtime-manifest-v3-va-script-build-dev: done
+  5-2-dong-bo-permission-declarations-voi-disclosure-runtime: done
+  5-3-thiet-lap-quality-gates-cho-release-readiness: done
+  epic-5-retrospective: optional

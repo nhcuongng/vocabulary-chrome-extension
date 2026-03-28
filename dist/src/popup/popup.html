@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vocabulary Lookup</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: #ffffff;
+        color: #1f2937;
+      }
+
+      main {
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .hint {
+        margin: 0;
+        font-size: 13px;
+        color: #4b5563;
+      }
+
+      .meta {
+        margin: 0;
+        font-size: 12px;
+        color: #4b5563;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Vocabulary Lookup</h1>
+
+      <div class="row">
+        <label for="auto-popup-toggle">Auto-popup</label>
+        <input id="auto-popup-toggle" type="checkbox" />
+      </div>
+
+      <p id="auto-popup-status" class="hint" aria-live="polite"></p>
+      <p id="attribution" class="meta"></p>
+      <p id="disclosure" class="meta"></p>
+    </main>
+
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

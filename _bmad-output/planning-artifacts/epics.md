@@ -197,6 +197,11 @@ Người dùng có thể bật/tắt auto-popup và hệ thống ghi nhớ tùy 
 Sản phẩm có telemetry ẩn danh, attribution rõ ràng, rate-limit và disclosure đầy đủ để vận hành bền vững.
 **FRs covered:** FR25, FR26, FR27, FR28, FR29, FR30
 
+### Epic 5 (Summary): Căn chỉnh nền tảng runtime và build pipeline
+
+Sản phẩm có baseline extension runtime rõ ràng (Manifest V3), script dev/build nhất quán, và quality gates đủ để phát hành.
+**FRs covered:** FR29, FR30 (hỗ trợ triển khai thực thi và kiểm chứng runtime)
+
 ---
 
 ## Epic 1: Tra cứu từ vựng tức thì trong luồng đọc
@@ -433,6 +438,64 @@ So that extension vận hành bền vững và giảm rủi ro vi phạm điều
 **When** dữ liệu cache còn hiệu lực
 **Then** hệ thống ưu tiên dùng cache trước network
 **And** giảm số request ra nguồn dữ liệu.
+
+## Epic 5: Căn chỉnh nền tảng runtime và build pipeline
+
+Sản phẩm có baseline extension runtime rõ ràng (Manifest V3), script dev/build nhất quán, và quality gates đủ để phát hành.
+
+### Story 5.1: Thiết lập baseline runtime Manifest V3 và script build/dev
+
+As a developer,
+I want dự án có manifest và script runtime/build tối thiểu,
+So that tôi có thể chạy, đóng gói và kiểm chứng extension trên môi trường thật.
+
+**Acceptance Criteria:**
+
+**Given** dự án hiện chỉ có test runner
+**When** hoàn tất cấu hình baseline
+**Then** dự án có `manifest.json` hợp lệ cho MV3
+**And** có script `dev` và `build` để chạy luồng phát triển/phát hành.
+
+**Given** cần tích hợp các module đã có
+**When** wiring entry points hoàn tất
+**Then** content/background/popup shell có thể được nạp theo manifest
+**And** không phá vỡ test suite hiện tại.
+
+### Story 5.2: Đồng bộ permission declarations với disclosure runtime
+
+As a product operator,
+I want quyền truy cập khai báo trong manifest khớp nội dung disclosure,
+So that sản phẩm minh bạch và giảm rủi ro compliance khi phát hành.
+
+**Acceptance Criteria:**
+
+**Given** manifest đã khai báo permissions/host_permissions
+**When** chạy audit disclosure
+**Then** hệ thống phát hiện quyền dư hoặc thiếu mô tả
+**And** báo cáo alignment rõ ràng cho release review.
+
+**Given** người dùng xem thông tin minh bạch
+**When** popup/tài liệu hiển thị disclosure
+**Then** nội dung khớp với manifest runtime thực tế
+**And** không có quyền nào không giải thích được.
+
+### Story 5.3: Thiết lập quality gates cho release readiness
+
+As a team,
+I want quy trình quality gate nhất quán trước release,
+So that thay đổi mới không làm giảm chất lượng và tính tuân thủ.
+
+**Acceptance Criteria:**
+
+**Given** code chuẩn bị phát hành
+**When** chạy pipeline kiểm tra
+**Then** các bước test/lint (hoặc checklist quality tương đương) phải pass
+**And** checklist minh bạch release được xác nhận đầy đủ.
+
+**Given** có thay đổi liên quan permission/compliance
+**When** pipeline chạy
+**Then** audit permission-disclosure được thực thi
+**And** kết quả được lưu làm bằng chứng release.
 
 ---
 

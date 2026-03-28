@@ -344,6 +344,7 @@ Extension hoạt động như một lớp tương tác nhẹ trên web pages, ư
 
 - NFR14: Nội dung disclosure quyền truy cập và quyền riêng tư phải khớp hành vi thực tế của extension trước khi phát hành.
 - NFR15: Luồng khai thác dữ liệu phải tuân thủ chiến lược pháp lý đã phê duyệt cho nguồn Vocabulary.com.
+- NFR16: Bản phát hành phải có baseline runtime kiểm chứng được (Manifest V3 + script build/dev) và evidence audit permission-disclosure trước khi publish.
 
 ## Traceability Matrix (Vision → Scope → FR)
 

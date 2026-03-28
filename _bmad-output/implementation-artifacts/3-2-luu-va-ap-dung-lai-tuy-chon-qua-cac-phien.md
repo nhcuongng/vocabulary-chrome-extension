@@ -1,6 +1,6 @@
 # Story 3.2: Lưu và áp dụng lại tùy chọn qua các phiên
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -14,10 +14,10 @@ so that tôi không phải cấu hình lại mỗi lần mở trình duyệt.
 
 ## Tasks / Subtasks
 
-- [ ] Thiết kế persistence cho user preference trong local storage extension (AC: 1)
-- [ ] Nạp settings trong startup lifecycle của extension (AC: 1)
-- [ ] Áp dụng setting trước khi bắt selection events (AC: 1)
-- [ ] Viết test restart scenario và backward compatibility (AC: 1)
+- [x] Thiết kế persistence cho user preference trong local storage extension (AC: 1)
+- [x] Nạp settings trong startup lifecycle của extension (AC: 1)
+- [x] Áp dụng setting trước khi bắt selection events (AC: 1)
+- [x] Viết test restart scenario và backward compatibility (AC: 1)
 
 ## Dev Notes
 
@@ -42,10 +42,27 @@ GPT-5.3-Codex
 
 ### Debug Log References
 
+- `npm test` ✅ (45/45 tests pass)
+
 ### Completion Notes List
 
 - Story context created by Scrum Master.
+- Added schema settings dùng chung tại `userSettings` với default rõ ràng, normalize, merge và backward compatibility cho dữ liệu legacy.
+- Added `createChromeStorageSettingsAdapter()` để lưu/nạp preference qua `chrome.storage.local`, có subscribe runtime change và serialize write queue để tránh race condition.
+- Added startup flow trong `createAutoPopupLookupController()` để nạp setting trước khi bắt selection events.
+- Added restart scenario tests + backward compatibility tests cho persistence adapter.
+- Completed code review cho phạm vi Story 3.2, không còn patch findings sau khi chạy full test suite.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/3-2-luu-va-ap-dung-lai-tuy-chon-qua-cac-phien.md
+- src/shared/userSettings.js
+- src/infrastructure/adapters/chromeStorageSettingsAdapter.js
+- src/content/autoPopupLookupController.js
+- tests/shared/userSettings.test.js
+- tests/infrastructure/chromeStorageSettingsAdapter.test.js
+- tests/content/autoPopupLookupController.test.js
+
+### Change Log
+
+- 2026-03-28: Hoàn tất Story 3.2 (settings persistence + startup apply + backward compatibility), đã chạy code review và test pass.

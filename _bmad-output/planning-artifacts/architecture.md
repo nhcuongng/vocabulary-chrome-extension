@@ -177,6 +177,25 @@ This starter provides the foundation. Your implementation will layer:
 4. **Popup component**: React + Tailwind implementation of your UX spec
 5. **Storage & telemetry**: Chrome storage API integration + logging
 
+### Current State vs Target State Alignment (CC Approved)
+
+To avoid ambiguity during implementation, architecture is clarified into two layers:
+
+**Current State (Implemented):**
+- Lightweight JavaScript module structure under `src/`
+- Node test runner workflow via `npm test`
+- Story-level behavior implemented progressively through BMAD stories
+
+**Target State (Planned):**
+- Full Manifest V3 runtime scaffold
+- `dev/build` workflow for packaging and release
+- Stronger release quality gates (permission-disclosure audit + pipeline checks)
+
+**Migration Milestones (Incremental):**
+1. **Milestone 1**: Add MV3 manifest + runtime shell wiring without breaking existing tests.
+2. **Milestone 2**: Align runtime permissions with disclosure and enforce auditable checks.
+3. **Milestone 3**: Add consistent quality gates for release readiness.
+
 ## Core Architectural Decisions
 
 ### Critical Decisions (Block Implementation Until Decided)

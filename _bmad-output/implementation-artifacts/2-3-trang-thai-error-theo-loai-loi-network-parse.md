@@ -1,6 +1,6 @@
 # Story 2.3: Trạng thái error theo loại lỗi (network/parse)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -15,10 +15,10 @@ so that tôi biết phải làm gì tiếp theo thay vì bị bối rối.
 
 ## Tasks / Subtasks
 
-- [ ] Chuẩn hóa taxonomy lỗi: `network`, `timeout`, `parse`, `unknown` (AC: 1,2)
-- [ ] Render error state theo từng loại với CTA tương ứng (AC: 1)
-- [ ] Bọc parser bằng safe guard để không crash host page (AC: 2)
-- [ ] Viết test cho từng error type + fallback default (AC: 1,2)
+- [x] Chuẩn hóa taxonomy lỗi: `network`, `timeout`, `parse`, `unknown` (AC: 1,2)
+- [x] Render error state theo từng loại với CTA tương ứng (AC: 1)
+- [x] Bọc parser bằng safe guard để không crash host page (AC: 2)
+- [x] Viết test cho từng error type + fallback default (AC: 1,2)
 
 ## Dev Notes
 
@@ -44,10 +44,22 @@ GPT-5.3-Codex
 
 ### Debug Log References
 
+- `npm test` ✅ (29/29 tests pass)
+
 ### Completion Notes List
 
 - Story context created by Scrum Master.
+- Chuẩn hóa taxonomy lỗi dùng chung (`network`, `timeout`, `parse`, `unknown`) với fallback `unknown` cho type không hợp lệ.
+- Added rendering nhánh `error` theo từng loại lỗi với message + CTA tương ứng từ message catalog.
+- Added `safeParseVocabularyHtml()` guard để bắt parser exception, trả typed parse error và tránh unhandled exception xuyên qua content script.
+- Added tests cho từng error type, fallback default, parser guard not-found branch, và parse-error branch.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/2-3-trang-thai-error-theo-loai-loi-network-parse.md
+- src/shared/lookupContract.js
+- src/content/popupRenderer.js
+- src/infrastructure/adapters/safeVocabularyHtmlParserAdapter.js
+- tests/content/popupRenderer.test.js
+- tests/infrastructure/safeVocabularyHtmlParserAdapter.test.js
+- tests/shared/lookupContract.test.js
