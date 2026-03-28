@@ -916,11 +916,6 @@
   }
 
   // src/application/complianceDisclosureCatalog.js
-  var DATA_SOURCE_ATTRIBUTION = {
-    providerName: "Vocabulary.com",
-    providerUrl: "https://www.vocabulary.com/",
-    policyLabel: "Ngu\u1ED3n d\u1EEF li\u1EC7u tham kh\u1EA3o"
-  };
   var PERMISSION_DISCLOSURE_ITEMS = [
     {
       permission: "activeTab",
@@ -956,11 +951,22 @@
     return normalized;
   }
   function buildAttributionText() {
-    return `${DATA_SOURCE_ATTRIBUTION.policyLabel}: ${DATA_SOURCE_ATTRIBUTION.providerName} (${DATA_SOURCE_ATTRIBUTION.providerUrl})`;
+    return `<span style="display:inline-block;vertical-align:middle;">
+    <span title='Ngu\u1ED3n d\u1EEF li\u1EC7u: Vocabulary.com (https://www.vocabulary.com/)' style="cursor:help;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><circle cx="10" cy="10" r="9" stroke="#888" stroke-width="2" fill="#f6f8fa"/><text x="10" y="15" text-anchor="middle" font-size="12" fill="#888" font-family="Arial, sans-serif">i</text></svg>
+    </span>
+    <span style="color:#888;font-size:12px;">Vocabulary.com</span>
+  </span>`;
   }
   function buildPermissionDisclosureSummary() {
     const permissions = PERMISSION_DISCLOSURE_ITEMS.map((item) => formatPermissionLabel(item.permission));
-    return `Quy\u1EC1n truy c\u1EADp: ${permissions.join(", ")}; ch\u1EC9 d\xF9ng cho tra c\u1EE9u t\u1EEB, l\u01B0u c\xE0i \u0111\u1EB7t, v\xE0 telemetry \u1EA9n danh c\u1EE5c b\u1ED9.`;
+    const fullText = `Quy\u1EC1n truy c\u1EADp: ${permissions.join(", ")}; ch\u1EC9 d\xF9ng cho tra c\u1EE9u t\u1EEB, l\u01B0u c\xE0i \u0111\u1EB7t, v\xE0 telemetry \u1EA9n danh c\u1EE5c b\u1ED9.`;
+    return `<span style="display:inline-block;vertical-align:middle;">
+    <span title='${fullText.replace(/'/g, "&apos;")}' style="cursor:help;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><path d="M10 2L17 5V10C17 14.4183 13.4183 18 9 18C4.58172 18 1 14.4183 1 10V5L10 2Z" stroke="#888" stroke-width="2" fill="#f6f8fa"/></svg>
+    </span>
+    <span style="color:#888;font-size:12px;">Quy\u1EC1n truy c\u1EADp</span>
+  </span>`;
   }
 
   // src/content/popupRenderer.js
@@ -1125,43 +1131,6 @@
   }
 
   // src/content/runtimeContentScript.js
-  function showQuickReferencePopup() {
-    const oldPopup = document.getElementById("quick-reference-popup");
-    if (oldPopup)
-      oldPopup.remove();
-    const popup = document.createElement("div");
-    popup.id = "quick-reference-popup";
-    popup.style.position = "fixed";
-    popup.style.top = "40px";
-    popup.style.left = "50%";
-    popup.style.transform = "translateX(-50%)";
-    popup.style.zIndex = "99999";
-    popup.style.background = "#fff";
-    popup.style.border = "2px solid #3a3a3a";
-    popup.style.borderRadius = "16px";
-    popup.style.boxShadow = "0 4px 24px rgba(0,0,0,0.18)";
-    popup.style.padding = "32px 24px 16px 24px";
-    popup.style.maxWidth = "600px";
-    popup.style.fontFamily = "system-ui, sans-serif";
-    popup.style.fontSize = "18px";
-    popup.style.color = "#222";
-    popup.style.lineHeight = "1.5";
-    popup.innerHTML = `
-    <div style="font-size:2rem;font-weight:700;margin-bottom:16px;">Quick reference</div>
-    <div style="font-size:1.4rem;font-weight:600;margin-bottom:12px;">reference</div>
-    <pre style="background:#f6f8fa;border-radius:8px;padding:16px;font-size:1.1rem;overflow-x:auto;margin-bottom:16px;">Module.after(['jquery'], function(){ jQuery(function($) { $('.pron-audio').parent().click(function(){ $(this).children('.pron-audio').get(0).play(); }); }); });</pre>
-    <div style="color:#888;font-size:1rem;margin-bottom:4px;">Ngu\u1ED3n d\u1EEF li\u1EC7u tham kh\u1EA3o: Vocabulary.com<br>(<a href='https://www.vocabulary.com/' target='_blank' style='color:#0074d9;'>https://www.vocabulary.com/</a>)</div>
-    <div style="color:#888;font-size:1rem;margin-bottom:4px;">Quy\u1EC1n truy c\u1EADp: activeTab, scripting, storage, host:https://www.vocabulary.com/*; ch\u1EC9 d\xF9ng cho tra c\u1EE9u t\u1EEB, l\u01B0u c\xE0i \u0111\u1EB7t, v\xE0 telemetry \u1EA9n danh c\u1EE5c b\u1ED9.</div>
-    <button id="quick-reference-close" style="position:absolute;top:12px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#888;">&times;</button>
-  `;
-    document.body.appendChild(popup);
-    document.getElementById("quick-reference-close").onclick = () => popup.remove();
-  }
-  document.addEventListener("keydown", function(e) {
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "q") {
-      showQuickReferencePopup();
-    }
-  });
   async function bootstrapContentRuntime({
     chromeApi = globalThis.chrome,
     windowObj = globalThis.window,
@@ -1206,9 +1175,9 @@
       popupElement.style.zIndex = 2147483647;
       popupElement.style.background = "#fff";
       popupElement.style.boxShadow = "0 2px 12px rgba(0,0,0,0.18)";
-      popupElement.style.borderRadius = "8px";
-      popupElement.style.padding = "16px";
-      popupElement.style.maxWidth = "420px";
+      popupElement.style.borderRadius = "10px";
+      popupElement.style.padding = "12px";
+      popupElement.style.maxWidth = "380px";
       popupElement.style.minWidth = "200px";
       popupElement.style.fontFamily = "inherit";
       popupElement.style.fontSize = "16px";
@@ -1217,7 +1186,9 @@
       popupElement.tabIndex = -1;
       popupElement.setAttribute("role", "dialog");
       popupElement.setAttribute("aria-live", "polite");
-      popupElement.addEventListener("mousedown", (e) => e.stopPropagation());
+      ["mousedown", "mouseup", "click", "dblclick", "contextmenu"].forEach((evt) => {
+        popupElement.addEventListener(evt, (e) => e.stopPropagation());
+      });
       documentObj.body.appendChild(popupElement);
       console.log("[VOCAB] Popup inserted into DOM");
       return popupElement;
@@ -1242,12 +1213,14 @@
         content = [];
       }
       popupElement.innerHTML = content.map((item) => {
-        if (item.type === "headword")
-          return `<div style="font-weight:bold;font-size:20px;">${item.value}</div>`;
+        if (item.type === "headword") {
+          const cap = typeof item.value === "string" && item.value.length > 0 ? item.value.charAt(0).toUpperCase() + item.value.slice(1) : item.value;
+          return `<p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">${cap}</p>`;
+        }
         if (item.type === "pronunciation")
-          return `<div style="color:#888;">${item.value}</div>`;
+          return `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;">${item.value}</div>`;
         if (item.type === "definition")
-          return `<div style="margin:8px 0;">${item.value}</div>`;
+          return `<p style="font-size:15px;line-height:1.5;margin:10px 0;">${item.value}</p>`;
         if (item.type === "title")
           return `<div style="font-weight:bold;">${item.value}</div>`;
         if (item.type === "message")
@@ -1257,9 +1230,9 @@
         if (item.type === "cta")
           return `<div style="margin-top:8px;"><button>${item.value}</button></div>`;
         if (item.type === "attribution")
-          return `<div style="margin-top:12px;font-size:12px;color:#888;">${item.value}</div>`;
+          return `<div style="margin-top:12px;">${item.value}</div>`;
         if (item.type === "permission-disclosure")
-          return `<div style="font-size:12px;color:#888;">${item.value}</div>`;
+          return `<div style="font-size:12px;margin-top:4px;">${item.value}</div>`;
         return "";
       }).join("");
       if (selectionRect) {

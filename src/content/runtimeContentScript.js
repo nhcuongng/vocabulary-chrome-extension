@@ -1,46 +1,3 @@
-// Quick reference popup for JS code (Vocabulary.com)
-function showQuickReferencePopup() {
-  // Remove existing popup if any
-  const oldPopup = document.getElementById('quick-reference-popup');
-  if (oldPopup) oldPopup.remove();
-
-  const popup = document.createElement('div');
-  popup.id = 'quick-reference-popup';
-  popup.style.position = 'fixed';
-  popup.style.top = '40px';
-  popup.style.left = '50%';
-  popup.style.transform = 'translateX(-50%)';
-  popup.style.zIndex = '99999';
-  popup.style.background = '#fff';
-  popup.style.border = '2px solid #3a3a3a';
-  popup.style.borderRadius = '16px';
-  popup.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-  popup.style.padding = '32px 24px 16px 24px';
-  popup.style.maxWidth = '600px';
-  popup.style.fontFamily = 'system-ui, sans-serif';
-  popup.style.fontSize = '18px';
-  popup.style.color = '#222';
-  popup.style.lineHeight = '1.5';
-
-  popup.innerHTML = `
-    <div style="font-size:2rem;font-weight:700;margin-bottom:16px;">Quick reference</div>
-    <div style="font-size:1.4rem;font-weight:600;margin-bottom:12px;">reference</div>
-    <pre style="background:#f6f8fa;border-radius:8px;padding:16px;font-size:1.1rem;overflow-x:auto;margin-bottom:16px;">Module.after(['jquery'], function(){ jQuery(function($) { $('.pron-audio').parent().click(function(){ $(this).children('.pron-audio').get(0).play(); }); }); });</pre>
-    <div style="color:#888;font-size:1rem;margin-bottom:4px;">Nguồn dữ liệu tham khảo: Vocabulary.com<br>(<a href='https://www.vocabulary.com/' target='_blank' style='color:#0074d9;'>https://www.vocabulary.com/</a>)</div>
-    <div style="color:#888;font-size:1rem;margin-bottom:4px;">Quyền truy cập: activeTab, scripting, storage, host:https://www.vocabulary.com/*; chỉ dùng cho tra cứu từ, lưu cài đặt, và telemetry ẩn danh cục bộ.</div>
-    <button id="quick-reference-close" style="position:absolute;top:12px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#888;">&times;</button>
-  `;
-
-  document.body.appendChild(popup);
-  document.getElementById('quick-reference-close').onclick = () => popup.remove();
-}
-
-// Example: Show popup when pressing Ctrl+Shift+Q
-document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q') {
-    showQuickReferencePopup();
-  }
-});
 import { readSelectionSnapshot } from './selectionDetection.js';
 import { createAutoPopupLookupController } from './autoPopupLookupController.js';
 import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/chromeStorageSettingsAdapter.js';
@@ -97,9 +54,9 @@ async function bootstrapContentRuntime({
     popupElement.style.zIndex = 2147483647;
     popupElement.style.background = '#fff';
     popupElement.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
-    popupElement.style.borderRadius = '8px';
-    popupElement.style.padding = '16px';
-    popupElement.style.maxWidth = '420px';
+    popupElement.style.borderRadius = '10px';
+    popupElement.style.padding = '12px';
+    popupElement.style.maxWidth = '380px';
     popupElement.style.minWidth = '200px';
     popupElement.style.fontFamily = 'inherit';
     popupElement.style.fontSize = '16px';
@@ -108,7 +65,10 @@ async function bootstrapContentRuntime({
     popupElement.tabIndex = -1;
     popupElement.setAttribute('role', 'dialog');
     popupElement.setAttribute('aria-live', 'polite');
-    popupElement.addEventListener('mousedown', (e) => e.stopPropagation());
+    // Stop propagation for all relevant events
+    ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu'].forEach((evt) => {
+      popupElement.addEventListener(evt, (e) => e.stopPropagation());
+    });
     documentObj.body.appendChild(popupElement);
     console.log('[VOCAB] Popup inserted into DOM');
     return popupElement;
@@ -132,17 +92,22 @@ async function bootstrapContentRuntime({
     } else {
       content = [];
     }
-    // Simple HTML rendering for demo
+    // D2 - Compact Utility style rendering (moved to vocab-popup)
     popupElement.innerHTML = content.map((item) => {
-      if (item.type === 'headword') return `<div style="font-weight:bold;font-size:20px;">${item.value}</div>`;
-      if (item.type === 'pronunciation') return `<div style="color:#888;">${item.value}</div>`;
-      if (item.type === 'definition') return `<div style="margin:8px 0;">${item.value}</div>`;
+      if (item.type === 'headword') {
+        const cap = typeof item.value === 'string' && item.value.length > 0
+          ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
+          : item.value;
+        return `<p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">${cap}</p>`;
+      }
+      if (item.type === 'pronunciation') return `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;">${item.value}</div>`;
+      if (item.type === 'definition') return `<p style="font-size:15px;line-height:1.5;margin:10px 0;">${item.value}</p>`;
       if (item.type === 'title') return `<div style="font-weight:bold;">${item.value}</div>`;
       if (item.type === 'message') return `<div>${item.value}</div>`;
       if (item.type === 'guidance-list') return `<ul style="margin:8px 0;">${item.value.map((g) => `<li>${g}</li>`).join('')}</ul>`;
       if (item.type === 'cta') return `<div style="margin-top:8px;"><button>${item.value}</button></div>`;
-      if (item.type === 'attribution') return `<div style="margin-top:12px;font-size:12px;color:#888;">${item.value}</div>`;
-      if (item.type === 'permission-disclosure') return `<div style="font-size:12px;color:#888;">${item.value}</div>`;
+      if (item.type === 'attribution') return `<div style="margin-top:12px;">${item.value}</div>`;
+      if (item.type === 'permission-disclosure') return `<div style="font-size:12px;margin-top:4px;">${item.value}</div>`;
       return '';
     }).join('');
     // Position popup

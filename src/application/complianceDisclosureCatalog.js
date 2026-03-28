@@ -57,13 +57,26 @@ function dedupe(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+// Attribution with icon and hover tooltip for full text
 export function buildAttributionText() {
-  return `${DATA_SOURCE_ATTRIBUTION.policyLabel}: ${DATA_SOURCE_ATTRIBUTION.providerName} (${DATA_SOURCE_ATTRIBUTION.providerUrl})`;
+  return `<span style="display:inline-block;vertical-align:middle;">
+    <span title='Nguồn dữ liệu: Vocabulary.com (https://www.vocabulary.com/)' style="cursor:help;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><circle cx="10" cy="10" r="9" stroke="#888" stroke-width="2" fill="#f6f8fa"/><text x="10" y="15" text-anchor="middle" font-size="12" fill="#888" font-family="Arial, sans-serif">i</text></svg>
+    </span>
+    <span style="color:#888;font-size:12px;">Vocabulary.com</span>
+  </span>`;
 }
 
+// Permission disclosure with icon and hover for full text
 export function buildPermissionDisclosureSummary() {
   const permissions = PERMISSION_DISCLOSURE_ITEMS.map((item) => formatPermissionLabel(item.permission));
-  return `Quyền truy cập: ${permissions.join(', ')}; chỉ dùng cho tra cứu từ, lưu cài đặt, và telemetry ẩn danh cục bộ.`;
+  const fullText = `Quyền truy cập: ${permissions.join(', ')}; chỉ dùng cho tra cứu từ, lưu cài đặt, và telemetry ẩn danh cục bộ.`;
+  return `<span style="display:inline-block;vertical-align:middle;">
+    <span title='${fullText.replace(/'/g, '&apos;')}' style="cursor:help;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><path d="M10 2L17 5V10C17 14.4183 13.4183 18 9 18C4.58172 18 1 14.4183 1 10V5L10 2Z" stroke="#888" stroke-width="2" fill="#f6f8fa"/></svg>
+    </span>
+    <span style="color:#888;font-size:12px;">Quyền truy cập</span>
+  </span>`;
 }
 
 export function auditManifestPermissions({ permissions = [], hostPermissions = [] } = {}) {

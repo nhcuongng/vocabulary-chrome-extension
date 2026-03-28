@@ -20,7 +20,6 @@ function hasCoreDictionaryData(parsedPayload) {
 export function safeParseVocabularyHtml({ html, parser = parseVocabularyHtml } = {}) {
   try {
     const parsedPayload = parser(html);
-    console.log("🚀 ~ safeParseVocabularyHtml ~ parsedPayload:", html)
 
     if (!hasCoreDictionaryData(parsedPayload)) {
       return createLookupNotFoundResponse({
