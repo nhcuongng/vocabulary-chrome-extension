@@ -1013,61 +1013,6 @@
     ];
   }
 
-  // src/content/popupPositioning.js
-  var POPUP_LAYOUT = {
-    MAX_WIDTH: 420,
-    GAP: 8,
-    VIEWPORT_PADDING: 12
-  };
-  function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-  }
-  function computePopupPosition({
-    selectionRect,
-    popupSize,
-    viewport,
-    maxWidth = POPUP_LAYOUT.MAX_WIDTH
-  } = {}) {
-    if (!selectionRect || !popupSize || !viewport) {
-      throw new Error("selectionRect, popupSize and viewport are required");
-    }
-    if (viewport.width <= 0 || viewport.height <= 0) {
-      throw new Error("viewport dimensions must be positive");
-    }
-    if (popupSize.width <= 0 || popupSize.height <= 0) {
-      throw new Error("popup dimensions must be positive");
-    }
-    const effectiveMaxWidth = Math.min(
-      maxWidth,
-      viewport.width - POPUP_LAYOUT.VIEWPORT_PADDING * 2
-    );
-    if (effectiveMaxWidth <= 0) {
-      throw new Error("viewport is too small to place popup");
-    }
-    const popupWidth = Math.min(popupSize.width, effectiveMaxWidth);
-    const centeredLeft = selectionRect.left + selectionRect.width / 2 - popupWidth / 2;
-    const minLeft = viewport.scrollX + POPUP_LAYOUT.VIEWPORT_PADDING;
-    const maxLeft = viewport.scrollX + viewport.width - popupWidth - POPUP_LAYOUT.VIEWPORT_PADDING;
-    const left = clamp(centeredLeft, minLeft, maxLeft);
-    const belowTop = selectionRect.bottom + POPUP_LAYOUT.GAP;
-    const aboveTop = selectionRect.top - popupSize.height - POPUP_LAYOUT.GAP;
-    const minTop = viewport.scrollY + POPUP_LAYOUT.VIEWPORT_PADDING;
-    const maxTop = viewport.scrollY + viewport.height - popupSize.height - POPUP_LAYOUT.VIEWPORT_PADDING;
-    let placement = "bottom";
-    let top = belowTop;
-    if (belowTop > maxTop && aboveTop >= minTop) {
-      placement = "top";
-      top = aboveTop;
-    }
-    top = clamp(top, minTop, maxTop);
-    return {
-      top,
-      left,
-      maxWidth: effectiveMaxWidth,
-      placement
-    };
-  }
-
   // src/application/popupViewModelMapper.js
   function normalizeDefinitions(definitions) {
     if (!Array.isArray(definitions)) {
@@ -1236,17 +1181,32 @@
         return "";
       }).join("");
       if (selectionRect) {
+        const popupWidth = popupElement.offsetWidth;
+        const popupHeight = popupElement.offsetHeight;
         const viewport = {
           width: windowObj.innerWidth,
           height: windowObj.innerHeight,
           scrollX: windowObj.scrollX,
           scrollY: windowObj.scrollY
         };
-        const popupSize = { width: popupElement.offsetWidth, height: popupElement.offsetHeight };
-        const pos = computePopupPosition({ selectionRect, popupSize, viewport });
-        popupElement.style.left = `${pos.left}px`;
-        popupElement.style.top = `${pos.top}px`;
-        popupElement.style.maxWidth = `${pos.maxWidth}px`;
+        let left = selectionRect.left + viewport.scrollX;
+        let top = selectionRect.bottom + viewport.scrollY + 8;
+        if (top + popupHeight > viewport.scrollY + viewport.height) {
+          const aboveTop = selectionRect.top + viewport.scrollY - popupHeight - 8;
+          if (aboveTop >= viewport.scrollY) {
+            top = aboveTop;
+          } else {
+            top = viewport.scrollY + viewport.height - popupHeight - 8;
+          }
+        }
+        if (left + popupWidth > viewport.scrollX + viewport.width) {
+          left = viewport.scrollX + viewport.width - popupWidth - 8;
+        }
+        if (left < viewport.scrollX)
+          left = viewport.scrollX + 8;
+        popupElement.style.left = `${left}px`;
+        popupElement.style.top = `${top}px`;
+        popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
       }
     }
     function showPopup(state, selectionRect) {

@@ -110,19 +110,39 @@ async function bootstrapContentRuntime({
       if (item.type === 'permission-disclosure') return `<div style="font-size:12px;margin-top:4px;">${item.value}</div>`;
       return '';
     }).join('');
-    // Position popup
+
+    // --- Fix: Ensure popup is measured after DOM update ---
     if (selectionRect) {
+      // Force reflow to ensure offsetWidth/offsetHeight are correct
+      const popupWidth = popupElement.offsetWidth;
+      const popupHeight = popupElement.offsetHeight;
       const viewport = {
         width: windowObj.innerWidth,
         height: windowObj.innerHeight,
         scrollX: windowObj.scrollX,
         scrollY: windowObj.scrollY,
       };
-      const popupSize = { width: popupElement.offsetWidth, height: popupElement.offsetHeight };
-      const pos = computePopupPosition({ selectionRect, popupSize, viewport });
-      popupElement.style.left = `${pos.left}px`;
-      popupElement.style.top = `${pos.top}px`;
-      popupElement.style.maxWidth = `${pos.maxWidth}px`;
+      // Compute position: always prefer below selection, fallback above if not enough space
+      let left = selectionRect.left + viewport.scrollX;
+      let top = selectionRect.bottom + viewport.scrollY + 8; // 8px margin below selection
+      // If popup would overflow bottom, try above selection
+      if (top + popupHeight > viewport.scrollY + viewport.height) {
+        const aboveTop = selectionRect.top + viewport.scrollY - popupHeight - 8;
+        if (aboveTop >= viewport.scrollY) {
+          top = aboveTop;
+        } else {
+          // Clamp to bottom if still overflow
+          top = viewport.scrollY + viewport.height - popupHeight - 8;
+        }
+      }
+      // Clamp left to viewport
+      if (left + popupWidth > viewport.scrollX + viewport.width) {
+        left = viewport.scrollX + viewport.width - popupWidth - 8;
+      }
+      if (left < viewport.scrollX) left = viewport.scrollX + 8;
+      popupElement.style.left = `${left}px`;
+      popupElement.style.top = `${top}px`;
+      popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
     }
   }
 
