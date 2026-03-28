@@ -93,23 +93,29 @@ async function bootstrapContentRuntime({
       content = [];
     }
     // D2 - Compact Utility style rendering (moved to vocab-popup)
-    popupElement.innerHTML = content.map((item) => {
+    let html = '';
+    // Render content, chèn link "Xem thêm" ngay dưới headword nếu có
+    content.forEach((item, idx) => {
       if (item.type === 'headword') {
         const cap = typeof item.value === 'string' && item.value.length > 0
           ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
           : item.value;
-        return `<p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">${cap}</p>`;
-      }
-      if (item.type === 'pronunciation') return `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;">${item.value}</div>`;
-      if (item.type === 'definition') return `<p style="font-size:15px;line-height:1.5;margin:10px 0;">${item.value}</p>`;
-      if (item.type === 'title') return `<div style="font-weight:bold;">${item.value}</div>`;
-      if (item.type === 'message') return `<div>${item.value}</div>`;
-      if (item.type === 'guidance-list') return `<ul style="margin:8px 0;">${item.value.map((g) => `<li>${g}</li>`).join('')}</ul>`;
-      if (item.type === 'cta') return `<div style="margin-top:8px;"><button>${item.value}</button></div>`;
-      if (item.type === 'attribution') return `<div style="margin-top:12px;">${item.value}</div>`;
-      if (item.type === 'permission-disclosure') return `<div style="font-size:12px;margin-top:4px;">${item.value}</div>`;
-      return '';
-    }).join('');
+        html += `<p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">${cap}</p>`;
+        // Thêm link nhỏ ngay dưới headword
+        if (viewModel && viewModel.headword) {
+          const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel.headword)}`;
+          html += `<div style="font-size:12px;margin:-4px 0 8px 0;text-align:left;"><a href="${vocabUrl}" target="_blank" rel="noopener noreferrer" style="color:#1677C9;text-decoration:underline;">Xem thêm</a></div>`;
+        }
+      } else if (item.type === 'pronunciation') html += `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;">${item.value}</div>`;
+      else if (item.type === 'definition') html += `<p style="font-size:15px;line-height:1.5;margin:10px 0;">${item.value}</p>`;
+      else if (item.type === 'title') html += `<div style="font-weight:bold;">${item.value}</div>`;
+      else if (item.type === 'message') html += `<div>${item.value}</div>`;
+      else if (item.type === 'guidance-list') html += `<ul style="margin:8px 0;">${item.value.map((g) => `<li>${g}</li>`).join('')}</ul>`;
+      else if (item.type === 'cta') html += `<div style="margin-top:8px;"><button>${item.value}</button></div>`;
+      else if (item.type === 'attribution') html += `<div style="margin-top:12px;">${item.value}</div>`;
+      else if (item.type === 'permission-disclosure') html += `<div style="font-size:12px;margin-top:4px;">${item.value}</div>`;
+    });
+    popupElement.innerHTML = html;
 
     // --- Fix: Ensure popup is measured after DOM update ---
     if (selectionRect) {
