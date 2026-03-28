@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UX Design Directions - Vocabulary Chrome Extension</title>
+  <style>
+    :root {
+      --primary-600: #0B5EA8;
+      --primary-500: #1677C9;
+      --primary-100: #EAF4FF;
+      --text-primary: #1F2937;
+      --text-secondary: #4B5563;
+      --border: #D1D5DB;
+      --surface: #FFFFFF;
+      --surface-muted: #F8FAFC;
+      --success: #0F9D58;
+      --warning: #F59E0B;
+      --error: #DC2626;
+      --focus-ring: #2563EB;
+      --radius: 12px;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text-primary);
+      background: linear-gradient(180deg, #f5f8fc 0%, #eef3f9 100%);
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(6px);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 20px;
+      color: var(--primary-600);
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .direction {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .direction h2 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 16px;
+      background: var(--primary-100);
+      border-bottom: 1px solid var(--border);
+      color: var(--primary-600);
+    }
+
+    .canvas {
+      padding: 16px;
+      background: var(--surface-muted);
+      min-height: 330px;
+    }
+
+    .popup {
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .word { font-size: 36px; font-weight: 700; margin: 0 0 8px; color: var(--primary-600); }
+    .row { color: var(--text-secondary); margin-bottom: 10px; font-size: 14px; }
+    .def { font-size: 16px; line-height: 1.5; margin: 10px 0; }
+    .chip { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; margin-right: 6px; }
+    .ok { background: #e9f8ef; color: var(--success); }
+    .warn { background: #fff7ea; color: #a66b00; }
+    .err { background: #ffecec; color: #a51d1d; }
+    .skeleton { height: 12px; background: #e4ebf2; border-radius: 6px; margin: 8px 0; }
+
+    .dense .popup { padding: 12px; border-radius: 10px; }
+    .dense .word { font-size: 30px; }
+    .dense .def { font-size: 15px; }
+
+    .airy .popup { padding: 20px; border-radius: 16px; }
+    .airy .word { font-size: 40px; }
+    .airy .def { font-size: 17px; }
+
+    .dark .canvas { background: #0f172a; }
+    .dark .popup {
+      background: #0b1220;
+      border-color: #22304a;
+      color: #e6edf7;
+    }
+    .dark .word { color: #6db0ff; }
+    .dark .row { color: #b6c3d8; }
+    .dark .def { color: #e9eef7; }
+
+    .minimal .popup { border: none; box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12); }
+
+    .split .popup {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 420px;
+    }
+    .split .left, .split .right { min-width: 0; }
+
+    .notes {
+      padding: 12px 16px;
+      border-top: 1px dashed var(--border);
+      color: var(--text-secondary);
+      font-size: 13px;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1 class="title">Design Direction Mockups - Vocabulary Extension</h1>
+    <p class="subtitle">6 hướng giao diện để so sánh. Gợi ý: D2 hoặc D4 phù hợp nhất cho MVP định hướng calm + clear.</p>
+  </header>
+
+  <main class="grid">
+    <section class="direction">
+      <h2>D1 - Balanced Card</h2>
+      <div class="canvas">
+        <div class="popup">
+          <p class="word">test</p>
+          <div class="row">US /tɛst/ · UK /tɛst/</div>
+          <div><span class="chip ok">success</span></div>
+          <p class="def">A trial or procedure used to measure knowledge, quality, or performance.</p>
+        </div>
+      </div>
+      <div class="notes">Cân bằng giữa tốc độ scan và độ thân thiện. Dễ triển khai.</div>
+    </section>
+
+    <section class="direction dense">
+      <h2>D2 - Compact Utility</h2>
+      <div class="canvas">
+        <div class="popup">
+          <p class="word">test</p>
+          <div class="row">/tɛst/ · Other forms: tests, testing</div>
+          <div><span class="chip ok">success</span><span class="chip warn">quick scan</span></div>
+          <p class="def">Used to examine quality or knowledge quickly in context.</p>
+        </div>
+      </div>
+      <div class="notes">Rất hợp MVP: nhẹ, nhanh, ít chiếm màn hình.</div>
+    </section>
+
+    <section class="direction airy">
+      <h2>D3 - Reading Comfort</h2>
+      <div class="canvas">
+        <div class="popup">
+          <p class="word">test</p>
+          <div class="row">Pronunciation · grammar hints</div>
+          <p class="def">A process of trying something to discover quality, value, or reliability.</p>
+          <div><span class="chip ok">comfortable</span></div>
+        </div>
+      </div>
+      <div class="notes">Rõ ràng, thoáng, nhưng tốn không gian hơn.</div>
+    </section>
+
+    <section class="direction minimal">
+      <h2>D4 - Minimal Focus</h2>
+      <div class="canvas">
+        <div class="popup">
+          <p class="word">test</p>
+          <div class="row">/tɛst/</div>
+          <p class="def">A trial to learn whether something works as intended.</p>
+          <div><span class="chip ok">focus</span><span class="chip ok">low-friction</span></div>
+        </div>
+      </div>
+      <div class="notes">Tập trung tối đa vào nội dung cốt lõi, ít nhiễu.</div>
+    </section>
+
+    <section class="direction split">
+      <h2>D5 - Split Info</h2>
+      <div class="canvas">
+        <div class="popup">
+          <div class="left">
+            <p class="word">test</p>
+            <div class="row">/tɛst/</div>
+            <div><span class="chip warn">not found</span></div>
+          </div>
+          <div class="right">
+            <p class="def">Try selecting one word only or remove punctuation.</p>
+          </div>
+        </div>
+      </div>
+      <div class="notes">Mạnh ở trạng thái lỗi/recovery, nhưng complexity cao hơn.</div>
+    </section>
+
+    <section class="direction dark">
+      <h2>D6 - Dark Assist</h2>
+      <div class="canvas">
+        <div class="popup">
+          <p class="word">test</p>
+          <div class="row">US /tɛst/ · UK /tɛst/</div>
+          <div class="skeleton"></div>
+          <div class="skeleton" style="width: 78%"></div>
+          <div><span class="chip err">error</span></div>
+        </div>
+      </div>
+      <div class="notes">Phù hợp dark mode phase sau, không ưu tiên MVP.</div>
+    </section>
+  </main>
+</body>
+</html>
