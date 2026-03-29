@@ -55,33 +55,100 @@ async function bootstrapContentRuntime({
   function createPopup() {
     if (popupElement) return popupElement;
     popupElement = documentObj.createElement('div');
-    popupElement.className = 'vocab-popup';
     popupElement.style.position = 'absolute';
     popupElement.style.zIndex = 2147483647;
-    popupElement.style.background = '#fff';
-    popupElement.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
-    popupElement.style.borderRadius = '10px';
-    popupElement.style.padding = '12px';
-    popupElement.style.maxWidth = '380px';
-    popupElement.style.minWidth = '200px';
-    popupElement.style.fontFamily = 'inherit';
-    popupElement.style.fontSize = '16px';
-    popupElement.style.color = '#222';
-    popupElement.style.transition = 'opacity 0.15s';
-    popupElement.tabIndex = -1;
-    popupElement.setAttribute('role', 'dialog');
-    popupElement.setAttribute('aria-live', 'polite');
+    // Shadow DOM root
+    const shadow = popupElement.attachShadow({ mode: 'open' });
+    // Popup container inside shadow
+    const popupContainer = documentObj.createElement('div');
+    popupContainer.className = 'vocab-popup vocab-popup-theme';
+    popupContainer.tabIndex = -1;
+    popupContainer.setAttribute('role', 'dialog');
+    popupContainer.setAttribute('aria-live', 'polite');
+    // Style for shadow root
+    const style = documentObj.createElement('style');
+    style.textContent = `
+      .vocab-popup-theme {
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        border-radius: 10px;
+        padding: 12px;
+        max-width: 380px;
+        min-width: 200px;
+        font-family: inherit;
+        font-size: 16px;
+        color: #222;
+        transition: opacity 0.15s;
+      }
+      .vocab-popup-theme .head-word:hover {
+        text-decoration: underline;
+      }
+      .vocab-popup-theme .head-word {
+        text-decoration: none;
+      }
+      .vocab-popup-headword {
+        font-size: 30px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        color: #1677C9;
+      }
+      .vocab-popup-pronunciation {
+        color: #4B5563;
+        font-size: 14px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .vocab-popup-audio-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0 4px;
+        color: #4B5563;
+      }
+      .vocab-popup-definition {
+        font-size: 15px;
+        line-height: 1.5;
+        margin: 10px 0;
+      }
+      .vocab-popup-title {
+        font-weight: bold;
+      }
+      .vocab-popup-message {
+      }
+      .vocab-popup-guidance-list {
+        margin: 8px 0;
+      }
+      .vocab-popup-cta {
+        margin-top: 8px;
+      }
+      .vocab-popup-attribution {
+        margin-top: 12px;
+      }
+      .vocab-popup-permission-disclosure {
+        font-size: 12px;
+        margin-top: 4px;
+      }
+    `;
+    shadow.appendChild(style);
+    shadow.appendChild(popupContainer);
     // Stop propagation for all relevant events
     ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu'].forEach((evt) => {
       popupElement.addEventListener(evt, (e) => e.stopPropagation());
     });
     documentObj.body.appendChild(popupElement);
-    console.log('[VOCAB] Popup inserted into DOM');
+    // Attach shadow and container for later use
+    popupElement._vocabShadow = shadow;
+    popupElement._vocabContainer = popupContainer;
+    console.log('[VOCAB] Popup inserted into DOM (shadow)');
     return popupElement;
   }
 
   function renderPopupContent(state, selectionRect) {
     if (!popupElement) return;
+    const shadow = popupElement._vocabShadow;
+    const popupContainer = popupElement._vocabContainer;
     let viewModel = null;
     let content = [];
     if (state.status === 'success' || state.status === 'not-found' || state.status === 'error') {
@@ -100,33 +167,24 @@ async function bootstrapContentRuntime({
     }
     // D2 - Compact Utility style rendering (moved to vocab-popup)
     let html = '';
-    // Render content, chèn link "Xem thêm" ngay dưới headword nếu có
     content.forEach((item, idx) => {
       if (item.type === 'headword') {
         const cap = typeof item.value === 'string' && item.value.length > 0
           ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
           : item.value;
         const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel.headword)}`;
-          html += `
-          <style>
-            .head-word:hover {
-              text-decoration: underline;
-            }
-
-            .head-word {
-              text-decoration:none;
-            }
-          </style>
-          <p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">
-        <a href="${vocabUrl}" class="head-word" target="_blank" rel="noopener noreferrer">${cap}</a></p>`;
+        html += `
+          <p class="vocab-popup-headword">
+            <a href="${vocabUrl}" class="head-word" target="_blank" rel="noopener noreferrer">${cap}</a>
+          </p>`;
       } else if (item.type === 'pronunciation') {
-        html += `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">`;
+        html += `<div class="vocab-popup-pronunciation">`;
         // Render US pronunciation + audio
         if (item.audio && item.audio.us && item.value.includes('US')) {
           const usMatch = item.value.match(/US\s*([^·]+)/);
           if (usMatch) {
             html += `<span>US ${usMatch[1].trim()}</span>`;
-            html += `<button title="US pronunciation" style="background:none;border:none;cursor:pointer;padding:0 4px; color: #4B5563;" onclick="(function(){var a=new Audio('${item.audio.us}');a.play();})()">${speakerSVG}</button>`;
+            html += `<button title="US pronunciation" class="vocab-popup-audio-btn" onclick="(function(){var a=new Audio('${item.audio.us}');a.play();})()">${speakerSVG}</button>`;
           }
         }
         // Render UK pronunciation + audio
@@ -134,7 +192,7 @@ async function bootstrapContentRuntime({
           const ukMatch = item.value.match(/UK\s*([^·]+)/);
           if (ukMatch) {
             html += `<span>UK ${ukMatch[1].trim()}</span>`;
-            html += `<button title="UK pronunciation" style="background:none;border:none;cursor:pointer;padding:0 4px;  color: #4B5563;" onclick="(function(){var a=new Audio('${item.audio.uk}');a.play();})()">${speakerSVG}</button>`;
+            html += `<button title="UK pronunciation" class="vocab-popup-audio-btn" onclick="(function(){var a=new Audio('${item.audio.uk}');a.play();})()">${speakerSVG}</button>`;
           }
         }
         // Fallback: if no US/UK, just show value
@@ -143,15 +201,15 @@ async function bootstrapContentRuntime({
         }
         html += `</div>`;
       }
-      else if (item.type === 'definition') html += `<p style="font-size:15px;line-height:1.5;margin:10px 0;">${item.value}</p>`;
-      else if (item.type === 'title') html += `<div style="font-weight:bold;">${item.value}</div>`;
-      else if (item.type === 'message') html += `<div>${item.value}</div>`;
-      else if (item.type === 'guidance-list') html += `<ul style="margin:8px 0;">${item.value.map((g) => `<li>${g}</li>`).join('')}</ul>`;
-      else if (item.type === 'cta') html += `<div style="margin-top:8px;"><button>${item.value}</button></div>`;
-      else if (item.type === 'attribution') html += `<div style="margin-top:12px;">${item.value}</div>`;
-      else if (item.type === 'permission-disclosure') html += `<div style="font-size:12px;margin-top:4px;">${item.value}</div>`;
+      else if (item.type === 'definition') html += `<p class="vocab-popup-definition">${item.value}</p>`;
+      else if (item.type === 'title') html += `<div class="vocab-popup-title">${item.value}</div>`;
+      else if (item.type === 'message') html += `<div class="vocab-popup-message">${item.value}</div>`;
+      else if (item.type === 'guidance-list') html += `<ul class="vocab-popup-guidance-list">${item.value.map((g) => `<li>${g}</li>`).join('')}</ul>`;
+      else if (item.type === 'cta') html += `<div class="vocab-popup-cta"><button>${item.value}</button></div>`;
+      else if (item.type === 'attribution') html += `<div class="vocab-popup-attribution">${item.value}</div>`;
+      else if (item.type === 'permission-disclosure') html += `<div class="vocab-popup-permission-disclosure">${item.value}</div>`;
     });
-    popupElement.innerHTML = html;
+    popupContainer.innerHTML = html;
 
     // --- Fix: Ensure popup is measured after DOM update ---
     if (selectionRect) {
