@@ -8,6 +8,12 @@ import { renderSuccessContent, renderNotFoundContent, renderErrorContent } from 
 import { computePopupPosition } from './popupPositioning.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
 
+const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>`
+
 async function bootstrapContentRuntime({
   chromeApi = globalThis.chrome,
   windowObj = globalThis.window,
@@ -100,13 +106,43 @@ async function bootstrapContentRuntime({
         const cap = typeof item.value === 'string' && item.value.length > 0
           ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
           : item.value;
-        html += `<p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">${cap}</p>`;
-        // Thêm link nhỏ ngay dưới headword
-        if (viewModel && viewModel.headword) {
-          const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel.headword)}`;
-          html += `<div style="font-size:12px;margin:-4px 0 8px 0;text-align:left;"><a href="${vocabUrl}" target="_blank" rel="noopener noreferrer" style="color:#1677C9;text-decoration:underline;">Xem thêm</a></div>`;
+        const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel.headword)}`;
+          html += `
+          <style>
+            .head-word:hover {
+              text-decoration: underline;
+            }
+
+            .head-word {
+              text-decoration:none;
+            }
+          </style>
+          <p style="font-size:30px;font-weight:700;margin:0 0 8px;color:#1677C9;">
+        <a href="${vocabUrl}" class="head-word" target="_blank" rel="noopener noreferrer">${cap}</a></p>`;
+      } else if (item.type === 'pronunciation') {
+        html += `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">`;
+        // Render US pronunciation + audio
+        if (item.audio && item.audio.us && item.value.includes('US')) {
+          const usMatch = item.value.match(/US\s*([^·]+)/);
+          if (usMatch) {
+            html += `<span>US ${usMatch[1].trim()}</span>`;
+            html += `<button title="US pronunciation" style="background:none;border:none;cursor:pointer;padding:0 4px; color: #4B5563;" onclick="(function(){var a=new Audio('${item.audio.us}');a.play();})()">${speakerSVG}</button>`;
+          }
         }
-      } else if (item.type === 'pronunciation') html += `<div style="color:#4B5563;font-size:14px;margin-bottom:10px;">${item.value}</div>`;
+        // Render UK pronunciation + audio
+        if (item.audio && item.audio.uk && item.value.includes('UK')) {
+          const ukMatch = item.value.match(/UK\s*([^·]+)/);
+          if (ukMatch) {
+            html += `<span>UK ${ukMatch[1].trim()}</span>`;
+            html += `<button title="UK pronunciation" style="background:none;border:none;cursor:pointer;padding:0 4px;  color: #4B5563;" onclick="(function(){var a=new Audio('${item.audio.uk}');a.play();})()">${speakerSVG}</button>`;
+          }
+        }
+        // Fallback: if no US/UK, just show value
+        if (!(item.audio && (item.audio.us || item.audio.uk))) {
+          html += `<span>${item.value}</span>`;
+        }
+        html += `</div>`;
+      }
       else if (item.type === 'definition') html += `<p style="font-size:15px;line-height:1.5;margin:10px 0;">${item.value}</p>`;
       else if (item.type === 'title') html += `<div style="font-weight:bold;">${item.value}</div>`;
       else if (item.type === 'message') html += `<div>${item.value}</div>`;

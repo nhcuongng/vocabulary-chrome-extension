@@ -18,7 +18,11 @@ function renderComplianceFooterContent() {
 export function renderSuccessContent(viewModel) {
   return [
     { type: 'headword', value: viewModel?.headword ?? '' },
-    { type: 'pronunciation', value: viewModel?.pronunciation ?? '' },
+    {
+      type: 'pronunciation',
+      value: viewModel?.pronunciation ?? '',
+      audio: viewModel?.audio || {},
+    },
     {
       type: 'definition',
       value: viewModel?.definition ?? viewModel?.mainDefinition ?? '',

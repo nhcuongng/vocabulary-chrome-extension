@@ -15,6 +15,7 @@ function normalizeDefinitions(definitions) {
 export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const headword = (parsedPayload?.headword ?? '').trim();
   const pronunciation = parsedPayload?.pronunciation ?? '';
+  const audio = parsedPayload?.audio || {};
   const definitions = normalizeDefinitions(parsedPayload?.definitions);
   const mainDefinition = definitions[0] ?? '';
 
@@ -33,6 +34,7 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
     orderedFields: ['headword', 'pronunciation', 'definition'],
     headword,
     pronunciation,
+    audio,
     definition: mainDefinition,
     mainDefinition,
   };

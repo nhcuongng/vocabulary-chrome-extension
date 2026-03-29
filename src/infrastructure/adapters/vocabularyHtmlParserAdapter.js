@@ -29,11 +29,60 @@ export function parseVocabularyHtml(html) {
     extractByRegex(safeHtml, /<h1[^>]*class=["'][^"']*(?:dynamictext|word)[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i) ||
     extractByRegex(safeHtml, /<h1[^>]*>([\s\S]*?)<\/h1>/i);
 
-  const pronunciation =
-    extractByRegex(safeHtml, /<span[^>]*class=["'][^"']*pronunciation[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) ||
-    extractByRegex(safeHtml, /<span[^>]*data-audio[^>]*>([\s\S]*?)<\/span>/i);
+  let audio = { us: '', uk: '' };
+  let ipaUs = '', ipaUk = '';
 
-  // Lấy tất cả các đoạn định nghĩa phù hợp
+  // 1. Tách các khối ipa-with-audio bằng cách split hoặc match global
+  // Cách này an toàn hơn Lookahead nếu HTML có cấu trúc lồng phức tạp
+  const ipaBlocks = safeHtml.match(/<div class="ipa-with-audio">[\s\S]*?<\/span>\s*<\/div>/gi) || [];
+
+  ipaBlocks.forEach((block) => {
+    const isUS = /us-flag-icon/i.test(block);
+    const isUK = /uk-flag-icon/i.test(block);
+
+    // Lấy IPA: Tìm nội dung trong span-replace-h3, xóa bỏ tag HTML và xuống dòng
+    let ipa = extractByRegex(block, /<span[^>]*class=["'][^"']*span-replace-h3[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
+    if (ipa) {
+      ipa = ipa.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    // Lấy Audio URL
+    let audioUrl = '';
+    // Trường hợp 1: Có thẻ <audio src="..."> (Thường thấy ở UK trong mẫu của bạn)
+    const srcMatch = block.match(/<audio[^>]*src=["']([^"']+)["']/i);
+    
+    // Trường hợp 2: Có data-audio="..." (Thường thấy ở US trong mẫu của bạn)
+    const dataAudioMatch = block.match(/data-audio=["']([^"']+)["']/i);
+
+    if (srcMatch) {
+      audioUrl = srcMatch[1];
+    } else if (dataAudioMatch) {
+      const region = isUS ? 'us' : 'uk';
+      audioUrl = `https://audio.vocabulary.com/1.0/${region}/${dataAudioMatch[1]}.mp3`;
+    }
+
+    if (isUS) {
+      ipaUs = ipa;
+      audio.us = audioUrl;
+    } else if (isUK) {
+      ipaUk = ipa;
+      audio.uk = audioUrl;
+    }
+  });
+
+  // 2. Ghép chuỗi Pronunciation
+  let pronunciation = '';
+  const parts = [];
+  if (ipaUs) parts.push(`US ${ipaUs}`);
+  if (ipaUk) parts.push(`UK ${ipaUk}`);
+  pronunciation = parts.join(' · ');
+
+  // Fallback nếu không tìm thấy trong ipa-section
+  if (!pronunciation) {
+    pronunciation = extractByRegex(safeHtml, /<span[^>]*class=["'][^"']*pronunciation[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) || '';
+  }
+
+  // ... (Phần lấy definitions giữ nguyên như cũ)
   const definitions = [];
   // h3.definition
   // const def1 = extractByRegex(safeHtml, /<h3[^>]*class=["'][^"']*definition[^"']*["'][^>]*>([\s\S]*?)<\/h3>/i);
@@ -49,9 +98,10 @@ export function parseVocabularyHtml(html) {
   if (def4) definitions.push(def4);
 
   return {
-    headword,
+    headword: headword ? headword.trim() : '',
     pronunciation,
+    audio,
     definitions,
-    hasCoreData: Boolean(headword && definitions.length > 0),
+    hasCoreData: Boolean(headword && (ipaUs || ipaUk)),
   };
 }
