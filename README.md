@@ -1,80 +1,100 @@
 
-# vocabulary-chrome-extension
 
-![Node.js Docker Image Documentation](./assets/example.png)
+# Vocabulary Chrome Extension
 
-> **Tra cứu định nghĩa tiếng Anh sâu – Giữ mạch đọc, học ngay tại chỗ.**
+![Vocabulary Chrome Extension Screenshot](./assets/example.png)
 
----
-
-## 🚀 Định vị sản phẩm
-
-**vocabulary-chrome-extension** là tiện ích Chrome dành cho:
-- Người học tiếng Anh chủ động (B1–C2), đọc báo/tài liệu tiếng Anh hàng ngày.
-- Sinh viên luyện thi IELTS/TOEFL/SAT/GRE.
-- Người đi làm cần đọc tài liệu chuyên ngành tiếng Anh.
-
-**Sứ mệnh:** Giúp bạn hiểu sắc thái từ vựng trong ngữ cảnh thực tế, không cần rời trang, không ngắt mạch đọc, không chỉ dịch nghĩa ngắn.
+> **Deep English definitions at your fingertips – Learn in context, without breaking your reading flow.**
 
 ---
 
-## 🌟 Điểm khác biệt
 
-- **Definition-first learning:** Ưu tiên định nghĩa tiếng Anh học thuật, không chỉ dịch máy.
-- **In-context workflow:** Tra cứu ngay trên trang đang đọc, popup xuất hiện cạnh vùng chọn.
-- **UX tối giản, tốc độ cao:** Pattern highlight-to-popup quen thuộc, phản hồi nhanh, không phá layout.
-- **Nguồn dữ liệu chất lượng:** Vocabulary.com – định nghĩa sâu, ví dụ thực tế, phát âm chuẩn.
-- **Tuân thủ pháp lý & minh bạch:** Chỉ truy vấn khi cần, attribution rõ ràng, không thu thập dữ liệu cá nhân.
+## 🚀 Product Positioning
 
----
+**Vocabulary Chrome Extension** is designed for:
+- Proactive English learners (B1–C2) reading news or documents daily.
+- Students preparing for IELTS/TOEFL/SAT/GRE.
+- Professionals reading English technical or specialized materials.
 
-## 🎯 Giá trị cốt lõi cho người dùng
-
-- Không cần mở tab mới, không copy/paste, không đứt mạch đọc.
-- Hiểu nghĩa từ ngay trong ngữ cảnh, tăng xác suất ghi nhớ lâu dài.
-- Trải nghiệm popup không che khuất nội dung, dễ đóng/mở lại.
-- Tùy chọn bật/tắt auto-popup để kiểm soát trải nghiệm.
+**Mission:** Empower you to understand nuanced vocabulary in real-world context, without leaving the page or interrupting your reading flow.
 
 ---
 
-## 🛠️ Tính năng chính (MVP)
 
-- Bôi đen 1 từ tiếng Anh trên bất kỳ trang web nào để mở popup định nghĩa.
-- Chuẩn hóa token đầu vào (lowercase, loại ký tự thừa, xử lý dấu câu).
-- Lấy và hiển thị dữ liệu cốt lõi từ Vocabulary.com (headword, phát âm, nghĩa chính).
-- Trạng thái rõ ràng: `loading`, `success`, `not found`, `error` (có hướng dẫn thao tác lại).
-- Tùy chọn bật/tắt auto-popup.
-- Logging lỗi cơ bản (ẩn danh) để cải thiện chất lượng.
+## 🌟 Key Differentiators
+
+- **Definition-first learning:** Prioritizes academic English definitions, not just machine translation.
+- **In-context workflow:** Look up words directly on the page, with a popup next to your selection.
+- **Minimalist, fast UX:** Familiar highlight-to-popup pattern, instant response, non-intrusive to layout.
+- **High-quality data source:** Vocabulary.com – deep definitions, real examples, accurate pronunciation.
+- **Legal compliance & transparency:** Queries only when needed, clear attribution, no personal data collection.
+
+---
+
+
+## 🎯 Core User Benefits
+
+- No need to open new tabs, copy/paste, or break your reading flow.
+- Understand word meanings in context, improving long-term retention.
+- Popup experience does not obscure content, easy to close/reopen.
+- Option to enable/disable auto-popup for full control.
 
 ---
 
-## 🔒 Minh bạch dữ liệu & quyền truy cập
 
-- **Nguồn dữ liệu:** Vocabulary.com ([https://www.vocabulary.com/](https://www.vocabulary.com/))
-- **Quyền truy cập:**
-  - `activeTab`: Đọc selection do người dùng chọn.
-  - `scripting`: Nạp content script để bắt selection & render popup.
-  - `storage`: Lưu cài đặt và telemetry ẩn danh cục bộ.
-  - `host:https://www.vocabulary.com/*`: Truy vấn định nghĩa.
-- **Checklist phát hành:** Xem [docs/transparency-release-checklist.md](docs/transparency-release-checklist.md)
+## 🛠️ Main Features (MVP)
+
+- Highlight any English word on any webpage to open a definition popup.
+- Input token normalization (lowercase, remove extraneous characters, handle punctuation).
+- Fetch and display core data from Vocabulary.com (headword, pronunciation, main definition).
+- Clear status states: `loading`, `success`, `not found`, `error` (with actionable guidance).
+- Option to enable/disable auto-popup.
+- Basic anonymous error logging to improve quality.
 
 ---
+
+
+## 🔒 Data Transparency & Permissions
+
+- **Data Source:** Vocabulary.com ([https://www.vocabulary.com/](https://www.vocabulary.com/))
+- **Permissions:**
+  - `activeTab`: Read user-selected text.
+  - `scripting`: Inject content script to capture selection & render popup.
+  - `storage`: Store settings and anonymous telemetry locally.
+  - `host:https://www.vocabulary.com/*`: Query definitions.
+- **Release checklist:** See [docs/transparency-release-checklist.md](docs/transparency-release-checklist.md)
+
+---
+
 
 ## ⚡ Scripts
 
-- `npm test`: Chạy toàn bộ unit test bằng Node test runner.
-- `npm run audit:permissions`: Đối chiếu quyền trong `manifest.json` với disclosure runtime.
-- `npm run build`: Build extension, kiểm tra alignment quyền/disclosure.
-- `npm run quality:gate`: Chuỗi kiểm tra release-readiness (`test` → `audit:permissions` → `build`), lưu bằng chứng tại `docs/release-evidence/latest-release-readiness.md`.
+- `npm test`: Run all unit tests using Node test runner.
+- `npm run audit:permissions`: Cross-check permissions in `manifest.json` with runtime disclosure.
+- `npm run build`: Build the extension and verify permission/disclosure alignment.
+- `npm run quality:gate`: Full release-readiness check (`test` → `audit:permissions` → `build`), with evidence saved at `docs/release-evidence/latest-release-readiness.md`.
 
 ---
 
-## 🔭 Tầm nhìn phát triển
 
-- Lịch sử từ đã tra, xuất danh sách từ sang Anki/Notion/Google Sheets.
-- Gợi ý collocation/synonym, cá nhân hóa theo lĩnh vực đọc.
-- Cơ chế ghi nhớ dài hạn (spaced repetition nhẹ) ngay trong luồng duyệt web.
+## 🔭 Roadmap
+
+- Lookup history, export word lists to Anki/Notion/Google Sheets.
+- Collocation/synonym suggestions, personalized by reading domain.
+- Lightweight spaced repetition directly in your browsing flow.
 
 ---
 
-> "Highlight để tra, học để nhớ, minh bạch để tin dùng."
+---
+
+## 🧩 How to Load the Unpacked Extension in Chrome
+
+1. Run `npm run build` to generate the extension build (see Scripts above).
+2. Open Chrome and go to `chrome://extensions/`.
+3. Enable **Developer mode** (toggle in the top right corner).
+4. Click **Load unpacked** and select the `dist/` (or build output) folder generated by the build script.
+5. The extension should now appear in your extension list and be ready to use.
+
+---
+
+> "Highlight to look up, learn to remember, trust through transparency."
