@@ -66,7 +66,7 @@ async function validateManifestRuntimeEntries() {
   return manifest;
 }
 
-async function build() {
+export async function build() {
   const manifest = await validateManifestRuntimeEntries();
 
   // Xóa dist/ trước khi bundle content script
@@ -126,7 +126,10 @@ async function build() {
   console.log('✅ Build completed: dist/');
   console.log('ℹ️ Load unpacked extension from dist/ in Chrome.');
 }
-build().catch((error) => {
-  console.error('❌ Build failed:', error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-});
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  build().catch((error) => {
+    console.error('❌ Build failed:', error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}
