@@ -106,6 +106,7 @@ async function bootstrapContentRuntime({
         cursor: pointer;
         padding: 0 4px;
         color: #4B5563;
+        display: flex;
       }
       .vocab-popup-definition {
         font-size: 15px;
