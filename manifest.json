@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vocabulary Chrome Extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Highlight một từ tiếng Anh để tra cứu định nghĩa nhanh ngay trên trang.",
   "action": {
     "default_title": "Vocabulary Lookup",
