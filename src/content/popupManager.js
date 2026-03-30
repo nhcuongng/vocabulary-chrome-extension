@@ -182,6 +182,45 @@ export function createPopupManager({ documentObj, windowObj }) {
     return popupElement;
   }
 
+  function updatePopupPosition(selectionRect) {
+    if (!popupElement || !selectionRect) return;
+
+    // Force reflow to ensure offsetWidth/offsetHeight are correct
+    const popupWidth = popupElement.offsetWidth;
+    const popupHeight = popupElement.offsetHeight;
+    const viewport = {
+      width: windowObj.innerWidth,
+      height: windowObj.innerHeight,
+      scrollX: windowObj.scrollX,
+      scrollY: windowObj.scrollY,
+    };
+
+    // Compute position: always prefer below selection, fallback above if not enough space
+    let left = selectionRect.left + viewport.scrollX;
+    let top = selectionRect.bottom + viewport.scrollY + 8; // 8px margin below selection
+
+    // If popup would overflow bottom, try above selection
+    if (top + popupHeight > viewport.scrollY + viewport.height) {
+      const aboveTop = selectionRect.top + viewport.scrollY - popupHeight - 8;
+      if (aboveTop >= viewport.scrollY) {
+        top = aboveTop;
+      } else {
+        // Clamp to bottom if still overflow
+        top = viewport.scrollY + viewport.height - popupHeight - 8;
+      }
+    }
+
+    // Clamp left to viewport
+    if (left + popupWidth > viewport.scrollX + viewport.width) {
+      left = viewport.scrollX + viewport.width - popupWidth - 8;
+    }
+    if (left < viewport.scrollX) left = viewport.scrollX + 8;
+
+    popupElement.style.left = `${left}px`;
+    popupElement.style.top = `${top}px`;
+    popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
+  }
+
   function renderPopupContent(state, selectionRect) {
     if (!popupElement) return;
     const shadow = popupElement._vocabShadow;
@@ -311,62 +350,32 @@ export function createPopupManager({ documentObj, windowObj }) {
           if (moreDefs.length === 0) {
             popupContainer.appendChild(h('p', { className: 'vocab-popup-definition', innerHTML: firstDef }));
           } else {
-            const popupWrapper = h('div', {
-              className: 'more-definitions-popup vocab-popup-theme',
-              style: {
-                display: 'none', position: 'absolute', zIndex: '2147483647',
-                background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
-                borderRadius: '10px', padding: '12px', width: '300px', height: '300px',
-                fontFamily: 'inherit', fontSize: '16px', color: '#222', border: 'none'
-              }
+            const moreContainer = h('div', {
+              className: 'more-definitions-container',
+              style: { display: 'none', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #eee' }
             });
 
-            const contentDiv = h('div', { style: { height: 'calc(100% - 30px)', overflowY: 'auto' } });
             moreDefs.forEach(def => {
-              contentDiv.appendChild(h('div', { style: { marginBottom: '8px' }, innerHTML: def }));
+              moreContainer.appendChild(h('div', { style: { marginBottom: '8px' }, innerHTML: def }));
             });
-
-            const closeBtn = h('button', {
-              className: 'close-more-definitions-popup',
-              style: { cursor: 'pointer', fontSize: '15px', background: 'red', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 12px' },
-              onClick: (e) => { e.stopPropagation(); popupWrapper.style.display = 'none'; }
-            }, 'Close');
-
-            const bottomBar = h('div', {
-              style: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', bottom: '12px', left: '0', padding: '4px 12px', boxSizing: 'border-box' }
-            }, closeBtn);
-
-            popupWrapper.appendChild(contentDiv);
-            popupWrapper.appendChild(bottomBar);
 
             const trigger = h('p', {
               className: 'more-trigger',
-              style: { fontSize: '12px', textDecoration: 'underline', cursor: 'pointer', color: '#1677C9', textAlign: 'right', padding: '0 8px' },
+              style: { fontSize: '12px', textDecoration: 'underline', cursor: 'pointer', color: '#1677C9', textAlign: 'right', padding: '0 8px', marginTop: '4px' },
               onClick: (e) => {
                 e.stopPropagation();
-                popupWrapper.style.display = 'block';
-                const triggerRect = trigger.getBoundingClientRect();
-                let realLeft = triggerRect.left + triggerRect.width;
-                let leftRelative = '100%';
-                if (realLeft + 300 > windowObj.innerWidth) {
-                  leftRelative = '-100%';
-                }
-                popupWrapper.style.top = '0px';
-                popupWrapper.style.left = leftRelative;
+                const isExpanded = moreContainer.style.display === 'block';
+                moreContainer.style.display = isExpanded ? 'none' : 'block';
+                trigger.textContent = isExpanded ? 'See more' : 'See less';
+                // Smart repositioning after height change
+                updatePopupPosition(selectionRect);
               }
             }, 'See more');
 
-            // Hide popup on click outside
-            documentObj.addEventListener('click', function onClickOutside(e) {
-              if (popupWrapper && !popupWrapper.contains(e.target) && e.target !== trigger) {
-                popupWrapper.style.display = 'none';
-              }
-            });
-
             const defContainer = h('div', { className: 'vocab-popup-definition' },
               h('span', { innerHTML: firstDef }),
-              trigger,
-              popupWrapper
+              moreContainer,
+              trigger
             );
 
             popupContainer.appendChild(defContainer);
@@ -391,39 +400,8 @@ export function createPopupManager({ documentObj, windowObj }) {
       }
     });
 
-    // --- Fix: Ensure popup is measured after DOM update ---
-    if (selectionRect) {
-      // Force reflow to ensure offsetWidth/offsetHeight are correct
-      const popupWidth = popupElement.offsetWidth;
-      const popupHeight = popupElement.offsetHeight;
-      const viewport = {
-        width: windowObj.innerWidth,
-        height: windowObj.innerHeight,
-        scrollX: windowObj.scrollX,
-        scrollY: windowObj.scrollY,
-      };
-      // Compute position: always prefer below selection, fallback above if not enough space
-      let left = selectionRect.left + viewport.scrollX;
-      let top = selectionRect.bottom + viewport.scrollY + 8; // 8px margin below selection
-      // If popup would overflow bottom, try above selection
-      if (top + popupHeight > viewport.scrollY + viewport.height) {
-        const aboveTop = selectionRect.top + viewport.scrollY - popupHeight - 8;
-        if (aboveTop >= viewport.scrollY) {
-          top = aboveTop;
-        } else {
-          // Clamp to bottom if still overflow
-          top = viewport.scrollY + viewport.height - popupHeight - 8;
-        }
-      }
-      // Clamp left to viewport
-      if (left + popupWidth > viewport.scrollX + viewport.width) {
-        left = viewport.scrollX + viewport.width - popupWidth - 8;
-      }
-      if (left < viewport.scrollX) left = viewport.scrollX + 8;
-      popupElement.style.left = `${left}px`;
-      popupElement.style.top = `${top}px`;
-      popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
-    }
+    // Position the popup
+    updatePopupPosition(selectionRect);
   }
 
   function showPopup(state, selectionRect) {
