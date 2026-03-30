@@ -11,7 +11,7 @@ test('popup renderer: success state hiển thị đúng thứ bậc headword -> 
   const content = renderSuccessContent({
     headword: 'hello',
     pronunciation: '/həˈloʊ/',
-    definition: 'A greeting',
+    definitions: ['A greeting'],
   });
 
   assert.deepEqual(content.map((item) => item.type), [
@@ -23,7 +23,7 @@ test('popup renderer: success state hiển thị đúng thứ bậc headword -> 
   ]);
   assert.equal(content[0].value, 'hello');
   assert.equal(content[1].value, '/həˈloʊ/');
-  assert.equal(content[2].value, 'A greeting');
+  assert.deepEqual(content[2].value, ['A greeting']);
 });
 
 test('popup renderer: not-found state hiển thị message và guidance list', () => {

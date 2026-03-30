@@ -300,7 +300,7 @@ test('request -> loading: hiển thị loading ngay tức thì (<200ms)', async 
     },
   });
 
-  const result = await orchestrator.runLookup({ headword: 'hello' });
+  const result = await orchestrator.runLookup({ payload: { token: 'hello' } });
 
   assert.equal(states[0].status, 'loading');
   assert.ok(states[0].loadingLatencyMs < 200);
@@ -316,7 +316,7 @@ test('lookup orchestrator: fallback error state khi lookupExecutor throw', async
     },
   });
 
-  const result = await orchestrator.runLookup({ headword: 'hello' });
+  const result = await orchestrator.runLookup({ payload: { token: 'hello' } });
 
   assert.equal(result.finalState.status, 'error');
   assert.equal(result.finalState.error.message, 'network unavailable');
@@ -350,7 +350,7 @@ test('lookup orchestrator: ghi telemetry ẩn danh theo kết quả lookup', asy
     }),
   });
 
-  await orchestrator.runLookup({ headword: 'hello' });
+  await orchestrator.runLookup({ payload: { token: 'hello' } });
 
   const events = telemetryRecorder.getEvents({ extensionVersion: '0.1.0' });
   assert.equal(events.length, 1);
@@ -377,8 +377,8 @@ test('lookup orchestrator: bỏ qua kết quả stale khi request cũ về muộ
       }),
   });
 
-  const firstRun = orchestrator.runLookup({ headword: 'first' });
-  const secondRun = orchestrator.runLookup({ headword: 'second' });
+  const firstRun = orchestrator.runLookup({ payload: { token: 'first' } });
+  const secondRun = orchestrator.runLookup({ payload: { token: 'second' } });
 
   secondResolver({ status: 'success', data: { headword: 'second' } });
   await secondRun;

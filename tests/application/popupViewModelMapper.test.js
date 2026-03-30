@@ -17,7 +17,7 @@ test('mapper: ánh xạ parsed payload sang popup view model theo thứ tự b�
   assert.deepEqual(model.orderedFields, ['headword', 'pronunciation', 'definition']);
   assert.equal(model.headword, 'hello');
   assert.equal(model.pronunciation, '/həˈloʊ/');
-  assert.equal(model.mainDefinition, 'A greeting');
+  assert.deepEqual(model.definitions, ['A greeting']);
 });
 
 test('mapper: trả not-found state khi payload rỗng/null', () => {

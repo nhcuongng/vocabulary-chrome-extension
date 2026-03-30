@@ -11,7 +11,7 @@ import {
 test('compliance catalog: attribution text rõ ràng và có nguồn dữ liệu', () => {
   const attributionText = buildAttributionText();
 
-  assert.match(attributionText, /Nguồn dữ liệu tham khảo/i);
+  assert.match(attributionText, /Nguồn dữ liệu:/i);
   assert.match(attributionText, /Vocabulary\.com/i);
   assert.match(attributionText, /https:\/\/www\.vocabulary\.com\//i);
 });
