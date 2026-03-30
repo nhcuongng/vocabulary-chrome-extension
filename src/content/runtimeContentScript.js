@@ -86,6 +86,11 @@ async function bootstrapContentRuntime({
             padding: 0 8px;
         }
 
+      .vocab-popup {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
       .vocab-popup-theme {
         background: #fff;
         box-shadow: 0 2px 12px rgba(0,0,0,0.18);

@@ -29,11 +29,11 @@ export function renderSuccessContent(viewModel) {
       const popupId = `more-definitions-popup-${Math.random().toString(36).substr(2, 9)}`;
       definitionHtml = `
         <span>${firstDef}</span>
-        <span 
+        <p 
           class="more-trigger" 
-          style="font-size: 8px; text-decoration: italic; cursor: pointer; color: #1677C9; margin-left: 4px;"
+          style="font-size: 12px; text-decoration: underline; cursor: pointer; color: #1677C9;text-align: right; padding: 0 8px"
           data-popup-id="${popupId}"
-        >more</span>
+        >See more</p>
         <div 
           id="${popupId}"
           class="more-definitions-popup vocab-popup-theme" 
