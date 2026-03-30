@@ -8,6 +8,11 @@ const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="2
   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
 </svg>`;
 
+const closeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="18" y1="6" x2="6" y2="18"></line>
+  <line x1="6" y1="6" x2="18" y2="18"></line>
+</svg>`;
+
 export function createPopupManager({ documentObj, windowObj }) {
   let popupElement = null;
   let popupCtrl = null;
@@ -172,6 +177,26 @@ export function createPopupManager({ documentObj, windowObj }) {
         font-size: 12px;
         margin-top: 4px;
       }
+      .vocab-popup-close-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background-color 0.2s, color 0.2s;
+        z-index: 10;
+      }
+      .vocab-popup-close-btn:hover {
+        background-color: #f3f4f6;
+        color: #4b5563;
+      }
     `;
     shadow.appendChild(style);
     shadow.appendChild(popupContainer);
@@ -281,6 +306,24 @@ export function createPopupManager({ documentObj, windowObj }) {
       }
       return el;
     }
+
+    // Always append close button
+    popupContainer.appendChild(
+      h('button', {
+        className: 'vocab-popup-close-btn',
+        title: 'Close popup',
+        ariaLabel: 'Close popup',
+        innerHTML: closeSVG,
+        onClick: (e) => {
+          e.stopPropagation();
+          if (popupCtrl) {
+            popupCtrl.close('close-button');
+          } else {
+            removePopup();
+          }
+        }
+      })
+    );
 
     content.forEach((item, idx) => {
       if (item.type === 'skeleton') {

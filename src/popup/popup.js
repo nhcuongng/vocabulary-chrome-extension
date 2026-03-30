@@ -28,8 +28,12 @@ async function bootstrapPopupRuntime({
     throw new Error('missing #auto-popup-toggle');
   }
 
-  attributionElement.textContent = buildAttributionText();
-  disclosureElement.textContent = buildPermissionDisclosureSummary();
+  if (attributionElement) {
+    attributionElement.textContent = buildAttributionText();
+  }
+  if (disclosureElement) {
+    disclosureElement.textContent = buildPermissionDisclosureSummary();
+  }
 
   const settingsStore = createChromeStorageSettingsAdapter({
     storageArea: chromeApi?.storage?.local,
