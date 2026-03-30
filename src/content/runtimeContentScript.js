@@ -4,6 +4,7 @@ import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/c
 
 import { createLookupFlowOrchestrator } from './lookupFlowOrchestrator.js';
 import { createPopupManager } from './popupManager.js';
+import { createTriggerIconManager } from './triggerIconManager.js';
 
 export async function bootstrapContentRuntime({
   chromeApi = globalThis.chrome,
@@ -30,13 +31,23 @@ export async function bootstrapContentRuntime({
   });
 
   const popupManager = createPopupManager({ documentObj, windowObj });
-  let orchestrator = null;
+  let pendingTriggerRequest = null;
+
+  const triggerIconManager = createTriggerIconManager({
+    documentObj,
+    windowObj,
+    onClick: () => {
+      if (pendingTriggerRequest) {
+        triggerIconManager.removeIcon();
+        orchestrator.runLookup(pendingTriggerRequest);
+        pendingTriggerRequest = null;
+      }
+    },
+  });
 
   // --- Orchestrator for lookup flow ---
-  orchestrator = createLookupFlowOrchestrator({
+  const orchestrator = createLookupFlowOrchestrator({
     lookupExecutor: async ({ headword }) => {
-      // Lấy token đúng từ request.token hoặc request.payload.token
-
       console.log('[VOCAB] lookupExecutor received headword:', headword);
       if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
         console.log('[VOCAB] lookupExecutor: invalid or empty headword');
@@ -55,6 +66,7 @@ export async function bootstrapContentRuntime({
     onStateChange: (state) => {
       console.log('[VOCAB] orchestrator onStateChange:', state);
       if (state.status === 'success' || state.status === 'not-found' || state.status === 'error' || state.status === 'loading') {
+        triggerIconManager.removeIcon();
         const selection = readSelectionSnapshot(windowObj);
         popupManager.showPopup(state, selection.rect);
       } else if (state.status === 'idle') {
@@ -69,10 +81,24 @@ export async function bootstrapContentRuntime({
     settingsStore,
     getSnapshot: () => readSelectionSnapshot(windowObj),
     onLookupRequest: (request) => {
-      // Truyền nguyên object request để orchestrator xử lý đúng
+      triggerIconManager.removeIcon();
+      pendingTriggerRequest = null;
       orchestrator.runLookup(request);
       console.log('[VOCAB] onLookupRequest', request);
     },
+    onTriggerIconRequest: (request) => {
+      popupManager.removePopup();
+      pendingTriggerRequest = request;
+      triggerIconManager.showIcon(request.payload.selectionRect);
+      console.log('[VOCAB] onTriggerIconRequest', request);
+    },
+  });
+
+  autoPopupController.subscribe(({ autoPopupEnabled }) => {
+    if (autoPopupEnabled) {
+      triggerIconManager.removeIcon();
+      pendingTriggerRequest = null;
+    }
   });
 
   await autoPopupController.start();
@@ -86,6 +112,8 @@ export async function bootstrapContentRuntime({
       autoPopupController.stop();
       settingsStore.destroy?.();
       popupManager.removePopup();
+      triggerIconManager.removeIcon();
+      pendingTriggerRequest = null;
       globalThis.__vocabularyExtensionContentRuntimeStarted = false;
     },
   };

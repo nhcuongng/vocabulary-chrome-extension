@@ -3,6 +3,7 @@ import { createSelectionDetectionController } from './selectionDetection.js';
 export function createAutoPopupLookupController({
   eventTarget,
   onLookupRequest,
+  onTriggerIconRequest,
   settingsStore,
   getSnapshot,
   onInvalidSelection,
@@ -17,9 +18,20 @@ export function createAutoPopupLookupController({
     throw new Error('settingsStore with load() is required');
   }
 
+  let runtimeStarted = false;
+  let autoPopupEnabled = true;
+  let unsubscribeSettingsStore = null;
+  const listeners = new Set();
+
   const selectionController = createSelectionDetectionController({
     eventTarget,
-    onLookupRequest,
+    onLookupRequest: (request) => {
+      if (autoPopupEnabled) {
+        onLookupRequest(request);
+      } else {
+        onTriggerIconRequest?.(request);
+      }
+    },
     getSnapshot,
     onInvalidSelection,
     onIgnoredDuplicate,
@@ -29,11 +41,6 @@ export function createAutoPopupLookupController({
     setTimer,
     clearTimer,
   });
-
-  let runtimeStarted = false;
-  let autoPopupEnabled = true;
-  let unsubscribeSettingsStore = null;
-  const listeners = new Set();
 
   const emit = () => {
     const payload = {
@@ -49,11 +56,7 @@ export function createAutoPopupLookupController({
     autoPopupEnabled = Boolean(enabled);
 
     if (runtimeStarted) {
-      if (autoPopupEnabled) {
-        selectionController.start();
-      } else {
-        selectionController.stop();
-      }
+      selectionController.start();
     }
 
     emit();
