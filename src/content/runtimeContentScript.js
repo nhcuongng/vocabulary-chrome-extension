@@ -68,6 +68,24 @@ async function bootstrapContentRuntime({
     // Style for shadow root
     const style = documentObj.createElement('style');
     style.textContent = `
+      .custom-definition-list .definition {
+          font-size: 14px;
+          margin-right: 10px;
+          margin-bottom: 10px;
+      }
+
+       .custom-definition-list .pos-icon {
+            color: #007BC4;
+            border-color: #007BC4;
+            display: inline-block;
+            font-size: 14px;
+            height: 24px;
+            border-radius: 12px;
+            border-style: solid;
+            border-width: 1px;
+            padding: 0 8px;
+        }
+
       .vocab-popup-theme {
         background: #fff;
         box-shadow: 0 2px 12px rgba(0,0,0,0.18);
@@ -212,6 +230,8 @@ async function bootstrapContentRuntime({
     });
     popupContainer.innerHTML = html;
 
+    attachMoreDefinitionsPopupHandlers(popupContainer)
+
     // --- Fix: Ensure popup is measured after DOM update ---
     if (selectionRect) {
       // Force reflow to ensure offsetWidth/offsetHeight are correct
@@ -264,6 +284,52 @@ async function bootstrapContentRuntime({
       });
     }
     popupCtrl.open();
+  }
+
+  // Call this after popup HTML is rendered into the DOM
+  function attachMoreDefinitionsPopupHandlers(container) {
+    const triggers = container.querySelectorAll('.more-trigger[data-popup-id]');
+    triggers.forEach(trigger => {
+      const popupId = trigger.getAttribute('data-popup-id');
+      const popup = container.querySelector(`#${popupId}`);
+      if (!popup) return;
+      const closeBtn = popup.querySelector('.close-more-definitions-popup');
+      function showPopup(e) {
+        popup.style.display = 'block';
+        // Calculate position
+        const popupRect = popup.getBoundingClientRect();
+        let realLeft = trigger.getBoundingClientRect().left + trigger.getBoundingClientRect().width;
+        // Adjust if overflow
+        let leftRelative = '100%';
+        if (realLeft + popupRect.width > window.innerWidth) {
+          leftRelative = '-100%';
+        }
+        popup.style.top = '0px';
+        popup.style.left = leftRelative;
+        // eslint-disable-next-line no-console
+        console.log('[popup-debug] showPopup', { popupId, popupRect, windowW: window.innerWidth, windowH: window.innerHeight });
+      }
+      function hidePopup() {
+        popup.style.display = 'none';
+      }
+      trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        // eslint-disable-next-line no-console
+        console.log('[popup-debug] trigger clicked', { popupId });
+        showPopup(e);
+      });
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          hidePopup();
+        });
+      }
+      document.addEventListener('click', function(e) {
+        if (!popup.contains(e.target) && e.target !== trigger) {
+          hidePopup();
+        }
+      });
+    });
   }
 
   // --- Orchestrator for lookup flow ---

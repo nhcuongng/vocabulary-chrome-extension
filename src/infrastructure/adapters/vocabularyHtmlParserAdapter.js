@@ -82,20 +82,48 @@ export function parseVocabularyHtml(html) {
     pronunciation = extractByRegex(safeHtml, /<span[^>]*class=["'][^"']*pronunciation[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) || '';
   }
 
-  // ... (Phần lấy definitions giữ nguyên như cũ)
+  // Lấy definitions như cũ
   const definitions = [];
-  // h3.definition
-  // const def1 = extractByRegex(safeHtml, /<h3[^>]*class=["'][^"']*definition[^"']*["'][^>]*>([\s\S]*?)<\/h3>/i);
-  // if (def1) definitions.push(def1);
-  // div.short hoặc div.definition
+  // Helper để tạo label styled
+  function makeLabel(label) {
+    return `<p style="display: flex; gap: 4px; align-items: center; background:#e0e7ff;color:#3730a3;font-size:12px;font-weight:600;padding:2px 8px;border-radius:8px;margin-right:8px;vertical-align:middle;"><span>✭</span> ${label}</p>`;
+  }
+
+  // div.short hoặc div.definition (giữ lại logic cũ)
   const def2 = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*(?:short)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
-  if (def2) definitions.push(def2);
+  if (def2) definitions.push(`${makeLabel('Short Definition')}${def2}`);
   // p.short trong word-area
   const def3 = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*short[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
-  if (def3) definitions.push(def3);
+  if (def3) definitions.push(`${makeLabel('Short Definition')}${def3}`);
   // p.long trong word-area
   const def4 = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*long[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
-  if (def4) definitions.push(def4);
+  if (def4) definitions.push(`${makeLabel('Long Definition')}${def4}`);
+
+  const olMatch = safeHtml.match(/<div[^>]*class=["'][^"']*word-definitions[^"']*["'][^>]*>[\s\S]*?(<ol>[\s\S]*?<\/ol>)/i);
+
+  if (olMatch) {
+    let olContent = olMatch[1];
+
+    // BƯỚC 2: Bóc tách và giữ lại đúng ol > li > div.definition
+    // Tìm tất cả các thẻ <li>
+    const liMatches = olContent.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) || [];
+    
+    const cleanedLis = liMatches.map((liHtml) => {
+      // Trong mỗi <li>, ta chỉ lấy thẻ <div class="definition">
+      // Dùng Regex đã tối ưu để không bị dừng ở thẻ đóng của pos-icon
+      const defMatch = liHtml.match(/<div[^>]*class=["']definition["'][^>]*>([\s\S]*?)<\/div>(?=\s*(?:<div class="defContent"|<\/li>|$))/i);
+      
+      if (defMatch) {
+        // Trả về thẻ <li> bọc ngoài div.definition, thêm label
+        return `<li style="margin-bottom: 10px;">${defMatch[0]}</li>`;
+      }
+      return "";
+    }).filter(li => li !== "").join("");
+
+    // Đóng gói lại thành một thẻ <ol> hoàn chỉnh
+    definitions.push(`${makeLabel(`Definition of "<i>${headword}</i>"`)}<ol class="custom-definition-list">${cleanedLis}</ol>`)
+  }
+  
 
   return {
     headword: headword ? headword.trim() : '',

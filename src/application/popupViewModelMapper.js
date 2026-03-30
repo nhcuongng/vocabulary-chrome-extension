@@ -17,9 +17,9 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const pronunciation = parsedPayload?.pronunciation ?? '';
   const audio = parsedPayload?.audio || {};
   const definitions = normalizeDefinitions(parsedPayload?.definitions);
-  const mainDefinition = definitions[0] ?? '';
+  console.log("🚀 ~ mapParsedPayloadToPopupViewModel ~ definitions:", definitions, headword)
 
-  if (!headword || !mainDefinition) {
+  if (!headword || !definitions) {
     return {
       state: 'not-found',
       orderedFields: ['title', 'message', 'guidance'],
@@ -35,8 +35,7 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
     headword,
     pronunciation,
     audio,
-    definition: mainDefinition,
-    mainDefinition,
+    definitions,
   };
 }
 
