@@ -26,22 +26,25 @@ test('popup renderer: success state hiển thị đúng thứ bậc headword -> 
   assert.deepEqual(content[2].value, ['A greeting']);
 });
 
-test('popup renderer: not-found state hiển thị message và guidance list', () => {
+test('popup renderer: not-found state hiển thị message, search suggestions và guidance list', () => {
   const content = renderNotFoundContent({
     title: 'Không tìm thấy kết quả',
     message: 'Không có dữ liệu phù hợp.',
+    searchSuggestions: 'Thử tìm tại: Google',
     guidance: ['Chỉ chọn một từ', 'Thử dạng từ gốc'],
   });
 
   assert.deepEqual(content.map((item) => item.type), [
     'title',
     'message',
+    'searchSuggestions',
     'guidance-list',
     'attribution',
     'permission-disclosure',
   ]);
   assert.equal(content[0].value, 'Không tìm thấy kết quả');
-  assert.deepEqual(content[2].value, ['Chỉ chọn một từ', 'Thử dạng từ gốc']);
+  assert.equal(content[2].value, 'Thử tìm tại: Google');
+  assert.deepEqual(content[3].value, ['Chỉ chọn một từ', 'Thử dạng từ gốc']);
 });
 
 test('popup renderer: error state mapping đúng theo loại lỗi', () => {

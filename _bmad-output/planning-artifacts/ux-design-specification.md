@@ -233,7 +233,7 @@ Defining experience của sản phẩm là: **“Highlight một từ tiếng An
 2. **Interaction:** extension bắt selection, chuẩn hóa token, gọi lookup.
 3. **Feedback:** popup hiển thị loading ngay; sau đó success/not found/error tương ứng.
 4. **Completion:** user hiểu nghĩa và tiếp tục đọc; có thể đóng popup nhanh (click ngoài/Esc).
-5. **Recovery:** nếu lỗi/không tìm thấy, hệ thống đưa gợi ý thao tác lại (chọn 1 từ, bỏ dấu câu, thử từ gốc).
+5. **Recovery:** nếu lỗi/không tìm thấy, hệ thống hiển thị dòng link tìm kiếm ngoại (Google, Cambridge, Oxford) ở vị trí ưu tiên và các gợi ý thao tác lại (chọn 1 từ, bỏ dấu câu, thử từ gốc).
 
 ## Visual Design Foundation
 
@@ -314,11 +314,14 @@ Defining experience của sản phẩm là: **“Highlight một từ tiếng An
   - Kèm hiệu ứng *shimmer* lướt sóng từ trái qua phải liên tục để tạo cảm giác hệ thống đang hoạt động tích cực.
   - Khi dữ liệu trả về thực tế, các khối xương (skeleton) này sẽ được thay thế mượt mà (cross-fade hoặc swap ngay lập tức) mà không làm nhảy vị trí popup.
 
-### 2. Tương tác an toàn bên trong Popup (Safe Zone Event Isolation)
+### 3. External Dictionary Fallback (Search Suggestions)
 
-- **UX Goal:** Đảm bảo người dùng có thể thoải mái thao tác (bôi đen, click, cuộn) bên trong popup mà không sợ vô tình làm đóng mất popup.
+- **UX Goal:** Cung cấp lối thoát ngay lập tức khi từ điển chính không có kết quả, giảm tỷ lệ người dùng phải tự copy-paste sang tab khác.
 - **Implementation:**
-  - **Event Isolation:** Toàn bộ Shadow DOM của popup phải sử dụng `stopPropagation()` đối với tất cả các sự kiện chuột cơ bản: `mousedown`, `mouseup`, `click`, `dblclick`, `contextmenu`, và đặc biệt là `pointerdown`.
-  - **Intentional Dismissal:** Popup chỉ được phép biến mất (dismiss) trong hai trường hợp thực sự có chủ ý:
-    - Người dùng bấm phím `Escape`.
-    - Người dùng có thao tác `pointerdown` (hoặc `click`) nằm **hoàn toàn bên ngoài** không gian của popup (vùng web tĩnh). Nếu người dùng bôi đen chữ từ bên trong popup kéo thả ra ngoài (`mouseup` bên ngoài), popup vẫn **không** được đóng.
+  - **Placement:** Hiển thị một dòng văn bản đơn giản nằm **ngay phía trên** danh sách gợi ý (`guidance-list`) trong trạng thái `not-found`.
+  - **Content:** "Thử tìm kiếm tại: [Google] | [Cambridge] | [Oxford]" (hoặc ngôn ngữ tương đương được cấu hình).
+  - **Styling:**
+    - Text: `body-sm` (`meta`), màu `text-secondary`.
+    - Links: Màu `primary-600` (`#0B5EA8`), có gạch chân (`text-decoration: underline`) khi hover để nhận diện khả năng tương tác.
+    - Spacing: Cách lề dưới 8px để tách biệt với danh sách mẹo tra cứu.
+  - **Safety:** Tất cả các link phải mở trong tab mới (`target="_blank"`) và có thuộc tính `rel="noopener noreferrer"`.

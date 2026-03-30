@@ -25,12 +25,28 @@ test('mapper: trả not-found state khi payload rỗng/null', () => {
     headword: '',
     pronunciation: '',
     definitions: [],
+    token: 'hello',
   });
 
   assert.equal(model.state, 'not-found');
-  assert.deepEqual(model.orderedFields, ['title', 'message', 'guidance']);
+  assert.deepEqual(model.orderedFields, ['title', 'message', 'searchSuggestions', 'guidance']);
   assert.ok(Array.isArray(model.guidance));
   assert.ok(model.guidance.length >= 1);
+  assert.match(model.searchSuggestions, /google\.com.*define\+hello/i);
+  assert.match(model.searchSuggestions, /target="_blank"/i);
+  assert.match(model.searchSuggestions, /rel="noopener noreferrer"/i);
+});
+
+test('mapper: sinh URL tìm kiếm ngoại đúng cách và encode ký tự đặc biệt', () => {
+  const model = mapParsedPayloadToPopupViewModel({
+    headword: '',
+    token: 'apple tree',
+  });
+
+  assert.equal(model.state, 'not-found');
+  // apple tree -> apple%20tree
+  assert.match(model.searchSuggestions, /q=define\+apple%20tree/i);
+  assert.match(model.searchSuggestions, /english\/apple%20tree/i);
 });
 
 test('mapper: ánh xạ error type sang UI copy tương ứng', () => {

@@ -154,6 +154,11 @@ export function createPopupManager({ documentObj, windowObj }) {
       }
       .vocab-popup-message {
       }
+      .vocab-popup-search-suggestions {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #4B5563;
+      }
       .vocab-popup-guidance-list {
         margin: 8px 0;
       }
@@ -387,6 +392,10 @@ export function createPopupManager({ documentObj, windowObj }) {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
       } else if (item.type === 'message') {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-message' }, item.value));
+      } else if (item.type === 'searchSuggestions') {
+        if (item.value) {
+          popupContainer.appendChild(h('div', { className: 'vocab-popup-search-suggestions', innerHTML: item.value }));
+        }
       } else if (item.type === 'guidance-list') {
         const ul = h('ul', { className: 'vocab-popup-guidance-list' });
         item.value.forEach(g => ul.appendChild(h('li', {}, g)));

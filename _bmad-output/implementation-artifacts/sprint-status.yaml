@@ -1,9 +1,9 @@
-# generated: 2026-03-28 13:50:24 +07
-# last_updated: 2026-03-28 22:15:00 +07
+# generated: 2026-03-30 18:45:00 +07
+# last_updated: 2026-03-30 19:00:00 +07
 # project: vocabulary-chrome-extension
 # project_key: NOKEY
 # tracking_system: file-system
-# story_location: /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/implementation-artifacts
+# story_location: _bmad-output/implementation-artifacts
 
 # STATUS DEFINITIONS:
 # ==================
@@ -34,41 +34,47 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2026-03-28 13:50:24 +07"
-last_updated: "2026-03-28 22:15:00 +07"
+generated: "2026-03-30 18:45:00 +07"
+last_updated: "2026-03-30 19:00:00 +07"
 project: vocabulary-chrome-extension
 project_key: NOKEY
 tracking_system: file-system
-story_location: /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/implementation-artifacts
+story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: in-progress
-  1-1-phat-hien-selection-hop-le-va-khoi-tao-tra-cuu: done
-  1-2-chuan-hoa-token-dau-vao-cho-mvp-mot-tu: done
-  1-3-gui-lookup-request-va-hien-thi-loading-ngay-tuc-thi: done
-  1-4-parse-du-lieu-cot-loi-va-anh-xa-sang-model-hien-thi: done
-  1-5-hien-thi-popup-gan-vung-chon-va-cho-phep-dong-thu-cong: done
+  epic-1: done
+  1-1-khoi-tao-du-an-tu-starter-template: done
+  1-2-cau-hinh-baseline-manifest-v3-va-script-build-dev: done
+  1-3-thiet-lap-quality-gates-cho-release-readiness: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
-  2-1-timeout-va-retry-co-kiem-soat-cho-lookup: review
-  2-2-trang-thai-not-found-voi-huong-dan-hanh-dong: review
-  2-3-trang-thai-error-theo-loai-loi-network-parse: review
+  epic-2: done
+  2-1-phat-hien-selection-hop-le-va-khoi-tao-tra-cuu: done
+  2-2-chuan-hoa-token-dau-vao-cho-mvp-mot-tu: done
+  2-3-gui-lookup-request-va-hien-thi-loading-ngay-tuc-thi: done
+  2-4-parse-du-lieu-cot-loi-va-anh-xa-sang-model-hien-thi: done
+  2-5-hien-thi-popup-gan-vung-chon-va-cho-phep-dong-thu-cong: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress
-  3-1-cai-dat-bat-tat-auto-popup: done
-  3-2-luu-va-ap-dung-lai-tuy-chon-qua-cac-phien: done
+  epic-3: done
+  3-1-timeout-va-retry-co-kiem-soat-cho-lookup: done
+  3-2-trang-thai-not-found-voi-huong-dan-han-dong: done
+  3-3-trang-thai-error-theo-loai-loi-network-parse: done
   epic-3-retrospective: optional
 
-  epic-4: in-progress
-  4-1-telemetry-an-danh-cho-thanh-cong-that-bai-lookup: done
-  4-2-attribution-nguon-du-lieu-va-disclosure-quyen-truy-cap: done
-  4-3-guardrails-tuan-thu-voi-rate-limit-truy-van: done
+  epic-4: done
+  4-1-cai-dat-bat-tat-auto-popup: done
+  4-2-luu-va-ap-dung-lai-tuy-chon-qua-cac-phien: done
   epic-4-retrospective: optional
 
-  epic-5: in-progress
-  5-1-thiet-lap-baseline-runtime-manifest-v3-va-script-build-dev: done
-  5-2-dong-bo-permission-declarations-voi-disclosure-runtime: done
-  5-3-thiet-lap-quality-gates-cho-release-readiness: done
+  epic-5: done
+  5-1-telemetry-an-danh-cho-thanh-cong-that-bai-lookup: done
+  5-2-attribution-nguon-du-lieu-va-disclosure-quyen-truy-cap: done
+  5-3-guardrails-tuan-thu-voi-rate-limit-va-cache: done
   epic-5-retrospective: optional
+
+  epic-6: done
+  6-1-tao-link-tim-kiem-tu-dien-ngoai-trong-viewmodelmapper: done
+  6-2-cap-nhat-giao-dien-popup-cho-trang-thai-not-found: done
+  6-3-kiem-thu-tich-hop-va-bao-mat-cho-link-ngoai: done
+  epic-6-retrospective: optional

@@ -70,6 +70,7 @@ export function createServiceWorkerLookupHandler({
     if (parsedResult?.status === 'not-found') {
       return createLookupNotFoundResponse({
         ...parsedResult.data,
+        token: headword,
         headword,
         lookupUrl: lookupResult?.data?.lookupUrl,
       });

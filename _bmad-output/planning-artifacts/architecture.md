@@ -1,13 +1,16 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
   - /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/planning-artifacts/prd.md
   - /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/planning-artifacts/ux-design-specification.md
   - /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/planning-artifacts/product-brief-vocabulary-chrome-extension.md
 workflowType: 'architecture'
+lastStep: 8
+status: 'complete'
 project_name: 'vocabulary-chrome-extension'
 user_name: 'Cuongnguyenhuu'
 date: '2026-03-28'
+completedAt: '2026-03-30'
 ---
 
 # Architecture Decision Document
@@ -300,7 +303,24 @@ success OR not_found OR error
 
 ---
 
-### Decision 5: Telemetry & Health Monitoring
+### Decision 6: External Dictionary Fallback URL Generation
+
+**Decision:** Dynamic URL Generation in the `ViewModelMapper` Layer
+
+**Rationale:**
+Generating external search links (Google, Cambridge, Oxford) at the mapping layer keeps the Service Worker's logic focused on data retrieval and caching. It also allows the UI to easily adapt the links (e.g., changing dictionary sources) without redeploying background service logic.
+
+**Implementation Details:**
+- **Input:** The `not-found` response from the Service Worker must include the original `token` (normalized word).
+- **Processing:** `ViewModelMapper` uses a helper function to build search URLs using `encodeURIComponent(token)`.
+- **Output:** The Popup ViewModel for the `not-found` state will include an HTML string or a structured array of link objects for the renderer.
+
+**Affects:** `ViewModelMapper`, `PopupRenderer`
+**Success Metric:** Accurate, safe search links generated for any word in the `not-found` state.
+
+---
+
+### Decision 7: Mapping Layer Expansion
 
 **Decision:** Lightweight Local Event Tracking (privacy-first)
 
@@ -384,9 +404,9 @@ Aligns with React/Tailwind ecosystem conventions; agents naturally follow these 
 **All service worker responses must use Tagged Union pattern:**
 
 ```typescript
-type LookupResponse = 
+type LookupResponse =
   | { status: 'success'; data: Definition }
-  | { status: 'not-found'; suggestion: string }
+  | { status: 'not-found'; data: { token: string; suggestion?: string } }
   | { status: 'error'; errorType: 'network' | 'parse' | 'timeout'; message: string }
 
 interface Definition {

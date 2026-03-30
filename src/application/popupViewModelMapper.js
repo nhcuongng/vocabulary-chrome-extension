@@ -12,6 +12,26 @@ function normalizeDefinitions(definitions) {
     .filter(Boolean);
 }
 
+function buildSearchSuggestionsHtml(token) {
+  if (!token) return '';
+
+  const encodedToken = encodeURIComponent(token);
+  const links = [
+    { label: 'Google', url: `https://www.google.com/search?q=define+${encodedToken}` },
+    { label: 'Cambridge', url: `https://dictionary.cambridge.org/dictionary/english/${encodedToken}` },
+    { label: 'Oxford', url: `https://www.oxfordlearnersdictionaries.com/definition/english/${encodedToken}` },
+  ];
+
+  const linksHtml = links
+    .map(
+      (link) =>
+        `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: #0B5EA8; text-decoration: underline;">${link.label}</a>`
+    )
+    .join(' | ');
+
+  return `${NOT_FOUND_COPY.searchSuggestionsPrefix} ${linksHtml}`;
+}
+
 export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const headword = (parsedPayload?.headword ?? '').trim();
   const pronunciation = parsedPayload?.pronunciation ?? '';
@@ -19,12 +39,14 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const definitions = normalizeDefinitions(parsedPayload?.definitions);
   console.log("🚀 ~ mapParsedPayloadToPopupViewModel ~ definitions:", definitions, headword)
 
-  if (!headword || !definitions) {
+  if (!headword || !definitions || definitions.length === 0) {
+    const token = headword || parsedPayload?.token || '';
     return {
       state: 'not-found',
-      orderedFields: ['title', 'message', 'guidance'],
+      orderedFields: ['title', 'message', 'searchSuggestions', 'guidance'],
       title: NOT_FOUND_COPY.title,
       message: NOT_FOUND_COPY.message,
+      searchSuggestions: buildSearchSuggestionsHtml(token),
       guidance: [...NOT_FOUND_COPY.guidance],
     };
   }
@@ -60,11 +82,13 @@ export function mapLookupResultToPopupViewModel(lookupResult) {
   }
 
   if (lookupResult?.status === 'not-found') {
+    const token = lookupResult?.data?.token || '';
     return {
       state: 'not-found',
-      orderedFields: ['title', 'message', 'guidance'],
+      orderedFields: ['title', 'message', 'searchSuggestions', 'guidance'],
       title: NOT_FOUND_COPY.title,
       message: NOT_FOUND_COPY.message,
+      searchSuggestions: buildSearchSuggestionsHtml(token),
       guidance: [...NOT_FOUND_COPY.guidance],
     };
   }

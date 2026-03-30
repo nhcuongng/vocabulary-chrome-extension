@@ -1,12 +1,15 @@
 ---
-stepsCompleted: 
+stepsCompleted:
   - step-01-validate-prerequisites
   - step-02-design-epics
   - step-03-create-stories
+  - step-04-final-validation
 inputDocuments:
   - /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/planning-artifacts/prd.md
   - /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/planning-artifacts/architecture.md
   - /Users/cuongnguyenhuu/Projects/personal/vocabulary-chrome-extension/_bmad-output/planning-artifacts/ux-design-specification.md
+status: 'complete'
+completedAt: '2026-03-30'
 ---
 
 # vocabulary-chrome-extension - Epic Breakdown
@@ -120,6 +123,9 @@ This document provides the complete epic and story breakdown for vocabulary-chro
 **Word Normalization (AR8)**
 - AR8: Word normalization flow: raw input → strip punctuation → lowercase → cache lookup/parser
 
+**Starter Template (AR9)**
+- AR9: Sử dụng `chrome-ext-starter` (React + Vite + Tailwind + DaisyUI) làm nền tảng.
+
 ---
 
 ### UX Design Requirements (12 UX-DRs)
@@ -146,364 +152,314 @@ This document provides the complete epic and story breakdown for vocabulary-chro
 
 ### FR Coverage Map
 
-- FR1: Epic 1 - Trigger tra cứu bằng thao tác bôi đen
-- FR2: Epic 1 - Nhận diện selection và trích xuất token
-- FR3: Epic 1 - Chặn trigger với selection không hợp lệ
-- FR4: Epic 3 - Bật/tắt auto-popup theo tùy chọn người dùng
-- FR5: Epic 1 - Chuẩn hóa token đầu vào
-- FR6: Epic 1 - Xử lý dấu câu trước/sau từ
-- FR7: Epic 1 - Giới hạn tra cứu 1 từ trong MVP
-- FR8: Epic 1 - Trả trạng thái invalid token
-- FR9: Epic 1 - Tạo URL dictionary theo headword chuẩn hóa
-- FR10: Epic 1 - Gửi yêu cầu lookup và nhận phản hồi
-- FR11: Epic 2 - Áp dụng timeout để tránh treo UI
-- FR12: Epic 2 - Retry có kiểm soát cho lỗi tạm thời
-- FR13: Epic 1 - Parse các trường dữ liệu cốt lõi
-- FR14: Epic 2 - Suy luận not-found khi không có dữ liệu
-- FR15: Epic 2 - Fallback lỗi thân thiện khi parse thất bại
-- FR16: Epic 1 - Ánh xạ dữ liệu parse sang model hiển thị thống nhất
-- FR17: Epic 1 - Hiển thị popup gần vùng selection
-- FR18: Epic 1 - Đóng popup thủ công
-- FR19: Epic 1 - Hiển thị trạng thái loading
-- FR20: Epic 1 - Hiển thị trạng thái success
-- FR21: Epic 2 - Hiển thị trạng thái not-found kèm hướng dẫn
-- FR22: Epic 2 - Hiển thị trạng thái error theo loại lỗi
-- FR23: Epic 3 - Cấu hình hành vi auto-popup trong settings
-- FR24: Epic 3 - Lưu và áp dụng lại tùy chọn giữa các phiên
-- FR25: Epic 4 - Ghi nhận sự kiện lookup ẩn danh
-- FR26: Epic 4 - Ghi nhận phân loại lỗi chính
-- FR27: Epic 4 - Truy vết sự cố theo phiên bản extension
-- FR28: Epic 4 - Hiển thị attribution nguồn dữ liệu
-- FR29: Epic 4 - Giới hạn truy vấn để tuân thủ nguồn
-- FR30: Epic 4 - Disclosure quyền truy cập dữ liệu rõ ràng
+- FR1: Epic 2 - Trigger tra cứu bằng thao tác bôi đen
+- FR2: Epic 2 - Nhận diện selection và trích xuất token
+- FR3: Epic 2 - Chặn trigger với selection không hợp lệ
+- FR4: Epic 4 - Bật/tắt auto-popup theo tùy chọn người dùng
+- FR5: Epic 2 - Chuẩn hóa token đầu vào
+- FR6: Epic 2 - Xử lý dấu câu trước/sau từ
+- FR7: Epic 2 - Giới hạn tra cứu 1 từ trong MVP
+- FR8: Epic 2 - Trả trạng thái invalid token
+- FR9: Epic 2 - Tạo URL dictionary theo headword chuẩn hóa
+- FR10: Epic 2 - Gửi yêu cầu lookup và nhận phản hồi
+- FR11: Epic 3 - Áp dụng timeout để tránh treo UI
+- FR12: Epic 3 - Retry có kiểm soát cho lỗi tạm thời
+- FR13: Epic 2 - Parse các trường dữ liệu cốt lõi
+- FR14: Epic 3 - Suy luận not-found khi không có dữ liệu
+- FR15: Epic 3 - Fallback lỗi thân thiện khi parse thất bại
+- FR16: Epic 2 - Ánh xạ dữ liệu parse sang model hiển thị thống nhất
+- FR17: Epic 2 - Hiển thị popup gần vùng selection
+- FR18: Epic 2 - Đóng popup thủ công
+- FR19: Epic 2 - Hiển thị trạng thái loading
+- FR20: Epic 2 - Hiển thị trạng thái success
+- FR21: Epic 3 - Hiển thị trạng thái not-found kèm hướng dẫn
+- FR22: Epic 3 - Hiển thị trạng thái error theo loại lỗi
+- FR23: Epic 4 - Cấu hình hành vi auto-popup trong settings
+- FR24: Epic 4 - Lưu và áp dụng lại tùy chọn giữa các phiên
+- FR25: Epic 5 - Ghi nhận sự kiện lookup ẩn danh
+- FR26: Epic 5 - Ghi nhận phân loại lỗi chính
+- FR27: Epic 5 - Truy vết sự cố theo phiên bản extension
+- FR28: Epic 5 - Hiển thị attribution nguồn dữ liệu
+- FR29: Epic 1 & 5 - Tuân thủ và Baseline runtime
+- FR30: Epic 1 & 5 - Disclosure quyền truy cập dữ liệu
 
 ---
 
 ## Epic List
 
-### Epic 1: Tra cứu từ vựng tức thì trong luồng đọc
+### Epic 1: Thiết lập nền tảng và môi trường phát triển (Foundation)
+Thiết lập scaffold dự án, cấu hình build pipeline và các quality gates cơ bản để đảm bảo môi trường phát triển nhất quán.
+**FRs covered:** FR29, FR30, AR9, NFR16
+
+### Epic 2: Tra cứu từ vựng tức thì trong luồng đọc
 Người dùng có thể bôi đen 1 từ và nhận định nghĩa cốt lõi ngay trong popup để tiếp tục đọc không đứt mạch.
 **FRs covered:** FR1, FR2, FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR13, FR16, FR17, FR18, FR19, FR20
 
-### Epic 2: Xử lý tình huống khó và phục hồi trải nghiệm
+### Epic 3: Xử lý tình huống khó và phục hồi trải nghiệm
 Người dùng vẫn được hướng dẫn rõ ràng khi timeout, parse lỗi, không tìm thấy từ, hoặc lỗi mạng.
 **FRs covered:** FR11, FR12, FR14, FR15, FR21, FR22
 
-### Epic 3: Cá nhân hóa hành vi tra cứu
+### Epic 4: Cá nhân hóa hành vi tra cứu
 Người dùng có thể bật/tắt auto-popup và hệ thống ghi nhớ tùy chọn giữa các phiên duyệt.
 **FRs covered:** FR4, FR23, FR24
 
-### Epic 4: Vận hành tin cậy, minh bạch và tuân thủ
+### Epic 5: Vận hành tin cậy, minh bạch và tuân thủ
 Sản phẩm có telemetry ẩn danh, attribution rõ ràng, rate-limit và disclosure đầy đủ để vận hành bền vững.
 **FRs covered:** FR25, FR26, FR27, FR28, FR29, FR30
 
-### Epic 5 (Summary): Căn chỉnh nền tảng runtime và build pipeline
+---
 
-Sản phẩm có baseline extension runtime rõ ràng (Manifest V3), script dev/build nhất quán, và quality gates đủ để phát hành.
-**FRs covered:** FR29, FR30 (hỗ trợ triển khai thực thi và kiểm chứng runtime)
+## Epic 1: Thiết lập nền tảng và môi trường phát triển (Foundation)
+
+Thiết lập scaffold dự án, cấu hình build pipeline và các quality gates cơ bản để đảm bảo môi trường phát triển nhất quán.
+
+### Story 1.1: Khởi tạo dự án từ starter template
+As a developer,
+I want khởi tạo dự án từ template `chrome-ext-starter`,
+So that tôi có sẵn cấu trúc React + Vite + Tailwind vững chắc.
+
+**Acceptance Criteria:**
+**Given** dự án mới bắt đầu
+**When** thực hiện clone và cài đặt `chrome-ext-starter`
+**Then** dự án có cấu trúc thư mục chuẩn (src/content, src/background, src/popup)
+**And** có thể chạy `pnpm dev` để xem extension mẫu.
+
+### Story 1.2: Cấu hình baseline Manifest V3 và script build/dev
+As a developer,
+I want cấu hình manifest và các script build tùy chỉnh,
+So that extension hoạt động đúng theo yêu cầu Manifest V3 của dự án.
+
+**Acceptance Criteria:**
+**Given** scaffold template đã có
+**When** cập nhật `manifest.json`
+**Then** các quyền `activeTab`, `scripting`, `storage` được khai báo đúng
+**And** script `build` tạo ra artifact sẵn sàng nạp vào Chrome.
+
+### Story 1.3: Thiết lập quality gates cho release readiness
+As a developer,
+I want có công cụ tự động kiểm tra chất lượng trước khi release,
+So that tránh các lỗi về quyền hạn và compliance khi publish.
+
+**Acceptance Criteria:**
+**Given** code đã sẵn sàng
+**When** chạy script quality gate
+**Then** thực hiện được audit permission-disclosure
+**And** báo cáo alignment được lưu lại làm bằng chứng release.
 
 ---
 
-## Epic 1: Tra cứu từ vựng tức thì trong luồng đọc
+## Epic 2: Tra cứu từ vựng tức thì trong luồng đọc
 
 Người dùng có thể bôi đen 1 từ và nhận định nghĩa cốt lõi ngay trong popup để tiếp tục đọc không đứt mạch.
 
-### Story 1.1: Phát hiện selection hợp lệ và khởi tạo tra cứu
-
+### Story 2.1: Phát hiện selection hợp lệ và khởi tạo tra cứu
 As a người học tiếng Anh,
 I want extension nhận diện chính xác selection hợp lệ,
 So that tôi có thể bắt đầu tra cứu ngay tại vị trí đang đọc.
 
 **Acceptance Criteria:**
-
 **Given** người dùng bôi đen một từ tiếng Anh hợp lệ
 **When** sự kiện selection được bắt bởi content script
 **Then** hệ thống tạo yêu cầu lookup mới
 **And** không tạo nhiều trigger trùng lặp trong một thao tác chọn từ.
 
-**Given** selection rỗng hoặc không hợp lệ
-**When** hệ thống chạy bước xác thực selection
-**Then** popup không được mở
-**And** không gửi request lookup ra service worker.
-
-### Story 1.2: Chuẩn hóa token đầu vào cho MVP một từ
-
+### Story 2.2: Chuẩn hóa token đầu vào cho MVP một từ
 As a người học tiếng Anh,
 I want token được chuẩn hóa trước khi tra cứu,
 So that kết quả lookup chính xác và ổn định hơn.
 
 **Acceptance Criteria:**
-
 **Given** token có chữ hoa/chữ thường lẫn dấu câu ở hai đầu
 **When** token đi qua pipeline chuẩn hóa
 **Then** token được chuyển thành lowercase và loại bỏ ký tự thừa ở biên
 **And** giữ lại nội dung từ cần tra cứu.
 
-**Given** người dùng chọn nhiều hơn một từ trong phạm vi MVP
-**When** hệ thống kiểm tra quy tắc token
-**Then** hệ thống trả trạng thái token không hợp lệ
-**And** không thực hiện gọi lookup network.
-
-### Story 1.3: Gửi lookup request và hiển thị loading ngay tức thì
-
+### Story 2.3: Gửi lookup request và hiển thị loading ngay tức thì
 As a người học tiếng Anh,
 I want hệ thống gửi yêu cầu tra cứu sau khi token hợp lệ,
 So that tôi nhận được phản hồi nhanh mà không rời trang.
 
 **Acceptance Criteria:**
-
 **Given** token normalized hợp lệ
 **When** service worker xử lý lookup
 **Then** URL dictionary được tạo đúng theo headword chuẩn hóa
 **And** request được gửi đi trong ngữ cảnh extension.
 
-**Given** lookup đã được khởi tạo
-**When** popup bắt đầu render
-**Then** trạng thái loading được hiển thị
-**And** loading xuất hiện trong thời gian mục tiêu UX (dưới 200ms).
-
-### Story 1.4: Parse dữ liệu cốt lõi và ánh xạ sang model hiển thị
-
+### Story 2.4: Parse dữ liệu cốt lõi và ánh xạ sang model hiển thị
 As a người học tiếng Anh,
 I want dữ liệu từ dictionary được parse thành cấu trúc thống nhất,
 So that popup có thể hiển thị thông tin rõ ràng và nhất quán.
 
 **Acceptance Criteria:**
-
 **Given** HTML response hợp lệ từ nguồn dictionary
 **When** parser adapter thực thi
 **Then** hệ thống trích xuất được headword, pronunciation và định nghĩa chính
 **And** dữ liệu được ánh xạ về model hiển thị chuẩn.
 
-**Given** parser trả dữ liệu thành công
-**When** popup nhận model hiển thị
-**Then** popup hiển thị trạng thái success
-**And** hiển thị đúng thứ bậc thông tin: headword, pronunciation, nghĩa chính.
-
-### Story 1.5: Hiển thị popup gần vùng chọn và cho phép đóng thủ công
-
+### Story 2.5: Hiển thị popup gần vùng chọn và cho phép đóng thủ công
 As a người học tiếng Anh,
 I want popup luôn xuất hiện gần vùng bôi đen và dễ đóng,
 So that tôi giữ được mạch đọc và kiểm soát giao diện.
 
 **Acceptance Criteria:**
-
 **Given** lookup đang ở trạng thái loading hoặc success
 **When** popup được gắn vào viewport
 **Then** popup xuất hiện gần vùng selection
-**And** không che khuất phần nội dung quan trọng quá mức (tuân thủ kích thước UX mục tiêu).
+**And** không che khuất phần nội dung quan trọng quá mức.
 
-**Given** popup đang mở
-**When** người dùng nhấn Esc hoặc click ngoài popup
-**Then** popup được đóng ngay
-**And** focus được trả về trạng thái đọc tự nhiên.
+---
 
-## Epic 2: Xử lý tình huống khó và phục hồi trải nghiệm
+## Epic 3: Xử lý tình huống khó và phục hồi trải nghiệm
 
 Người dùng vẫn được hướng dẫn rõ ràng khi timeout, parse lỗi, không tìm thấy từ, hoặc lỗi mạng.
 
-### Story 2.1: Timeout và retry có kiểm soát cho lookup
-
+### Story 3.1: Timeout và retry có kiểm soát cho lookup
 As a người học tiếng Anh,
 I want hệ thống xử lý timeout và retry hợp lý,
 So that tôi không bị treo UI khi kết nối kém.
 
 **Acceptance Criteria:**
-
 **Given** request lookup vượt quá ngưỡng timeout
 **When** service worker kiểm tra thời gian chờ
 **Then** request được kết thúc an toàn
 **And** hệ thống chuyển sang nhánh lỗi có hướng dẫn.
 
-**Given** xảy ra lỗi tạm thời có thể phục hồi
-**When** cơ chế retry chạy
-**Then** hệ thống retry theo số lần giới hạn cấu hình
-**And** không tạo vòng lặp retry vô hạn.
-
-### Story 2.2: Trạng thái not-found với hướng dẫn hành động
-
+### Story 3.2: Trạng thái not-found với hướng dẫn hành động
 As a người học tiếng Anh,
 I want nhận được hướng dẫn cụ thể khi không tìm thấy từ,
 So that tôi có thể thao tác lại đúng cách.
 
 **Acceptance Criteria:**
-
 **Given** lookup không có dữ liệu từ điển khả dụng
 **When** parser hoặc mapper xác nhận kết quả rỗng
 **Then** popup hiển thị trạng thái not-found
 **And** hiển thị gợi ý thao tác lại (bỏ dấu câu/chọn 1 từ/thử từ gốc).
 
-### Story 2.3: Trạng thái error theo loại lỗi (network/parse)
-
+### Story 3.3: Trạng thái error theo loại lỗi (network/parse)
 As a người học tiếng Anh,
 I want thông báo lỗi rõ nguyên nhân,
 So that tôi biết phải làm gì tiếp theo thay vì bị bối rối.
 
 **Acceptance Criteria:**
-
 **Given** lỗi network hoặc timeout
 **When** hệ thống trả kết quả lỗi
 **Then** popup hiển thị thông báo lỗi tương ứng
-**And** cung cấp hành động tiếp theo phù hợp (ví dụ thử lại).
+**And** cung cấp hành động tiếp theo phù hợp.
 
-**Given** parser thất bại do thay đổi cấu trúc nguồn
-**When** hệ thống bắt lỗi parser
-**Then** popup hiển thị trạng thái error an toàn
-**And** không làm hỏng trang web đang mở.
+---
 
-## Epic 3: Cá nhân hóa hành vi tra cứu
+## Epic 4: Cá nhân hóa hành vi tra cứu
 
 Người dùng có thể bật/tắt auto-popup và hệ thống ghi nhớ tùy chọn giữa các phiên duyệt.
 
-### Story 3.1: Cài đặt bật/tắt auto-popup
-
+### Story 4.1: Cài đặt bật/tắt auto-popup
 As a người học tiếng Anh,
 I want cấu hình auto-popup theo thói quen của tôi,
 So that tôi kiểm soát được mức độ tự động của extension.
 
 **Acceptance Criteria:**
-
 **Given** người dùng mở màn hình cài đặt extension
 **When** người dùng thay đổi công tắc auto-popup
 **Then** hệ thống cập nhật giá trị cài đặt mới
 **And** hành vi trigger lookup tuân theo giá trị vừa chọn.
 
-### Story 3.2: Lưu và áp dụng lại tùy chọn qua các phiên
-
+### Story 4.2: Lưu và áp dụng lại tùy chọn qua các phiên
 As a người học tiếng Anh,
 I want tùy chọn của tôi được ghi nhớ lâu dài,
 So that tôi không phải cấu hình lại mỗi lần mở trình duyệt.
 
 **Acceptance Criteria:**
-
 **Given** người dùng đã lưu tùy chọn auto-popup
 **When** trình duyệt hoặc extension được khởi động lại
 **Then** cài đặt được nạp lại từ storage local
 **And** áp dụng đúng cho phiên duyệt mới.
 
-## Epic 4: Vận hành tin cậy, minh bạch và tuân thủ
+---
+
+## Epic 5: Vận hành tin cậy, minh bạch và tuân thủ
 
 Sản phẩm có telemetry ẩn danh, attribution rõ ràng, rate-limit và disclosure đầy đủ để vận hành bền vững.
 
-### Story 4.1: Telemetry ẩn danh cho thành công/thất bại lookup
-
+### Story 5.1: Telemetry ẩn danh cho thành công/thất bại lookup
 As a product operator,
 I want hệ thống ghi nhận sự kiện lookup và phân loại lỗi,
 So that tôi có thể theo dõi sức khỏe sản phẩm và truy vết sự cố.
 
 **Acceptance Criteria:**
-
 **Given** một lookup kết thúc
 **When** hệ thống ghi log sự kiện
 **Then** sự kiện được lưu ở dạng ẩn danh với loại kết quả (success/not-found/error)
-**And** kèm phân loại lỗi chính khi có lỗi (network/timeout/parse/invalid token).
+**And** kèm phân loại lỗi chính khi có lỗi.
 
-**Given** operator cần truy vết lỗi theo phiên bản
-**When** đọc dữ liệu telemetry cục bộ
-**Then** có thể lọc và xem sự kiện theo version extension
-**And** không chứa dữ liệu nhận dạng cá nhân.
-
-### Story 4.2: Attribution nguồn dữ liệu và disclosure quyền truy cập
-
+### Story 5.2: Attribution nguồn dữ liệu và disclosure quyền truy cập
 As a người dùng extension,
 I want thấy rõ nguồn dữ liệu và quyền truy cập được sử dụng,
 So that tôi tin tưởng sản phẩm minh bạch và đúng chính sách.
 
 **Acceptance Criteria:**
-
 **Given** người dùng xem popup hoặc trang thông tin extension
 **When** hệ thống hiển thị thông tin nguồn dữ liệu
-**Then** attribution được hiển thị theo chính sách đã phê duyệt
-**And** nội dung rõ ràng, dễ hiểu.
+**Then** attribution được hiển thị theo chính sách đã phê duyệt.
 
-**Given** người dùng xem disclosure quyền truy cập
-**When** kiểm tra tài liệu phát hành hoặc màn hình thông tin
-**Then** mô tả quyền truy cập khớp với hành vi thực tế của extension
-**And** không có quyền dư thừa không giải thích được.
-
-### Story 4.3: Guardrails tuân thủ với rate-limit truy vấn
-
+### Story 5.3: Guardrails tuân thủ với rate-limit và cache
 As a product operator,
 I want có cơ chế giới hạn truy vấn hợp lý,
 So that extension vận hành bền vững và giảm rủi ro vi phạm điều khoản nguồn.
 
 **Acceptance Criteria:**
-
-**Given** số lượng lookup tăng cao trong thời gian ngắn
-**When** hệ thống đánh giá ngưỡng truy vấn
-**Then** rate-limit được áp dụng theo chính sách
-**And** người dùng nhận phản hồi phù hợp thay vì lỗi mơ hồ.
-
 **Given** cùng một từ được tra cứu lặp lại
 **When** dữ liệu cache còn hiệu lực
 **Then** hệ thống ưu tiên dùng cache trước network
 **And** giảm số request ra nguồn dữ liệu.
 
-## Epic 5: Căn chỉnh nền tảng runtime và build pipeline
+---
 
-Sản phẩm có baseline extension runtime rõ ràng (Manifest V3), script dev/build nhất quán, và quality gates đủ để phát hành.
-
-### Story 5.1: Thiết lập baseline runtime Manifest V3 và script build/dev
-
-As a developer,
-I want dự án có manifest và script runtime/build tối thiểu,
-So that tôi có thể chạy, đóng gói và kiểm chứng extension trên môi trường thật.
-
-**Acceptance Criteria:**
-
-**Given** dự án hiện chỉ có test runner
-**When** hoàn tất cấu hình baseline
-**Then** dự án có `manifest.json` hợp lệ cho MV3
-**And** có script `dev` và `build` để chạy luồng phát triển/phát hành.
-
-**Given** cần tích hợp các module đã có
-**When** wiring entry points hoàn tất
-**Then** content/background/popup shell có thể được nạp theo manifest
-**And** không phá vỡ test suite hiện tại.
-
-### Story 5.2: Đồng bộ permission declarations với disclosure runtime
-
-As a product operator,
-I want quyền truy cập khai báo trong manifest khớp nội dung disclosure,
-So that sản phẩm minh bạch và giảm rủi ro compliance khi phát hành.
-
-**Acceptance Criteria:**
-
-**Given** manifest đã khai báo permissions/host_permissions
-**When** chạy audit disclosure
-**Then** hệ thống phát hiện quyền dư hoặc thiếu mô tả
-**And** báo cáo alignment rõ ràng cho release review.
-
-**Given** người dùng xem thông tin minh bạch
-**When** popup/tài liệu hiển thị disclosure
-**Then** nội dung khớp với manifest runtime thực tế
-**And** không có quyền nào không giải thích được.
-
-### Story 5.3: Thiết lập quality gates cho release readiness
-
-As a team,
-I want quy trình quality gate nhất quán trước release,
-So that thay đổi mới không làm giảm chất lượng và tính tuân thủ.
-
-**Acceptance Criteria:**
-
-**Given** code chuẩn bị phát hành
-**When** chạy pipeline kiểm tra
-**Then** các bước test/lint (hoặc checklist quality tương đương) phải pass
-**And** checklist minh bạch release được xác nhận đầy đủ.
-
-**Given** có thay đổi liên quan permission/compliance
-**When** pipeline chạy
-**Then** audit permission-disclosure được thực thi
-**And** kết quả được lưu làm bằng chứng release.
+### Epic 6: Nâng tầm trải nghiệm và khả năng tự phục hồi (Phase 2)
+Người dùng có lối thoát nhanh chóng thông qua các từ điển uy tín khác khi nguồn Vocabulary.com không có kết quả.
+**FRs covered:** FR21, FR31, FR32
 
 ---
 
-## Status
+## Epic 6: Nâng tầm trải nghiệm và khả năng tự phục hồi (Phase 2)
+
+### Story 6.1: Tạo link tìm kiếm từ điển ngoại trong ViewModelMapper
+As a developer,
+I want logic sinh URL tìm kiếm ngoại được đặt tại Mapper,
+So that background service luôn tinh gọn và dễ dàng thay đổi nguồn link sau này.
+
+**Acceptance Criteria:**
+**Given** lookup trả về trạng thái `not-found` kèm `token`
+**When** dữ liệu đi qua `mapLookupResultToPopupViewModel`
+**Then** hệ thống tạo ra chuỗi URL hợp lệ cho Google, Cambridge, Oxford
+**And** các URL được URI-encode đúng cách để tránh lỗi ký tự đặc biệt.
+
+### Story 6.2: Cập nhật giao diện Popup cho trạng thái Not Found
+As a người học tiếng Anh,
+I want thấy các link tìm kiếm ngoại ngay trên popup khi không tìm thấy từ,
+So that tôi có thể tra cứu ở nguồn khác chỉ với 1 cú click.
+
+**Acceptance Criteria:**
+**Given** popup đang ở trạng thái `not-found`
+**When** renderer hiển thị nội dung
+**Then** dòng "Thử tìm kiếm tại: Google | Cambridge | Oxford" xuất hiện trên cùng của danh sách gợi ý
+**And** các link có màu xanh Scholarly và hiệu ứng hover gạch chân đúng thiết kế.
+
+### Story 6.3: Kiểm thử tích hợp và bảo mật cho link ngoại
+As a QA engineer,
+I want đảm bảo các link ngoại hoạt động đúng và an toàn,
+So that không gây rủi ro bảo mật hoặc làm người dùng rời khỏi trang hiện tại.
+
+**Acceptance Criteria:**
+**Given** người dùng click vào một link từ điển ngoại
+**When** trình duyệt xử lý sự kiện click
+**Then** trang từ điển tương ứng được mở trong một tab mới
+**And** link có thuộc tính `rel="noopener noreferrer"` để bảo vệ phiên duyệt hiện tại.
+
+---
 
 ✅ **Step 1 Complete:** Requirements extracted and confirmed.
 ✅ **Step 2 Complete:** Epic structure approved and mapped to FRs.
 ✅ **Step 3 Complete:** All epic stories and acceptance criteria generated.
+✅ **Step 4 Complete:** Final validation passed. Epic 1 redefined as Foundation.
 
-**Next Step:** Step 4 final validation and readiness check.
-
+**Workflow Complete!** Ready for development.

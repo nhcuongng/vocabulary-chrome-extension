@@ -41,6 +41,7 @@ export function renderNotFoundContent(viewModel = {}) {
   return [
     { type: 'title', value: viewModel?.title ?? NOT_FOUND_COPY.title },
     { type: 'message', value: viewModel?.message ?? NOT_FOUND_COPY.message },
+    { type: 'searchSuggestions', value: viewModel?.searchSuggestions ?? '' },
     { type: 'guidance-list', value: guidance },
     ...renderComplianceFooterContent(),
   ];

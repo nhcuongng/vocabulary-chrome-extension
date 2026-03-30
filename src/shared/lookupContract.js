@@ -71,6 +71,7 @@ export function createLookupSuccessResponse(data) {
 }
 
 export function createLookupNotFoundResponse(data = {}) {
+  // data should contain { token: string }
   return {
     status: LOOKUP_RESPONSE_STATUS.NOT_FOUND,
     data,

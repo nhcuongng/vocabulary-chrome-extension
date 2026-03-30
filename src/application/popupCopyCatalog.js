@@ -3,6 +3,7 @@ import { LOOKUP_ERROR_TYPE, normalizeLookupErrorType } from '../shared/lookupCon
 export const NOT_FOUND_COPY = {
   title: 'Không tìm thấy kết quả',
   message: 'Từ bạn chọn chưa có dữ liệu phù hợp trong nguồn hiện tại.',
+  searchSuggestionsPrefix: 'Thử tìm kiếm tại:',
   guidance: [
     'Bỏ dấu câu ở đầu/cuối từ.',
     'Chỉ chọn một từ duy nhất.',
