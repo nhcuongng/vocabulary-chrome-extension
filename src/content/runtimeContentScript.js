@@ -32,14 +32,22 @@ export async function bootstrapContentRuntime({
 
   const popupManager = createPopupManager({ documentObj, windowObj });
   let pendingTriggerRequest = null;
+  let isUserInitiated = false;
 
   const triggerIconManager = createTriggerIconManager({
     documentObj,
     windowObj,
     onClick: () => {
       if (pendingTriggerRequest) {
+        isUserInitiated = true;
         triggerIconManager.removeIcon();
-        orchestrator.runLookup(pendingTriggerRequest);
+        const currentState = orchestrator.getState();
+        if (currentState.status !== 'idle') {
+          const selection = readSelectionSnapshot(windowObj);
+          popupManager.showPopup(currentState, selection.rect);
+        } else {
+          orchestrator.runLookup(pendingTriggerRequest);
+        }
         pendingTriggerRequest = null;
       }
     },
@@ -64,8 +72,12 @@ export async function bootstrapContentRuntime({
       });
     },
     onStateChange: (state) => {
-      console.log('[VOCAB] orchestrator onStateChange:', state);
+      const autoPopupEnabled = autoPopupController.isAutoPopupEnabled();
       if (state.status === 'success' || state.status === 'not-found' || state.status === 'error' || state.status === 'loading') {
+        if (!autoPopupEnabled && !isUserInitiated) {
+          return;
+        }
+
         triggerIconManager.removeIcon();
         const selection = readSelectionSnapshot(windowObj);
         popupManager.showPopup(state, selection.rect);
@@ -81,16 +93,27 @@ export async function bootstrapContentRuntime({
     settingsStore,
     getSnapshot: () => readSelectionSnapshot(windowObj),
     onLookupRequest: (request) => {
+      isUserInitiated = true;
       triggerIconManager.removeIcon();
       pendingTriggerRequest = null;
       orchestrator.runLookup(request);
       console.log('[VOCAB] onLookupRequest', request);
     },
     onTriggerIconRequest: (request) => {
+      isUserInitiated = false;
       popupManager.removePopup();
       pendingTriggerRequest = request;
       triggerIconManager.showIcon(request.payload.selectionRect);
+      orchestrator.runLookup(request);
       console.log('[VOCAB] onTriggerIconRequest', request);
+    },
+    onInvalidSelection: (decision) => {
+      if (decision.reasonCode === 'empty-selection') {
+        isUserInitiated = false;
+        popupManager.removePopup();
+        triggerIconManager.removeIcon();
+        pendingTriggerRequest = null;
+      }
     },
   });
 
