@@ -7,10 +7,12 @@ import { normalizeLookupErrorType } from '../shared/lookupContract.js';
 
 function renderComplianceFooterContent() {
   return [
-    { type: 'attribution', value: buildAttributionText() },
     {
-      type: 'permission-disclosure',
-      value: buildPermissionDisclosureSummary(),
+      type: 'compliance-footer',
+      value: {
+        attribution: buildAttributionText(),
+        disclosure: buildPermissionDisclosureSummary(),
+      },
     },
   ];
 }

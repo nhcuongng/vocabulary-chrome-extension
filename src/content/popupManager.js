@@ -190,12 +190,21 @@ export function createPopupManager({ documentObj, windowObj }) {
       .vocab-popup-cta {
         margin-top: 8px;
       }
-      .vocab-popup-attribution {
+      .vocab-popup-compliance-footer {
         margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        border-top: 1px solid #f3f4f6;
+        padding-top: 8px;
+      }
+      .vocab-popup-attribution {
+        margin-top: 0;
       }
       .vocab-popup-permission-disclosure {
         font-size: 12px;
-        margin-top: 4px;
+        margin-top: 0;
       }
       .vocab-popup-close-btn {
         position: absolute;
@@ -495,10 +504,13 @@ export function createPopupManager({ documentObj, windowObj }) {
         popupContainer.appendChild(ul);
       } else if (item.type === 'cta') {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
-      } else if (item.type === 'attribution') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-attribution', innerHTML: item.value }));
-      } else if (item.type === 'permission-disclosure') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value }));
+      } else if (item.type === 'compliance-footer') {
+        popupContainer.appendChild(
+          h('div', { className: 'vocab-popup-compliance-footer' },
+            h('div', { className: 'vocab-popup-attribution', innerHTML: item.value.attribution }),
+            h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value.disclosure })
+          )
+        );
       }
     });
 

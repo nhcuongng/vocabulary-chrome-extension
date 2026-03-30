@@ -18,8 +18,7 @@ test('popup renderer: success state hiển thị đúng thứ bậc headword -> 
     'headword',
     'pronunciation',
     'definition',
-    'attribution',
-    'permission-disclosure',
+    'compliance-footer',
   ]);
   assert.equal(content[0].value, 'hello');
   assert.equal(content[1].value, '/həˈloʊ/');
@@ -39,8 +38,7 @@ test('popup renderer: not-found state hiển thị message, search suggestions v
     'message',
     'searchSuggestions',
     'guidance-list',
-    'attribution',
-    'permission-disclosure',
+    'compliance-footer',
   ]);
   assert.equal(content[0].value, 'Không tìm thấy kết quả');
   assert.equal(content[2].value, 'Thử tìm tại: Google');
@@ -64,14 +62,11 @@ test('popup renderer: tương thích với payload chỉ có errorType', () => {
   assert.equal(timeoutContent[2].value, 'Thử lại');
 });
 
-test('popup renderer: luôn có attribution và disclosure footer', () => {
+test('popup renderer: luôn có compliance footer', () => {
   const content = renderErrorContent({ type: 'network' });
-  const attribution = content.find((item) => item.type === 'attribution');
-  const disclosure = content.find((item) => item.type === 'permission-disclosure');
+  const footer = content.find((item) => item.type === 'compliance-footer');
 
-  assert.ok(attribution);
-  assert.match(attribution.value, /Vocabulary\.com/i);
-
-  assert.ok(disclosure);
-  assert.match(disclosure.value, /activeTab/i);
+  assert.ok(footer);
+  assert.match(footer.value.attribution, /Vocabulary\.com/i);
+  assert.match(footer.value.disclosure, /activeTab/i);
 });
