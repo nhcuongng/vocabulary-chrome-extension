@@ -1,5 +1,10 @@
 function stripTags(value) {
-  return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  // Strip HTML comments first, then tags with quoted attributes
+  return value
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(?:"[^"]*"|'[^']*'|[^"'>])*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function decodeBasicEntities(value) {
@@ -19,7 +24,9 @@ function extractByRegex(html, regex) {
     return '';
   }
 
-  return decodeBasicEntities(stripTags(match[1] ?? ''));
+  // CRITICAL: decode entities FIRST, then strip tags to avoid XSS bypass
+  const decoded = decodeBasicEntities(match[1] ?? '');
+  return stripTags(decoded);
 }
 
 export function parseVocabularyHtml(html) {
@@ -84,44 +91,66 @@ export function parseVocabularyHtml(html) {
 
   // Lấy definitions như cũ
   const definitions = [];
-  // Helper để tạo label styled
-  function makeLabel(label) {
-    return `<p style="display: flex; gap: 4px; align-items: center; background:#e0e7ff;color:#3730a3;font-size:12px;font-weight:600;padding:2px 8px;border-radius:8px;margin-right:8px;vertical-align:middle;"><span>✭</span> ${label}</p>`;
+  // Helper to wrap content in a collapsible details element
+  function wrapInCollapse(label, content, isOpen = false) {
+    const labelHtml = `<span class="vocab-details-label"><span>✭</span> ${label}</span>`;
+    return `
+      <details ${isOpen ? 'open' : ''} class="vocab-details">
+        <summary>
+          ${labelHtml}
+          <span class="collapse-icon">▶</span>
+        </summary>
+        <div class="details-content">
+          ${content}
+        </div>
+      </details>
+    `.trim();
   }
 
-  // div.short hoặc div.definition (giữ lại logic cũ)
-  const def2 = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*(?:short)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
-  if (def2) definitions.push(`${makeLabel('Short Definition')}${def2}`);
+  // Use a Set to track added content to avoid duplicates
+  const addedContents = new Set();
+  function addDefinition(label, content) {
+    if (!content) return;
+    const trimmed = content.trim();
+    if (addedContents.has(trimmed)) return;
+
+    definitions.push(wrapInCollapse(label, trimmed, definitions.length === 0));
+    addedContents.add(trimmed);
+  }
+
+  // div.short hoặc div.definition
+  addDefinition('Short Definition', extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*(?:short)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i));
+
   // p.short trong word-area
-  const def3 = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*short[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
-  if (def3) definitions.push(`${makeLabel('Short Definition')}${def3}`);
+  addDefinition('Short Definition', extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*short[^"']*["'][^>]*>([\s\S]*?)<\/p>/i));
+
   // p.long trong word-area
-  const def4 = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*long[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
-  if (def4) definitions.push(`${makeLabel('Long Definition')}${def4}`);
+  addDefinition('Long Definition', extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*long[^"']*["'][^>]*>([\s\S]*?)<\/p>/i));
 
   const olMatch = safeHtml.match(/<div[^>]*class=["'][^"']*word-definitions[^"']*["'][^>]*>[\s\S]*?(<ol>[\s\S]*?<\/ol>)/i);
 
   if (olMatch) {
     let olContent = olMatch[1];
 
-    // BƯỚC 2: Bóc tách và giữ lại đúng ol > li > div.definition
-    // Tìm tất cả các thẻ <li>
     const liMatches = olContent.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) || [];
-    
+
     const cleanedLis = liMatches.map((liHtml) => {
-      // Trong mỗi <li>, ta chỉ lấy thẻ <div class="definition">
-      // Dùng Regex đã tối ưu để không bị dừng ở thẻ đóng của pos-icon
       const defMatch = liHtml.match(/<div[^>]*class=["']definition["'][^>]*>([\s\S]*?)<\/div>(?=\s*(?:<div class="defContent"|<\/li>|$))/i);
-      
+
       if (defMatch) {
-        // Trả về thẻ <li> bọc ngoài div.definition, thêm label
-        return `<li style="margin-bottom: 10px;">${defMatch[0]}</li>`;
+        // Sanitize the content of the definition using the existing safe pipeline
+        const sanitizedDef = decodeBasicEntities(defMatch[1] ?? '');
+        const plainTextDef = stripTags(sanitizedDef);
+        return `<li style="margin-bottom: 10px;">${plainTextDef}</li>`;
       }
       return "";
     }).filter(li => li !== "").join("");
 
-    // Đóng gói lại thành một thẻ <ol> hoàn chỉnh
-    definitions.push(`${makeLabel(`Definition of "<i>${headword}</i>"`)}<ol class="custom-definition-list">${cleanedLis}</ol>`)
+    if (cleanedLis) {
+      const label = `Definition of "<i>${headword}</i>"`;
+      const content = `<ol class="custom-definition-list" style="margin: 0; padding-left: 20px;">${cleanedLis}</ol>`;
+      addDefinition(label, content);
+    }
   }
   
 

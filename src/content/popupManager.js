@@ -16,9 +16,30 @@ const closeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
 export function createPopupManager({ documentObj, windowObj }) {
   let popupElement = null;
   let popupCtrl = null;
+  let absoluteSelectionRect = null;
+  let isListening = false;
+
+  const handleScrollResize = () => {
+    if (popupElement && absoluteSelectionRect) {
+      updatePopupPosition();
+    }
+  };
+
+  // Simple throttle
+  let throttleTimeout = null;
+  const throttledHandleScrollResize = () => {
+    if (throttleTimeout) return;
+    throttleTimeout = setTimeout(() => {
+      handleScrollResize();
+      throttleTimeout = null;
+    }, 50);
+  };
 
   function removePopup() {
     if (popupElement && popupElement.parentNode) {
+      windowObj.removeEventListener('scroll', throttledHandleScrollResize, true);
+      windowObj.removeEventListener('resize', throttledHandleScrollResize, true);
+      isListening = false;
       popupElement.parentNode.removeChild(popupElement);
       popupElement = null;
       popupCtrl = null;
@@ -105,7 +126,6 @@ export function createPopupManager({ documentObj, windowObj }) {
       .vocab-popup {
         max-height: 300px;
         min-height: 120px;
-        min-width: 300px;
         overflow-y: auto;
       }
 
@@ -115,7 +135,7 @@ export function createPopupManager({ documentObj, windowObj }) {
         border-radius: 10px;
         padding: 12px;
         max-width: 380px;
-        min-width: 200px;
+        min-width: 150px;
         font-family: inherit;
         font-size: 16px;
         color: #222;
@@ -197,6 +217,60 @@ export function createPopupManager({ documentObj, windowObj }) {
         background-color: #f3f4f6;
         color: #4b5563;
       }
+
+      /* Details & Summary custom styles */
+      details.vocab-details {
+        margin-bottom: 8px;
+        border: 1px solid #f3f4f6;
+        border-radius: 8px;
+        padding: 8px;
+        background: #fff;
+      }
+      details.vocab-details summary {
+        cursor: pointer;
+        list-style: none;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+      }
+      details.vocab-details summary::-webkit-details-marker {
+        display: none;
+      }
+      details.vocab-details .vocab-details-label {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+        background: #e0e7ff;
+        color: #3730a3;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 8px;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      details.vocab-details .collapse-icon {
+        display: inline-block;
+        transition: transform 0.2s ease;
+        color: #9ca3af;
+        font-size: 10px;
+      }
+      details.vocab-details[open] .collapse-icon {
+        transform: rotate(90deg);
+      }
+      details.vocab-details .details-content {
+        margin-top: 8px;
+        color: #4b5563;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      details.vocab-details .details-content p {
+        margin: 0;
+      }
     `;
     shadow.appendChild(style);
     shadow.appendChild(popupContainer);
@@ -212,8 +286,8 @@ export function createPopupManager({ documentObj, windowObj }) {
     return popupElement;
   }
 
-  function updatePopupPosition(selectionRect) {
-    if (!popupElement || !selectionRect) return;
+  function updatePopupPosition() {
+    if (!popupElement || !absoluteSelectionRect) return;
 
     // Force reflow to ensure offsetWidth/offsetHeight are correct
     const popupWidth = popupElement.offsetWidth;
@@ -226,12 +300,12 @@ export function createPopupManager({ documentObj, windowObj }) {
     };
 
     // Compute position: always prefer below selection, fallback above if not enough space
-    let left = selectionRect.left + viewport.scrollX;
-    let top = selectionRect.bottom + viewport.scrollY + 8; // 8px margin below selection
+    let left = absoluteSelectionRect.left;
+    let top = absoluteSelectionRect.bottom + 8; // 8px margin below selection
 
     // If popup would overflow bottom, try above selection
     if (top + popupHeight > viewport.scrollY + viewport.height) {
-      const aboveTop = selectionRect.top + viewport.scrollY - popupHeight - 8;
+      const aboveTop = absoluteSelectionRect.top - popupHeight - 8;
       if (aboveTop >= viewport.scrollY) {
         top = aboveTop;
       } else {
@@ -239,6 +313,9 @@ export function createPopupManager({ documentObj, windowObj }) {
         top = viewport.scrollY + viewport.height - popupHeight - 8;
       }
     }
+
+    // Clamp top to viewport
+    if (top < viewport.scrollY) top = viewport.scrollY + 8;
 
     // Clamp left to viewport
     if (left + popupWidth > viewport.scrollX + viewport.width) {
@@ -251,7 +328,7 @@ export function createPopupManager({ documentObj, windowObj }) {
     popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
   }
 
-  function renderPopupContent(state, selectionRect) {
+  function renderPopupContent(state) {
     if (!popupElement) return;
     const shadow = popupElement._vocabShadow;
     const popupContainer = popupElement._vocabContainer;
@@ -390,47 +467,20 @@ export function createPopupManager({ documentObj, windowObj }) {
         }
         popupContainer.appendChild(pronContainer);
       } else if (item.type === 'definition') {
-        const defs = item.value;
-        if (Array.isArray(defs) && defs.length > 0) {
-          const firstDef = defs[0];
-          const moreDefs = defs.slice(1);
-
-          if (moreDefs.length === 0) {
-            popupContainer.appendChild(h('p', { className: 'vocab-popup-definition', innerHTML: firstDef }));
-          } else {
-            const moreContainer = h('div', {
-              className: 'more-definitions-container',
-              style: { display: 'none', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #eee' }
+        const defs = Array.isArray(item.value) ? item.value : [item.value];
+        defs.forEach(defHtml => {
+          if (defHtml) {
+            const defContainer = h('div', { className: 'vocab-popup-definition', innerHTML: defHtml });
+            // Add toggle event to all details elements within this definition
+            const detailsElements = defContainer.querySelectorAll('details.vocab-details');
+            detailsElements.forEach(details => {
+              details.addEventListener('toggle', () => {
+                updatePopupPosition();
+              });
             });
-
-            moreDefs.forEach(def => {
-              moreContainer.appendChild(h('div', { style: { marginBottom: '8px' }, innerHTML: def }));
-            });
-
-            const trigger = h('p', {
-              className: 'more-trigger',
-              style: { fontSize: '12px', textDecoration: 'underline', cursor: 'pointer', color: '#1677C9', textAlign: 'right', padding: '0 8px', marginTop: '4px' },
-              onClick: (e) => {
-                e.stopPropagation();
-                const isExpanded = moreContainer.style.display === 'block';
-                moreContainer.style.display = isExpanded ? 'none' : 'block';
-                trigger.textContent = isExpanded ? 'See more' : 'See less';
-                // Smart repositioning after height change
-                updatePopupPosition(selectionRect);
-              }
-            }, 'See more');
-
-            const defContainer = h('div', { className: 'vocab-popup-definition' },
-              h('span', { innerHTML: firstDef }),
-              moreContainer,
-              trigger
-            );
-
             popupContainer.appendChild(defContainer);
           }
-        } else if (typeof defs === 'string') {
-          popupContainer.appendChild(h('p', { className: 'vocab-popup-definition', innerHTML: defs }));
-        }
+        });
       } else if (item.type === 'title') {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
       } else if (item.type === 'message') {
@@ -453,12 +503,31 @@ export function createPopupManager({ documentObj, windowObj }) {
     });
 
     // Position the popup
-    updatePopupPosition(selectionRect);
+    updatePopupPosition();
   }
 
   function showPopup(state, selectionRect) {
+    if (selectionRect) {
+      absoluteSelectionRect = {
+        left: selectionRect.left + windowObj.scrollX,
+        top: selectionRect.top + windowObj.scrollY,
+        bottom: selectionRect.bottom + windowObj.scrollY,
+        right: selectionRect.right + windowObj.scrollX,
+        width: selectionRect.width,
+        height: selectionRect.height
+      };
+    }
+
     createPopup();
-    renderPopupContent(state, selectionRect);
+    renderPopupContent(state);
+
+    // Add scroll and resize listeners only once to ensure popup stays clamped to viewport
+    if (!isListening) {
+      windowObj.addEventListener('scroll', throttledHandleScrollResize, true);
+      windowObj.addEventListener('resize', throttledHandleScrollResize, true);
+      isListening = true;
+    }
+
     if (!popupCtrl) {
       popupCtrl = createPopupController({
         eventTarget: documentObj,
