@@ -37,6 +37,48 @@ export function createPopupManager({ documentObj, windowObj }) {
     // Style for shadow root
     const style = documentObj.createElement('style');
     style.textContent = `
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+
+      .skeleton {
+        background: #f6f7f8;
+        background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+        background-repeat: no-repeat;
+        background-size: 800px 100%;
+        display: inline-block;
+        position: relative;
+        animation-duration: 1.5s;
+        animation-fill-mode: forwards;
+        animation-iteration-count: infinite;
+        animation-name: shimmer;
+        animation-timing-function: linear;
+        border-radius: 4px;
+      }
+
+      .skeleton-headword {
+        height: 28px;
+        width: 60%;
+        margin-bottom: 12px;
+      }
+
+      .skeleton-pron {
+        height: 18px;
+        width: 40%;
+        margin-bottom: 16px;
+      }
+
+      .skeleton-def {
+        height: 14px;
+        width: 100%;
+        margin-bottom: 8px;
+      }
+
+      .skeleton-def.short {
+        width: 70%;
+      }
+
       .custom-definition-list .definition {
           font-size: 14px;
           margin-right: 10px;
@@ -57,6 +99,8 @@ export function createPopupManager({ documentObj, windowObj }) {
 
       .vocab-popup {
         max-height: 300px;
+        min-height: 120px;
+        min-width: 300px;
         overflow-y: auto;
       }
 
@@ -127,7 +171,7 @@ export function createPopupManager({ documentObj, windowObj }) {
     shadow.appendChild(style);
     shadow.appendChild(popupContainer);
     // Stop propagation for all relevant events
-    ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu'].forEach((evt) => {
+    ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'pointerdown'].forEach((evt) => {
       popupElement.addEventListener(evt, (e) => e.stopPropagation());
     });
     documentObj.body.appendChild(popupElement);
@@ -154,7 +198,12 @@ export function createPopupManager({ documentObj, windowObj }) {
         content = renderErrorContent(state.error);
       }
     } else if (state.status === 'loading') {
-      content = [{ type: 'message', value: 'Đang tra cứu...' }];
+      content = [
+        { type: 'skeleton', value: 'headword' },
+        { type: 'skeleton', value: 'pron' },
+        { type: 'skeleton', value: 'def' },
+        { type: 'skeleton', value: 'def-short' }
+      ];
     } else {
       content = [];
     }
@@ -190,7 +239,17 @@ export function createPopupManager({ documentObj, windowObj }) {
     }
 
     content.forEach((item, idx) => {
-      if (item.type === 'headword') {
+      if (item.type === 'skeleton') {
+        if (item.value === 'headword') {
+          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-headword' }));
+        } else if (item.value === 'pron') {
+          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-pron' }));
+        } else if (item.value === 'def') {
+          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def' }));
+        } else if (item.value === 'def-short') {
+          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
+        }
+      } else if (item.type === 'headword') {
         const cap = typeof item.value === 'string' && item.value.length > 0
           ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
           : item.value;
@@ -326,9 +385,9 @@ export function createPopupManager({ documentObj, windowObj }) {
       } else if (item.type === 'cta') {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
       } else if (item.type === 'attribution') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-attribution' }, item.value));
+        popupContainer.appendChild(h('div', { className: 'vocab-popup-attribution', innerHTML: item.value }));
       } else if (item.type === 'permission-disclosure') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-permission-disclosure' }, item.value));
+        popupContainer.appendChild(h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value }));
       }
     });
 

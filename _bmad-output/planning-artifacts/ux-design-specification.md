@@ -301,3 +301,24 @@ Defining experience của sản phẩm là: **“Highlight một từ tiếng An
   - Mọi trạng thái đều có nhãn text rõ
 - Motion:
   - Animation ngắn (`120–180ms`), giảm hiệu ứng nếu người dùng bật reduced motion
+
+## Detailed UX Refinements
+
+### 1. Skeleton Loading (Addressing Layout Shift)
+
+- **UX Goal:** Tránh giật khung hình (layout shift) gây mất tập trung khi chuyển từ trạng thái `loading` sang `success`.
+- **Implementation:**
+  - Ngay khi bôi đen từ, popup xuất hiện với khung kích thước tối thiểu cố định (`width: 300px`, `height: 120px`).
+  - Thay vì dòng chữ "Đang tra cứu...", hiển thị giao diện **Skeleton UI** (các khối chữ nhật màu xám nhạt `#E5E7EB` đến `#F3F4F6` đại diện cho text).
+  - Cấu trúc Skeleton mô phỏng chính xác kết quả thực: 1 khối to cho Headword (rộng 40%), 1 khối nhỏ cho Pronunciation (rộng 25%), 2 khối mỏng cho Definition (90% và 70%).
+  - Kèm hiệu ứng *shimmer* lướt sóng từ trái qua phải liên tục để tạo cảm giác hệ thống đang hoạt động tích cực.
+  - Khi dữ liệu trả về thực tế, các khối xương (skeleton) này sẽ được thay thế mượt mà (cross-fade hoặc swap ngay lập tức) mà không làm nhảy vị trí popup.
+
+### 2. Tương tác an toàn bên trong Popup (Safe Zone Event Isolation)
+
+- **UX Goal:** Đảm bảo người dùng có thể thoải mái thao tác (bôi đen, click, cuộn) bên trong popup mà không sợ vô tình làm đóng mất popup.
+- **Implementation:**
+  - **Event Isolation:** Toàn bộ Shadow DOM của popup phải sử dụng `stopPropagation()` đối với tất cả các sự kiện chuột cơ bản: `mousedown`, `mouseup`, `click`, `dblclick`, `contextmenu`, và đặc biệt là `pointerdown`.
+  - **Intentional Dismissal:** Popup chỉ được phép biến mất (dismiss) trong hai trường hợp thực sự có chủ ý:
+    - Người dùng bấm phím `Escape`.
+    - Người dùng có thao tác `pointerdown` (hoặc `click`) nằm **hoàn toàn bên ngoài** không gian của popup (vùng web tĩnh). Nếu người dùng bôi đen chữ từ bên trong popup kéo thả ra ngoài (`mouseup` bên ngoài), popup vẫn **không** được đóng.
