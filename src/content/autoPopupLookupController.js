@@ -20,6 +20,7 @@ export function createAutoPopupLookupController({
 
   let runtimeStarted = false;
   let autoPopupEnabled = true;
+  let darkMode = false;
   let unsubscribeSettingsStore = null;
   const listeners = new Set();
 
@@ -45,6 +46,7 @@ export function createAutoPopupLookupController({
   const emit = () => {
     const payload = {
       autoPopupEnabled,
+      darkMode,
     };
 
     for (const listener of listeners) {
@@ -52,8 +54,9 @@ export function createAutoPopupLookupController({
     }
   };
 
-  const applyAutoPopupEnabled = (enabled) => {
-    autoPopupEnabled = Boolean(enabled);
+  const applySettings = (settings) => {
+    autoPopupEnabled = Boolean(settings?.autoPopupEnabled ?? true);
+    darkMode = Boolean(settings?.darkMode ?? false);
 
     if (runtimeStarted) {
       selectionController.start();
@@ -74,11 +77,11 @@ export function createAutoPopupLookupController({
 
       if (typeof settingsStore.subscribe === 'function') {
         unsubscribeSettingsStore = settingsStore.subscribe((nextSettings) => {
-          applyAutoPopupEnabled(nextSettings?.autoPopupEnabled);
+          applySettings(nextSettings);
         });
       }
 
-      applyAutoPopupEnabled(loadedSettings?.autoPopupEnabled);
+      applySettings(loadedSettings);
     } catch (error) {
       runtimeStarted = false;
       unsubscribeSettingsStore?.();

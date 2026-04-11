@@ -20,12 +20,17 @@ async function bootstrapPopupRuntime({
   documentObj = globalThis.document,
 } = {}) {
   const toggleElement = documentObj.getElementById('auto-popup-toggle');
+  const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
   const statusElement = documentObj.getElementById('auto-popup-status');
   const attributionElement = documentObj.getElementById('attribution');
   const disclosureElement = documentObj.getElementById('disclosure');
 
   if (!toggleElement) {
     throw new Error('missing #auto-popup-toggle');
+  }
+
+  if (!darkModeToggleElement) {
+    throw new Error('missing #dark-mode-toggle');
   }
 
   if (attributionElement) {
@@ -41,24 +46,47 @@ async function bootstrapPopupRuntime({
   });
 
   let autoPopupEnabled = true;
+  let darkMode = false;
+
+  const updateBodyTheme = (isDark) => {
+    if (isDark) {
+      documentObj.body.classList.add('dark-mode');
+    } else {
+      documentObj.body.classList.remove('dark-mode');
+    }
+  };
 
   const autoPopupController = {
     async start() {
       const settings = await settingsStore.load();
       autoPopupEnabled = Boolean(settings?.autoPopupEnabled);
+      darkMode = Boolean(settings?.darkMode);
+      updateBodyTheme(darkMode);
+      darkModeToggleElement.checked = darkMode;
     },
     stop() {},
     isAutoPopupEnabled() {
       return autoPopupEnabled;
     },
+    isDarkMode() {
+      return darkMode;
+    },
     async setAutoPopupEnabled(enabled) {
       autoPopupEnabled = Boolean(enabled);
       await settingsStore.update({ autoPopupEnabled });
     },
+    async setDarkMode(enabled) {
+      darkMode = Boolean(enabled);
+      updateBodyTheme(darkMode);
+      await settingsStore.update({ darkMode });
+    },
     subscribe(listener) {
       return settingsStore.subscribe((nextSettings) => {
         autoPopupEnabled = Boolean(nextSettings?.autoPopupEnabled);
-        listener({ autoPopupEnabled });
+        darkMode = Boolean(nextSettings?.darkMode);
+        updateBodyTheme(darkMode);
+        darkModeToggleElement.checked = darkMode;
+        listener({ autoPopupEnabled, darkMode });
       });
     },
   };
@@ -82,6 +110,11 @@ async function bootstrapPopupRuntime({
     autoPopupController,
   });
 
+  const handleDarkModeChange = async () => {
+    await autoPopupController.setDarkMode(darkModeToggleElement.checked);
+  };
+  darkModeToggleElement.addEventListener('change', handleDarkModeChange);
+
   await panel.init();
   renderStatus(statusElement, autoPopupController.isAutoPopupEnabled());
 
@@ -92,6 +125,7 @@ async function bootstrapPopupRuntime({
   const destroy = () => {
     unsubscribe?.();
     panel.destroy();
+    darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
     settingsStore.destroy?.();
   };
 

@@ -4,6 +4,7 @@ export const USER_SETTINGS_STORAGE_KEY = 'user-settings';
 export const DEFAULT_USER_SETTINGS = Object.freeze({
   schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
   autoPopupEnabled: true,
+  darkMode: false,
 });
 
 function toBooleanOrNull(value) {
@@ -41,9 +42,13 @@ export function normalizeUserSettings(rawValue) {
   const normalizedAutoPopupEnabled =
     toBooleanOrNull(rawValue.autoPopupEnabled) ?? DEFAULT_USER_SETTINGS.autoPopupEnabled;
 
+  const normalizedDarkMode =
+    toBooleanOrNull(rawValue.darkMode) ?? DEFAULT_USER_SETTINGS.darkMode;
+
   return {
     schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
     autoPopupEnabled: normalizedAutoPopupEnabled,
+    darkMode: normalizedDarkMode,
   };
 }
 

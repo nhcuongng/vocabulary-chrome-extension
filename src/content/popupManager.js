@@ -280,6 +280,40 @@ export function createPopupManager({ documentObj, windowObj }) {
       details.vocab-details .details-content p {
         margin: 0;
       }
+
+      /* Dark mode styles */
+      .vocab-popup.dark-mode {
+        background: #1f2937;
+        color: #f3f4f6;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      .vocab-popup.dark-mode .vocab-popup-headword {
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-popup-pronunciation,
+      .vocab-popup.dark-mode .vocab-popup-audio-btn,
+      .vocab-popup.dark-mode .vocab-popup-search-suggestions,
+      .vocab-popup.dark-mode .details-content {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-popup-compliance-footer {
+        border-top-color: #374151;
+      }
+      .vocab-popup.dark-mode details.vocab-details {
+        background: #111827;
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode details.vocab-details summary {
+        color: #e5e7eb;
+      }
+      .vocab-popup.dark-mode details.vocab-details .vocab-details-label {
+        background: #1e3a8a;
+        color: #bfdbfe;
+      }
+      .vocab-popup.dark-mode .skeleton {
+        background: #374151;
+        background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%);
+      }
     `;
     shadow.appendChild(style);
     shadow.appendChild(popupContainer);
@@ -518,7 +552,7 @@ export function createPopupManager({ documentObj, windowObj }) {
     updatePopupPosition();
   }
 
-  function showPopup(state, selectionRect) {
+  function showPopup(state, selectionRect, { darkMode = false } = {}) {
     if (selectionRect) {
       absoluteSelectionRect = {
         left: selectionRect.left + windowObj.scrollX,
@@ -531,6 +565,14 @@ export function createPopupManager({ documentObj, windowObj }) {
     }
 
     createPopup();
+
+    const popupContainer = popupElement._vocabContainer;
+    if (darkMode) {
+      popupContainer.classList.add('dark-mode');
+    } else {
+      popupContainer.classList.remove('dark-mode');
+    }
+
     renderPopupContent(state);
 
     // Add scroll and resize listeners only once to ensure popup stays clamped to viewport

@@ -33,6 +33,7 @@ export async function bootstrapContentRuntime({
   const popupManager = createPopupManager({ documentObj, windowObj });
   let pendingTriggerRequest = null;
   let isUserInitiated = false;
+  let darkMode = false;
 
   const triggerIconManager = createTriggerIconManager({
     documentObj,
@@ -44,7 +45,7 @@ export async function bootstrapContentRuntime({
         const currentState = orchestrator.getState();
         if (currentState.status !== 'idle') {
           const selection = readSelectionSnapshot(windowObj);
-          popupManager.showPopup(currentState, selection.rect);
+          popupManager.showPopup(currentState, selection.rect, { darkMode });
         } else {
           orchestrator.runLookup(pendingTriggerRequest);
         }
@@ -80,7 +81,7 @@ export async function bootstrapContentRuntime({
 
         triggerIconManager.removeIcon();
         const selection = readSelectionSnapshot(windowObj);
-        popupManager.showPopup(state, selection.rect);
+        popupManager.showPopup(state, selection.rect, { darkMode });
       } else if (state.status === 'idle') {
         popupManager.removePopup();
       }
@@ -117,11 +118,12 @@ export async function bootstrapContentRuntime({
     },
   });
 
-  autoPopupController.subscribe(({ autoPopupEnabled }) => {
-    if (autoPopupEnabled) {
+  autoPopupController.subscribe((nextState) => {
+    if (nextState.autoPopupEnabled) {
       triggerIconManager.removeIcon();
       pendingTriggerRequest = null;
     }
+    darkMode = Boolean(nextState.darkMode);
   });
 
   await autoPopupController.start();
