@@ -25,5 +25,14 @@
   ],
   "host_permissions": [
     "https://www.vocabulary.com/*"
-  ]
+  ],
+  "commands": {
+    "open-quick-search": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+D",
+        "mac": "Command+Shift+D"
+      },
+      "description": "Mở ô tìm kiếm nhanh (Quick Search)"
+    }
+  }
 }

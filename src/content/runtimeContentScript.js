@@ -5,6 +5,7 @@ import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/c
 import { createLookupFlowOrchestrator } from './lookupFlowOrchestrator.js';
 import { createPopupManager } from './popupManager.js';
 import { createTriggerIconManager } from './triggerIconManager.js';
+import { createQuickSearchOverlay } from './quickSearchOverlay.js';
 
 export async function bootstrapContentRuntime({
   chromeApi = globalThis.chrome,
@@ -31,6 +32,30 @@ export async function bootstrapContentRuntime({
   });
 
   const popupManager = createPopupManager({ documentObj, windowObj });
+  
+  const lookupExecutor = async ({ headword }) => {
+    console.log('[VOCAB] lookupExecutor received headword:', headword);
+    if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
+      console.log('[VOCAB] lookupExecutor: invalid or empty headword');
+      return {
+        status: 'error',
+        error: { type: 'invalid-token', message: 'headword token is required' },
+      };
+    }
+    return new Promise((resolve) => {
+      chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: headword } }, (response) => {
+        console.log('[VOCAB] lookupExecutor got response:', response);
+        resolve(response);
+      });
+    });
+  };
+
+  const quickSearchOverlay = createQuickSearchOverlay({
+    documentObj,
+    windowObj,
+    lookupExecutor
+  });
+
   let pendingTriggerRequest = null;
   let isUserInitiated = false;
   let darkMode = false;
@@ -56,22 +81,7 @@ export async function bootstrapContentRuntime({
 
   // --- Orchestrator for lookup flow ---
   const orchestrator = createLookupFlowOrchestrator({
-    lookupExecutor: async ({ headword }) => {
-      console.log('[VOCAB] lookupExecutor received headword:', headword);
-      if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
-        console.log('[VOCAB] lookupExecutor: invalid or empty headword');
-        return {
-          status: 'error',
-          error: { type: 'invalid-token', message: 'headword token is required' },
-        };
-      }
-      return new Promise((resolve) => {
-        chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: headword } }, (response) => {
-          console.log('[VOCAB] lookupExecutor got response:', response);
-          resolve(response);
-        });
-      });
-    },
+    lookupExecutor,
     onStateChange: (state) => {
       const autoPopupEnabled = autoPopupController.isAutoPopupEnabled();
       if (state.status === 'success' || state.status === 'not-found' || state.status === 'error' || state.status === 'loading') {
@@ -126,6 +136,13 @@ export async function bootstrapContentRuntime({
     darkMode = Boolean(nextState.darkMode);
   });
 
+  // Listen for messages from background script
+  chromeApi.runtime.onMessage.addListener((message) => {
+    if (message?.type === 'TOGGLE_QUICK_SEARCH') {
+      quickSearchOverlay.toggle({ darkMode });
+    }
+  });
+
   await autoPopupController.start();
   console.log('[VOCAB] Content script started');
 
@@ -138,6 +155,7 @@ export async function bootstrapContentRuntime({
       settingsStore.destroy?.();
       popupManager.removePopup();
       triggerIconManager.removeIcon();
+      quickSearchOverlay.hide();
       pendingTriggerRequest = null;
       globalThis.__vocabularyExtensionContentRuntimeStarted = false;
     },

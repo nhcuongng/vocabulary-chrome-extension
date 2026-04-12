@@ -6,6 +6,19 @@ export function bootstrapServiceWorkerRuntime({
   messageHandler = createServiceWorkerLookupHandler(),
 } = {}) {
   const onMessage = chromeApi?.runtime?.onMessage;
+  const onCommand = chromeApi?.commands?.onCommand;
+
+  if (onCommand) {
+    onCommand.addListener((command) => {
+      if (command === 'open-quick-search') {
+        chromeApi.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id) {
+            chromeApi.tabs.sendMessage(tabs[0].id, { type: 'TOGGLE_QUICK_SEARCH' });
+          }
+        });
+      }
+    });
+  }
 
   if (!onMessage || typeof onMessage.addListener !== 'function') {
     return {
