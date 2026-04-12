@@ -198,6 +198,12 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       }, 400); // 400ms debounce
     });
 
+    // Prevent keyboard events from leaking to the host page
+    const stopProp = (e) => e.stopPropagation();
+    input.addEventListener('keydown', stopProp);
+    input.addEventListener('keyup', stopProp);
+    input.addEventListener('keypress', stopProp);
+
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         // Immediate search on Enter
