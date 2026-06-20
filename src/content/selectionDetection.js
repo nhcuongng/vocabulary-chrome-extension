@@ -29,7 +29,6 @@ export function normalizeSelectionText(value) {
 
 export function validateSelectionToken(text) {
   const result = validateMvpOneWordToken(text);
-  console.log('[VOCAB][selectionDetection] validateSelectionToken input:', text, 'result:', result);
 
   if (!result.isValid) {
     if (result.reasonCode === TOKEN_VALIDATION_REASON.EMPTY) {
@@ -124,7 +123,6 @@ export function buildLookupDecision({
   requestId,
 }) {
   const validation = validateSelectionToken(snapshot?.text);
-  console.log('[VOCAB][selectionDetection] buildLookupDecision snapshot:', snapshot, 'validation:', validation);
 
   if (validation.status !== LOOKUP_DECISION_STATUS.VALID) {
     return {
@@ -233,11 +231,9 @@ export function createSelectionDetectionController({
       requestId: `lookup-${nextRequestNumber++}`,
     });
 
-    console.log('[VOCAB][selectionDetection] Decision:', decision);
 
     if (decision.status === LOOKUP_DECISION_STATUS.VALID) {
       dedupeState = decision.nextDedupeState;
-      console.log('[VOCAB][selectionDetection] onLookupRequest called with:', decision.request);
       onLookupRequest(decision.request);
       return decision;
     }

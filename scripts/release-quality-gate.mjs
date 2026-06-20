@@ -136,7 +136,6 @@ async function runQualityGate() {
     return;
   }
 
-  console.log('✅ Quality gate passed. Evidence saved to docs/release-evidence/latest-release-readiness.md');
 }
 
 runQualityGate().catch((error) => {

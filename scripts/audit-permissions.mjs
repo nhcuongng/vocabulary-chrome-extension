@@ -14,19 +14,6 @@ async function loadManifest() {
 }
 
 function printReport(report) {
-  console.log('🔎 Permission/Disclosure Audit (manifest.json)');
-  console.log(`- isAligned: ${report.isAligned}`);
-  console.log(`- summary: ${report.summary}`);
-  console.log(`- policyPermissions: ${report.policyPermissions.join(', ') || '(none)'}`);
-  console.log(`- runtimePermissions: ${report.runtimePermissions.join(', ') || '(none)'}`);
-
-  if (report.unexpectedPermissions.length > 0) {
-    console.log(`- unexpectedPermissions: ${report.unexpectedPermissions.join(', ')}`);
-  }
-
-  if (report.missingDisclosureItems.length > 0) {
-    console.log(`- missingDisclosureItems: ${report.missingDisclosureItems.join(', ')}`);
-  }
 }
 
 async function run() {

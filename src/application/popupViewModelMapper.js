@@ -37,7 +37,6 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const pronunciation = parsedPayload?.pronunciation ?? '';
   const audio = parsedPayload?.audio || {};
   const definitions = normalizeDefinitions(parsedPayload?.definitions);
-  console.log("🚀 ~ mapParsedPayloadToPopupViewModel ~ definitions:", definitions, headword)
 
   if (!headword || !definitions || definitions.length === 0) {
     const token = headword || parsedPayload?.token || '';

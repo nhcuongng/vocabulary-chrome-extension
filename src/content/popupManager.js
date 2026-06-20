@@ -43,7 +43,6 @@ export function createPopupManager({ documentObj, windowObj }) {
       popupElement.parentNode.removeChild(popupElement);
       popupElement = null;
       popupCtrl = null;
-      console.log('[VOCAB] Popup removed from DOM');
     }
   }
 
@@ -325,7 +324,6 @@ export function createPopupManager({ documentObj, windowObj }) {
     // Attach shadow and container for later use
     popupElement._vocabShadow = shadow;
     popupElement._vocabContainer = popupContainer;
-    console.log('[VOCAB] Popup inserted into DOM (shadow)');
     return popupElement;
   }
 
@@ -588,7 +586,6 @@ export function createPopupManager({ documentObj, windowObj }) {
         popupElement,
         onClose: ({ reason }) => {
           removePopup();
-          console.log('[VOCAB] Popup closed', reason);
         },
         onOpen: () => {
           popupElement.focus();

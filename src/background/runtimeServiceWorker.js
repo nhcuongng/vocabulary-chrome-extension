@@ -31,11 +31,9 @@ export function bootstrapServiceWorkerRuntime({
     if (message?.type !== LOOKUP_MESSAGE_TYPE) {
       return false;
     }
-    console.log('[VOCAB][BG] Received lookup message', message);
     Promise.resolve()
       .then(() => messageHandler(message, sender))
       .then((result) => {
-        console.log('[VOCAB][BG] Lookup result', result);
         if (result !== null && result !== undefined) {
           sendResponse(result);
         }

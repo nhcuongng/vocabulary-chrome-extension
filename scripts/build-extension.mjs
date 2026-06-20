@@ -123,8 +123,6 @@ export async function build() {
 
   await writeFile(path.join(distDir, 'build-metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8');
 
-  console.log('✅ Build completed: dist/');
-  console.log('ℹ️ Load unpacked extension from dist/ in Chrome.');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

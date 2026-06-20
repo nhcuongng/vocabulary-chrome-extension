@@ -60,7 +60,5 @@ for (const target of watchTargets) {
   await startWatchingTarget(target);
 }
 
-console.log('👀 Watching src/, manifest.json, package.json ...');
-console.log('ℹ️ Press Ctrl+C to stop.');
 
 runBuild();

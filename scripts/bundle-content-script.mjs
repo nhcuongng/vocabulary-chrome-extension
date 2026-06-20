@@ -22,4 +22,3 @@ await build({
   logLevel: 'info',
 });
 
-console.log('✅ Bundled content script:', outfile);

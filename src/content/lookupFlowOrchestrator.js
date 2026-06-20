@@ -26,7 +26,6 @@ export function createLookupFlowOrchestrator({
   let currentRunId = 0;
 
   const setState = (state) => {
-    console.log('[VOCAB] Popup setState', state);
     currentState = state;
     onStateChange(state);
   };
@@ -47,9 +46,7 @@ export function createLookupFlowOrchestrator({
 
     let result;
     try {
-      console.log('[VOCAB] Call lookupExecutor', headword);
       result = await lookupExecutor({ headword });
-      console.log('[VOCAB] lookupExecutor result', result);
     } catch (error) {
       result = {
         status: 'error',

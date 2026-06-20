@@ -34,9 +34,7 @@ export async function bootstrapContentRuntime({
   const popupManager = createPopupManager({ documentObj, windowObj });
   
   const lookupExecutor = async ({ headword }) => {
-    console.log('[VOCAB] lookupExecutor received headword:', headword);
     if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
-      console.log('[VOCAB] lookupExecutor: invalid or empty headword');
       return {
         status: 'error',
         error: { type: 'invalid-token', message: 'headword token is required' },
@@ -44,7 +42,6 @@ export async function bootstrapContentRuntime({
     }
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: headword } }, (response) => {
-        console.log('[VOCAB] lookupExecutor got response:', response);
         resolve(response);
       });
     });
@@ -108,7 +105,6 @@ export async function bootstrapContentRuntime({
       triggerIconManager.removeIcon();
       pendingTriggerRequest = null;
       orchestrator.runLookup(request);
-      console.log('[VOCAB] onLookupRequest', request);
     },
     onTriggerIconRequest: (request) => {
       isUserInitiated = false;
@@ -116,7 +112,6 @@ export async function bootstrapContentRuntime({
       pendingTriggerRequest = request;
       triggerIconManager.showIcon(request.payload.selectionRect);
       orchestrator.runLookup(request);
-      console.log('[VOCAB] onTriggerIconRequest', request);
     },
     onInvalidSelection: (decision) => {
       if (decision.reasonCode === 'empty-selection') {
@@ -144,7 +139,6 @@ export async function bootstrapContentRuntime({
   });
 
   await autoPopupController.start();
-  console.log('[VOCAB] Content script started');
 
   globalThis.__vocabularyExtensionContentRuntimeStarted = true;
 
