@@ -5,7 +5,6 @@ import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/c
 import { createLookupFlowOrchestrator } from './lookupFlowOrchestrator.js';
 import { createPopupManager } from './popupManager.js';
 import { createTriggerIconManager } from './triggerIconManager.js';
-import { createQuickSearchOverlay } from './quickSearchOverlay.js';
 
 export async function bootstrapContentRuntime({
   chromeApi = globalThis.chrome,
@@ -46,12 +45,6 @@ export async function bootstrapContentRuntime({
       });
     });
   };
-
-  const quickSearchOverlay = createQuickSearchOverlay({
-    documentObj,
-    windowObj,
-    lookupExecutor
-  });
 
   let pendingTriggerRequest = null;
   let isUserInitiated = false;
@@ -131,13 +124,6 @@ export async function bootstrapContentRuntime({
     darkMode = Boolean(nextState.darkMode);
   });
 
-  // Listen for messages from background script
-  chromeApi.runtime.onMessage.addListener((message) => {
-    if (message?.type === 'TOGGLE_QUICK_SEARCH') {
-      quickSearchOverlay.toggle({ darkMode });
-    }
-  });
-
   await autoPopupController.start();
 
   globalThis.__vocabularyExtensionContentRuntimeStarted = true;
@@ -149,7 +135,6 @@ export async function bootstrapContentRuntime({
       settingsStore.destroy?.();
       popupManager.removePopup();
       triggerIconManager.removeIcon();
-      quickSearchOverlay.hide();
       pendingTriggerRequest = null;
       globalThis.__vocabularyExtensionContentRuntimeStarted = false;
     },
