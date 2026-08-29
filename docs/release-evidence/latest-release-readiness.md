@@ -1,6 +1,6 @@
 # Release readiness evidence
 
-- Generated at: 2026-08-29T16:04:00.148Z
+- Generated at: 2026-08-29T16:07:06.386Z
 - Release ready: true
 
 ## Quality gate steps
