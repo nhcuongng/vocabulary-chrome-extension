@@ -673,198 +673,79 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       return el;
     }
 
-    // 1. Render Header Bar: Search Toggle, Slide (5 words/slide) with Prev/Next, Close Button
+    // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Close Button
     const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
-    let displayWords = allHistoryWords;
-    if (isHistorySearching && historySearchQuery.trim()) {
-      const query = historySearchQuery.trim().toLowerCase();
-      displayWords = allHistoryWords.filter((w) => w.toLowerCase().includes(query));
-    }
-
     const ITEMS_PER_PAGE = 5;
-    const totalPages = Math.max(1, Math.ceil(displayWords.length / ITEMS_PER_PAGE));
+    const totalPages = Math.max(1, Math.ceil(allHistoryWords.length / ITEMS_PER_PAGE));
     if (currentSlideIndex >= totalPages) {
       currentSlideIndex = Math.max(0, totalPages - 1);
     }
     const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
-    const visibleWords = displayWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const visibleWords = allHistoryWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     const headerBar = h('div', { className: 'vocab-popup-header-bar' });
 
-    if (isHistorySearching) {
-      // Inline search mode
-      const searchBar = h('div', { className: 'vocab-history-search-bar' });
-      const searchInput = h('input', {
-        className: 'vocab-history-search-input',
-        type: 'text',
-        placeholder: 'Tìm trong lịch sử...',
-        value: historySearchQuery,
-        onInput: (e) => {
-          historySearchQuery = e.target.value;
-          currentSlideIndex = 0;
-          renderPopupContent(lastState);
-        },
-        onKeyDown: (e) => {
+    // Slide Navigation Wrapper (Prev Button + 5 Chips + Next Button)
+    if (visibleWords.length > 0) {
+      const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
+
+      const prevBtn = h('button', {
+        className: 'vocab-slide-nav-btn',
+        title: 'Slide trước',
+        disabled: currentSlideIndex <= 0,
+        innerHTML: prevSlideSVG,
+        onClick: (e) => {
           e?.stopPropagation?.();
-          if (e.key === 'Escape') {
-            isHistorySearching = false;
-            historySearchQuery = '';
+          if (currentSlideIndex > 0) {
+            currentSlideIndex--;
             renderPopupContent(lastState);
           }
         },
       });
 
-      const clearSearchBtn = h('button', {
-        className: 'vocab-history-search-clear-btn',
-        title: 'Đóng tìm kiếm',
-        innerHTML: closeSVG,
+      const slideContainer = h('div', { className: 'vocab-history-slide' });
+      visibleWords.forEach((word) => {
+        const chip = h(
+          'span',
+          {
+            className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
+            title: word,
+            onClick: (e) => {
+              e?.stopPropagation?.();
+              navigateToWord(word, { fromHistory: true });
+            },
+          },
+          word
+        );
+        slideContainer.appendChild(chip);
+      });
+
+      const nextBtn = h('button', {
+        className: 'vocab-slide-nav-btn',
+        title: 'Slide tiếp theo',
+        disabled: currentSlideIndex >= totalPages - 1,
+        innerHTML: nextSlideSVG,
         onClick: (e) => {
           e?.stopPropagation?.();
-          isHistorySearching = false;
-          historySearchQuery = '';
-          currentSlideIndex = 0;
-          renderPopupContent(lastState);
+          if (currentSlideIndex < totalPages - 1) {
+            currentSlideIndex++;
+            renderPopupContent(lastState);
+          }
         },
       });
 
-      searchBar.appendChild(searchInput);
-      searchBar.appendChild(clearSearchBtn);
-
-      // Also render filtered slide chips if any
-      if (visibleWords.length > 0) {
-        const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
-        const prevBtn = h('button', {
-          className: 'vocab-slide-nav-btn',
-          title: 'Slide trước',
-          disabled: currentSlideIndex <= 0,
-          innerHTML: prevSlideSVG,
-          onClick: (e) => {
-            e?.stopPropagation?.();
-            if (currentSlideIndex > 0) {
-              currentSlideIndex--;
-              renderPopupContent(lastState);
-            }
-          },
-        });
-        const slideContainer = h('div', { className: 'vocab-history-slide' });
-        visibleWords.forEach((word) => {
-          const chip = h(
-            'span',
-            {
-              className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
-              title: word,
-              onClick: (e) => {
-                e?.stopPropagation?.();
-                navigateToWord(word, { fromHistory: true });
-              },
-            },
-            word
-          );
-          slideContainer.appendChild(chip);
-        });
-        const nextBtn = h('button', {
-          className: 'vocab-slide-nav-btn',
-          title: 'Slide tiếp theo',
-          disabled: currentSlideIndex >= totalPages - 1,
-          innerHTML: nextSlideSVG,
-          onClick: (e) => {
-            e?.stopPropagation?.();
-            if (currentSlideIndex < totalPages - 1) {
-              currentSlideIndex++;
-              renderPopupContent(lastState);
-            }
-          },
-        });
-
-        sliderWrapper.appendChild(prevBtn);
-        sliderWrapper.appendChild(slideContainer);
-        sliderWrapper.appendChild(nextBtn);
-        searchBar.appendChild(sliderWrapper);
-      }
-
-      headerBar.appendChild(searchBar);
-      setTimeout(() => searchInput.focus(), 0);
+      sliderWrapper.appendChild(prevBtn);
+      sliderWrapper.appendChild(slideContainer);
+      sliderWrapper.appendChild(nextBtn);
+      headerBar.appendChild(sliderWrapper);
     } else {
-      // Normal slide mode
-      // 1. Search toggle icon button
-      if (allHistoryWords.length > 0) {
-        const searchToggleBtn = h('button', {
-          className: 'vocab-history-search-toggle-btn',
-          title: 'Tìm kiếm trong lịch sử',
-          innerHTML: searchSVG,
-          onClick: (e) => {
-            e?.stopPropagation?.();
-            isHistorySearching = true;
-            historySearchQuery = '';
-            currentSlideIndex = 0;
-            renderPopupContent(lastState);
-          },
-        });
-        headerBar.appendChild(searchToggleBtn);
-      }
-
-      // 2. Slide Navigation Wrapper (Prev Button + 5 Chips + Next Button)
-      if (visibleWords.length > 0) {
-        const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
-
-        const prevBtn = h('button', {
-          className: 'vocab-slide-nav-btn',
-          title: 'Slide trước',
-          disabled: currentSlideIndex <= 0,
-          innerHTML: prevSlideSVG,
-          onClick: (e) => {
-            e?.stopPropagation?.();
-            if (currentSlideIndex > 0) {
-              currentSlideIndex--;
-              renderPopupContent(lastState);
-            }
-          },
-        });
-
-        const slideContainer = h('div', { className: 'vocab-history-slide' });
-        visibleWords.forEach((word) => {
-          const chip = h(
-            'span',
-            {
-              className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
-              title: word,
-              onClick: (e) => {
-                e?.stopPropagation?.();
-                navigateToWord(word, { fromHistory: true });
-              },
-            },
-            word
-          );
-          slideContainer.appendChild(chip);
-        });
-
-        const nextBtn = h('button', {
-          className: 'vocab-slide-nav-btn',
-          title: 'Slide tiếp theo',
-          disabled: currentSlideIndex >= totalPages - 1,
-          innerHTML: nextSlideSVG,
-          onClick: (e) => {
-            e?.stopPropagation?.();
-            if (currentSlideIndex < totalPages - 1) {
-              currentSlideIndex++;
-              renderPopupContent(lastState);
-            }
-          },
-        });
-
-        sliderWrapper.appendChild(prevBtn);
-        sliderWrapper.appendChild(slideContainer);
-        sliderWrapper.appendChild(nextBtn);
-        headerBar.appendChild(sliderWrapper);
-      } else {
-        const emptySlide = h('div', { className: 'vocab-history-slide' });
-        headerBar.appendChild(emptySlide);
-      }
+      const emptySlide = h('div', { className: 'vocab-history-slide' });
+      headerBar.appendChild(emptySlide);
     }
 
-    // 3. Close button
+    // 2. Close button
     const closeBtn = h('button', {
       className: 'vocab-popup-close-btn',
       title: 'Đóng popup',
