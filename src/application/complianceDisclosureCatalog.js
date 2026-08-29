@@ -29,6 +29,10 @@ export const PERMISSION_DISCLOSURE_ITEMS = [
     permission: 'host:https://api.dictionaryapi.dev/*',
     rationale: 'Tra cứu định nghĩa và phát âm chuẩn tiếng Anh từ Free Dictionary API.',
   },
+  {
+    permission: 'host:https://translate.google.com/*',
+    rationale: 'Phát âm audio bản ngữ chuẩn tiếng Anh (US/UK).',
+  },
 ];
 
 function normalizePermissionName(permission) {

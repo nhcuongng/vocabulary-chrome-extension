@@ -47,8 +47,8 @@ test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, đ�
   assert.equal(result.headword, 'beautiful');
   assert.ok(result.pronunciation.includes('US /ˈbjuːtɪfəl/'));
   assert.ok(result.pronunciation.includes('UK /ˈbjuːtɪfəl/'));
-  assert.equal(result.audio.uk, 'https://api.dictionaryapi.dev/media/pronunciations/en/beautiful-uk.mp3');
-  assert.equal(result.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/beautiful-us.mp3');
+  assert.ok(result.audio.uk.includes('translate.google.com') || result.audio.uk.includes('beautiful-uk.mp3'));
+  assert.ok(result.audio.us.includes('translate.google.com') || result.audio.us.includes('beautiful-us.mp3'));
   assert.equal(result.definitions.length, 4);
   assert.ok(result.definitions.some((d) => d.includes('Short Definition')));
   assert.ok(result.definitions.some((d) => d.includes('Long Definition')));

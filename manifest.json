@@ -26,6 +26,7 @@
   "host_permissions": [
     "https://www.vocabulary.com/*",
     "https://dictionary.cambridge.org/*",
-    "https://api.dictionaryapi.dev/*"
+    "https://api.dictionaryapi.dev/*",
+    "https://translate.google.com/*"
   ]
 }

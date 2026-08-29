@@ -34,7 +34,12 @@ test('compliance catalog: disclosure summary nêu đúng mục đích quyền tr
 test('compliance catalog: audit phát hiện quyền dư thừa không có disclosure', () => {
   const aligned = auditManifestPermissions({
     permissions: ['activeTab', 'scripting', 'storage'],
-    hostPermissions: ['https://www.vocabulary.com/*', 'https://dictionary.cambridge.org/*', 'https://api.dictionaryapi.dev/*'],
+    hostPermissions: [
+      'https://www.vocabulary.com/*',
+      'https://dictionary.cambridge.org/*',
+      'https://api.dictionaryapi.dev/*',
+      'https://translate.google.com/*',
+    ],
   });
 
   const misaligned = auditManifestPermissions({
@@ -66,7 +71,12 @@ test('compliance catalog: thiếu disclosure item cũng phải fail alignment', 
 test('compliance catalog: build report trả về đầy đủ thông tin release review', () => {
   const alignedReport = buildManifestDisclosureAuditReport({
     permissions: ['activeTab', 'scripting', 'storage'],
-    hostPermissions: ['https://www.vocabulary.com/*', 'https://dictionary.cambridge.org/*', 'https://api.dictionaryapi.dev/*'],
+    hostPermissions: [
+      'https://www.vocabulary.com/*',
+      'https://dictionary.cambridge.org/*',
+      'https://api.dictionaryapi.dev/*',
+      'https://translate.google.com/*',
+    ],
   });
 
   assert.equal(alignedReport.isAligned, true);

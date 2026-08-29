@@ -78,6 +78,14 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
     ipaUs = ipaUk;
   }
 
+  const encodedHw = encodeURIComponent(headword || targetWord);
+  if (!audioUs || audioUs.includes('api.dictionaryapi.dev/media/')) {
+    audioUs = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${encodedHw}`;
+  }
+  if (!audioUk || audioUk.includes('api.dictionaryapi.dev/media/')) {
+    audioUk = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-GB&q=${encodedHw}`;
+  }
+
   const pronParts = [];
   if (ipaUs) pronParts.push(`US /${ipaUs}/`);
   if (ipaUk && (ipaUk !== ipaUs || audioUk || !ipaUs)) {

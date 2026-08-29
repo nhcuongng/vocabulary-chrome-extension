@@ -38,48 +38,75 @@ const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
 </svg>`;
 
 function speakWord(word, lang = 'en-US') {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = lang === 'uk' || lang === 'en-GB' ? 'en-GB' : 'en-US';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-      return true;
-    } catch (e) {
-      console.warn('SpeechSynthesis failed', e);
-    }
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return false;
   }
-  return false;
+
+  try {
+    const synth = window.speechSynthesis;
+    if (synth.paused) {
+      synth.resume();
+    }
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+    utterance.lang = targetLang;
+    utterance.rate = 0.9;
+
+    const voices = synth.getVoices() || [];
+    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    }
+
+    synth.speak(utterance);
+    return true;
+  } catch (e) {
+    console.warn('SpeechSynthesis error:', e);
+    return false;
+  }
 }
 
 function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
-  if (audioUrl) {
-    let cleanUrl = String(audioUrl).trim();
-    if (cleanUrl.startsWith('//')) {
-      cleanUrl = `https:${cleanUrl}`;
-    }
+  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+  const encodedWord = encodeURIComponent(fallbackWord || '');
 
-    try {
-      const audio = new Audio(cleanUrl);
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('Audio.play() failed, falling back to Web Speech API:', err);
-          if (fallbackWord) {
-            speakWord(fallbackWord, lang);
-          }
-        });
-        return;
-      }
-    } catch (err) {
-      console.warn('Audio construction failed, falling back to Web Speech API:', err);
-    }
+  const candidateUrls = [];
+  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
+    let cleanUrl = String(audioUrl).trim();
+    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
+    candidateUrls.push(cleanUrl);
   }
 
   if (fallbackWord) {
-    speakWord(fallbackWord, lang);
+    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
   }
+
+  let index = 0;
+  function tryPlayNext() {
+    if (index >= candidateUrls.length) {
+      if (fallbackWord) {
+        speakWord(fallbackWord, targetLang);
+      }
+      return;
+    }
+
+    const currentUrl = candidateUrls[index++];
+    try {
+      const audio = new Audio(currentUrl);
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          tryPlayNext();
+        });
+      }
+    } catch {
+      tryPlayNext();
+    }
+  }
+
+  tryPlayNext();
 }
 
 async function bootstrapPopupRuntime({
