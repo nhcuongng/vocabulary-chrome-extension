@@ -120,6 +120,108 @@
         align-items: center;
       }
 
+      .suggestions-area {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .suggestions-area:empty {
+        display: none;
+      }
+
+      .history-chip {
+        background: #f3f4f6;
+        color: #374151;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s;
+        border: 1px solid transparent;
+      }
+
+      .history-chip:hover {
+        background: #e0e7ff;
+        color: #3730a3;
+        border-color: #c7d2fe;
+      }
+
+      body.dark-mode .history-chip {
+        background: #374151;
+        color: #d1d5db;
+      }
+
+      body.dark-mode .history-chip:hover {
+        background: #1e3a8a;
+        color: #bfdbfe;
+      }
+
+      /* Word Family in popup action */
+      .vocab-word-family-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+      }
+
+      .vocab-family-chip {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .vocab-family-chip:hover {
+        background: #dcfce7;
+        color: #14532d;
+        border-color: #86efac;
+      }
+
+      .vocab-family-chip.disabled-inflection {
+        cursor: not-allowed;
+        opacity: 0.65;
+        background: #f3f4f6;
+        color: #6b7280;
+        border-color: #e5e7eb;
+      }
+
+      .vocab-family-chip.disabled-inflection:hover {
+        background: #f3f4f6;
+        color: #6b7280;
+        border-color: #e5e7eb;
+      }
+
+      body.dark-mode .vocab-family-chip {
+        background: #064e3b;
+        color: #a7f3d0;
+        border-color: #047857;
+      }
+
+      body.dark-mode .vocab-family-chip:hover {
+        background: #065f46;
+        color: #d1fae5;
+      }
+
+      body.dark-mode .vocab-family-chip.disabled-inflection {
+        background: #374151;
+        color: #9ca3af;
+        border-color: #4b5563;
+      }
+
+      body.dark-mode .vocab-family-chip.disabled-inflection:hover {
+        background: #374151;
+        color: #9ca3af;
+        border-color: #4b5563;
+      }
+
       .search-input {
         width: 100%;
         padding: 10px 36px 10px 12px;
@@ -453,6 +555,7 @@
             </svg>
           </button>
         </div>
+        <div id="vocab-search-suggestions" class="suggestions-area"></div>
       </div>
 
       <div id="vocab-search-results" class="results-container"></div>

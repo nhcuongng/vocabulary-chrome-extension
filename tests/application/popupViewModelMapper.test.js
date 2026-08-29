@@ -18,6 +18,19 @@ test('mapper: ánh xạ parsed payload sang popup view model theo thứ tự b�
   assert.equal(model.headword, 'hello');
   assert.equal(model.pronunciation, '/həˈloʊ/');
   assert.deepEqual(model.definitions, ['A greeting']);
+  assert.deepEqual(model.wordFamily, []);
+});
+
+test('mapper: ánh xạ wordFamily khi có trong parsedPayload', () => {
+  const model = mapParsedPayloadToPopupViewModel({
+    headword: 'create',
+    pronunciation: '/kriˈeɪt/',
+    definitions: ['To make something'],
+    wordFamily: [{ word: 'created' }, { word: 'creative' }],
+  });
+
+  assert.equal(model.state, 'success');
+  assert.deepEqual(model.wordFamily, [{ word: 'created' }, { word: 'creative' }]);
 });
 
 test('mapper: trả not-found state khi payload rỗng/null', () => {

@@ -19,8 +19,9 @@ function renderComplianceFooterContent() {
 
 export function renderSuccessContent(viewModel) {
   const definitions = viewModel.definitions || [];
+  const wordFamily = Array.isArray(viewModel.wordFamily) ? viewModel.wordFamily : [];
 
-  return [
+  const items = [
     { type: 'headword', value: viewModel?.headword ?? '' },
     {
       type: 'pronunciation',
@@ -31,8 +32,18 @@ export function renderSuccessContent(viewModel) {
       type: 'definition',
       value: definitions,
     },
-    ...renderComplianceFooterContent(),
   ];
+
+  if (wordFamily.length > 0) {
+    items.push({
+      type: 'word-family',
+      value: wordFamily,
+    });
+  }
+
+  items.push(...renderComplianceFooterContent());
+
+  return items;
 }
 
 export function renderNotFoundContent(viewModel = {}) {

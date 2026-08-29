@@ -1,6 +1,7 @@
 import { readSelectionSnapshot } from './selectionDetection.js';
 import { createAutoPopupLookupController } from './autoPopupLookupController.js';
 import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/chromeStorageSettingsAdapter.js';
+import { createChromeStorageHistoryAdapter } from '../infrastructure/adapters/chromeStorageHistoryAdapter.js';
 
 import { createLookupFlowOrchestrator } from './lookupFlowOrchestrator.js';
 import { createPopupManager } from './popupManager.js';
@@ -30,8 +31,12 @@ export async function bootstrapContentRuntime({
     storageChangeEvent: chromeApi.storage?.onChanged,
   });
 
-  const popupManager = createPopupManager({ documentObj, windowObj });
-  
+  const historyStore = createChromeStorageHistoryAdapter({
+    storageArea: chromeApi.storage?.local,
+    storageChangeEvent: chromeApi.storage?.onChanged,
+  });
+  await historyStore.load().catch(() => {});
+
   const lookupExecutor = async ({ headword }) => {
     if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
       return {
@@ -46,6 +51,21 @@ export async function bootstrapContentRuntime({
     });
   };
 
+  const handlePopupLookupWord = (word, { fromHistory = false } = {}) => {
+    isUserInitiated = true;
+    if (!fromHistory) {
+      historyStore.addSearchWord(word).catch(() => {});
+    }
+    orchestrator.runLookup({ payload: { token: word } });
+  };
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    onLookupWord: handlePopupLookupWord,
+    historyAdapter: historyStore,
+  });
+
   let pendingTriggerRequest = null;
   let isUserInitiated = false;
   let darkMode = false;
@@ -57,6 +77,8 @@ export async function bootstrapContentRuntime({
       if (pendingTriggerRequest) {
         isUserInitiated = true;
         triggerIconManager.removeIcon();
+        const token = pendingTriggerRequest.payload.token;
+        if (token) historyStore.addSearchWord(token).catch(() => {});
         const currentState = orchestrator.getState();
         if (currentState.status !== 'idle') {
           const selection = readSelectionSnapshot(windowObj);
@@ -97,6 +119,8 @@ export async function bootstrapContentRuntime({
       isUserInitiated = true;
       triggerIconManager.removeIcon();
       pendingTriggerRequest = null;
+      const token = request?.payload?.token;
+      if (token) historyStore.addSearchWord(token).catch(() => {});
       orchestrator.runLookup(request);
     },
     onTriggerIconRequest: (request) => {

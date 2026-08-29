@@ -48,3 +48,44 @@ test('parser adapter: trích xuất dữ liệu từ trang https://www.vocabular
   assert.ok(parsed.definitions.some(d => d.includes('Long Definition') && d.includes('Định nghĩa dài hơn')));
   assert.equal(parsed.hasCoreData, true);
 });
+
+test('parser adapter: trích xuất wordFamily từ thẻ <vcom:wordfamily>', () => {
+  const html = `
+    <h1 class="dynamictext">create</h1>
+    <div class="ipa-with-audio">
+      <div class="us-flag-icon"></div>
+      <span class="span-replace-h3">/kriˈeɪt/</span>
+    </div>
+    <div class="word-area">
+      <p class="short">bring into existence</p>
+    </div>
+    <vcom:wordfamily lang="en" word="create" data="[{&#034;word&#034;:&#034;created&#034;,&#034;hw&#034;:true,&#034;freq&#034;:89.9},{&#034;word&#034;:&#034;creative&#034;,&#034;hw&#034;:true,&#034;freq&#034;:8.4},{&#034;word&#034;:&#034;creation&#034;,&#034;hw&#034;:true,&#034;freq&#034;:10.9},{&#034;word&#034;:&#034;create&#034;,&#034;hw&#034;:true,&#034;freq&#034;:22.8}]">
+  `;
+
+  const parsed = parseVocabularyHtml(html);
+  assert.equal(parsed.headword, 'create');
+  assert.ok(Array.isArray(parsed.wordFamily));
+  assert.equal(parsed.wordFamily.length, 3); // excludes 'create' itself
+  // Sorted by freq: created (89.9), creation (10.9), creative (8.4)
+  assert.equal(parsed.wordFamily[0].word, 'created');
+  assert.equal(parsed.wordFamily[1].word, 'creation');
+  assert.equal(parsed.wordFamily[2].word, 'creative');
+});
+
+test('parser adapter: trả wordFamily rỗng an toàn khi không có thẻ <vcom:wordfamily>', () => {
+  const html = `
+    <h1 class="dynamictext">simple</h1>
+    <div class="ipa-with-audio">
+      <div class="us-flag-icon"></div>
+      <span class="span-replace-h3">/ˈsɪmpəl/</span>
+    </div>
+    <div class="word-area">
+      <p class="short">easy</p>
+    </div>
+  `;
+
+  const parsed = parseVocabularyHtml(html);
+  assert.equal(parsed.headword, 'simple');
+  assert.deepEqual(parsed.wordFamily, []);
+});
+
