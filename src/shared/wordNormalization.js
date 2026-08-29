@@ -14,7 +14,7 @@ export function normalizeWord(rawToken) {
     return '';
   }
 
-  const stripped = compact.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '');
+  const stripped = compact.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '');
   return stripped.toLowerCase();
 }
 

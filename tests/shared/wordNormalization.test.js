@@ -13,16 +13,21 @@ test('normalizeWord: strip punctuation ở biên và lowercase', () => {
   assert.equal(normalizeWord('co-op'), 'co-op');
 });
 
-test('validateMvpOneWordToken: từ chối multi-token và token không hợp lệ', () => {
-  const multi = validateMvpOneWordToken('hello world');
-  assert.equal(multi.isValid, false);
-  assert.equal(multi.reasonCode, TOKEN_VALIDATION_REASON.MULTI_TOKEN);
+test('validateMvpOneWordToken: chấp nhận từ ghép có gạch nối và nháy đơn', () => {
+  const hyphenated = validateMvpOneWordToken('well-known');
+  assert.equal(hyphenated.isValid, true);
+  assert.equal(hyphenated.normalizedToken, 'well-known');
 
-  const invalid = validateMvpOneWordToken('12345');
-  assert.equal(invalid.isValid, false);
-  assert.equal(invalid.reasonCode, TOKEN_VALIDATION_REASON.INVALID_CHARACTERS);
+  const multiHyphen = validateMvpOneWordToken('"state-of-the-art"');
+  assert.equal(multiHyphen.isValid, true);
+  assert.equal(multiHyphen.normalizedToken, 'state-of-the-art');
 
-  const valid = validateMvpOneWordToken("'Hello!'");
-  assert.equal(valid.isValid, true);
-  assert.equal(valid.normalizedToken, 'hello');
+  const apostrophe = validateMvpOneWordToken("don't");
+  assert.equal(apostrophe.isValid, true);
+  assert.equal(apostrophe.normalizedToken, "don't");
+
+  const underscore = validateMvpOneWordToken('word_123');
+  assert.equal(underscore.isValid, false);
+  assert.equal(underscore.reasonCode, TOKEN_VALIDATION_REASON.INVALID_CHARACTERS);
 });
+

@@ -165,7 +165,7 @@ export function parseCambridgeHtml(html) {
           liHtml += ` <span style="font-size: 11px; background: #e0e7ff; color: #3730a3; padding: 1px 5px; border-radius: 4px; margin-left: 4px; font-weight: 500;">${gwText}</span>`;
         }
         if (examples.length > 0) {
-          const exHtml = examples.map((eg) => `<div style="font-style: italic; color: var(--hint-color); margin-top: 3px; font-size: 13px;">• ${eg}</div>`).join('');
+          const exHtml = examples.map((eg) => `<div style="font-style: italic; color: var(--hint-color, #6b7280); margin-top: 3px; font-size: 13px;">• ${eg}</div>`).join('');
           liHtml += exHtml;
         }
         liHtml += `</li>`;

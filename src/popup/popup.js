@@ -12,6 +12,11 @@ import {
 } from '../content/popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
 import { isInflectedForm } from '../domain/wordInflectionUtils.js';
+import {
+  playAudioWithFallback,
+  speakWord,
+  stopCurrentAudio,
+} from '../domain/audioPlaybackUtils.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -36,78 +41,6 @@ const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
   <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
 </svg>`;
-
-function speakWord(word, lang = 'en-US') {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return false;
-  }
-
-  try {
-    const synth = window.speechSynthesis;
-    if (synth.paused) {
-      synth.resume();
-    }
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(word);
-    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-    utterance.lang = targetLang;
-    utterance.rate = 0.9;
-
-    const voices = synth.getVoices() || [];
-    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-    }
-
-    synth.speak(utterance);
-    return true;
-  } catch (e) {
-    console.warn('SpeechSynthesis error:', e);
-    return false;
-  }
-}
-
-function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
-  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-  const encodedWord = encodeURIComponent(fallbackWord || '');
-
-  const candidateUrls = [];
-  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
-    let cleanUrl = String(audioUrl).trim();
-    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
-    candidateUrls.push(cleanUrl);
-  }
-
-  if (fallbackWord) {
-    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
-  }
-
-  let index = 0;
-  function tryPlayNext() {
-    if (index >= candidateUrls.length) {
-      if (fallbackWord) {
-        speakWord(fallbackWord, targetLang);
-      }
-      return;
-    }
-
-    const currentUrl = candidateUrls[index++];
-    try {
-      const audio = new Audio(currentUrl);
-      const promise = audio.play();
-      if (promise !== undefined) {
-        promise.catch(() => {
-          tryPlayNext();
-        });
-      }
-    } catch {
-      tryPlayNext();
-    }
-  }
-
-  tryPlayNext();
-}
 
 async function bootstrapPopupRuntime({
   chromeApi = globalThis.chrome,
@@ -333,10 +266,12 @@ async function bootstrapPopupRuntime({
     const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
     visibleWords.forEach((word) => {
-      const chip = documentObj.createElement('span');
+      const chip = documentObj.createElement('button');
+      chip.type = 'button';
       chip.className = `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`;
       chip.textContent = word;
-      chip.title = word;
+      chip.title = `Search ${word}`;
+      chip.setAttribute('aria-label', `Search ${word}`);
       chip.addEventListener('click', (e) => {
         e.stopPropagation();
         if (searchInput) searchInput.value = word;
@@ -457,6 +392,7 @@ async function bootstrapPopupRuntime({
             h('button', {
               className: 'vocab-popup-audio-btn',
               title: 'US pronunciation',
+              ariaLabel: 'US pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -481,6 +417,7 @@ async function bootstrapPopupRuntime({
             h('button', {
               className: 'vocab-popup-audio-btn',
               title: 'UK pronunciation',
+              ariaLabel: 'UK pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -499,6 +436,7 @@ async function bootstrapPopupRuntime({
             h('button', {
               className: 'vocab-popup-audio-btn',
               title: 'Listen pronunciation',
+              ariaLabel: 'Listen pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -531,6 +469,7 @@ async function bootstrapPopupRuntime({
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
                 title: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
+                ariaLabel: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
                 disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
@@ -583,7 +522,8 @@ async function bootstrapPopupRuntime({
   }
 
   const lookupExecutor = async (word) => {
-    if (!word || typeof word !== 'string' || !/^\w+$/.test(word)) {
+    const cleanWord = typeof word === 'string' ? word.trim().toLowerCase() : '';
+    if (!cleanWord || !/^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
       return {
         status: 'error',
         error: { type: 'invalid-token', message: 'Invalid search token.' },
@@ -592,7 +532,7 @@ async function bootstrapPopupRuntime({
     const source = autoPopupController.getDictionarySource();
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
-        { type: 'LOOKUP_REQUEST', payload: { token: word, source } },
+        { type: 'LOOKUP_REQUEST', payload: { token: cleanWord, source } },
         (response) => {
           resolve(response);
         },

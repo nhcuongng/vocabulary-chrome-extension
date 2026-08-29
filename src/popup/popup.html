@@ -343,6 +343,7 @@
       }
 
       .vocab-history-chip {
+        font-family: inherit;
         background: #f3f4f6;
         color: #374151;
         font-size: 11px;
@@ -352,11 +353,15 @@
         white-space: nowrap;
         cursor: pointer;
         border: 1px solid transparent;
+        outline: none;
         transition: background-color 0.15s, color 0.15s;
         flex-shrink: 0;
         max-width: 90px;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .vocab-history-chip:hover {
@@ -583,6 +588,29 @@
         margin-top: 10px;
         font-size: 13px;
         color: var(--hint-color);
+      }
+
+      .vocab-popup-search-suggestions a,
+      .search-suggestion-link {
+        color: #1677C9;
+        text-decoration: underline;
+        font-weight: 500;
+        transition: color 0.15s ease;
+      }
+
+      .vocab-popup-search-suggestions a:hover,
+      .search-suggestion-link:hover {
+        color: #0d5ca0;
+      }
+
+      body.dark-mode .vocab-popup-search-suggestions a,
+      body.dark-mode .search-suggestion-link {
+        color: #60a5fa;
+      }
+
+      body.dark-mode .vocab-popup-search-suggestions a:hover,
+      body.dark-mode .search-suggestion-link:hover {
+        color: #93c5fd;
       }
 
       .vocab-popup-guidance-list {

@@ -2,6 +2,11 @@ import { createPopupController } from './popupController.js';
 import { renderSuccessContent, renderNotFoundContent, renderErrorContent } from './popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
 import { isInflectedForm } from '../domain/wordInflectionUtils.js';
+import {
+  playAudioWithFallback,
+  speakWord,
+  stopCurrentAudio,
+} from '../domain/audioPlaybackUtils.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -31,78 +36,6 @@ const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height
   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
 </svg>`;
-
-function speakWord(word, lang = 'en-US') {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return false;
-  }
-
-  try {
-    const synth = window.speechSynthesis;
-    if (synth.paused) {
-      synth.resume();
-    }
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(word);
-    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-    utterance.lang = targetLang;
-    utterance.rate = 0.9;
-
-    const voices = synth.getVoices() || [];
-    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-    }
-
-    synth.speak(utterance);
-    return true;
-  } catch (e) {
-    console.warn('SpeechSynthesis error:', e);
-    return false;
-  }
-}
-
-function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
-  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-  const encodedWord = encodeURIComponent(fallbackWord || '');
-
-  const candidateUrls = [];
-  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
-    let cleanUrl = String(audioUrl).trim();
-    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
-    candidateUrls.push(cleanUrl);
-  }
-
-  if (fallbackWord) {
-    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
-  }
-
-  let index = 0;
-  function tryPlayNext() {
-    if (index >= candidateUrls.length) {
-      if (fallbackWord) {
-        speakWord(fallbackWord, targetLang);
-      }
-      return;
-    }
-
-    const currentUrl = candidateUrls[index++];
-    try {
-      const audio = new Audio(currentUrl);
-      const promise = audio.play();
-      if (promise !== undefined) {
-        promise.catch(() => {
-          tryPlayNext();
-        });
-      }
-    } catch {
-      tryPlayNext();
-    }
-  }
-
-  tryPlayNext();
-}
 
 export function createPopupManager({
   documentObj,
@@ -549,6 +482,17 @@ export function createPopupManager({
         font-size: 13px;
         color: #4B5563;
       }
+      .vocab-popup-search-suggestions a,
+      .search-suggestion-link {
+        color: #1677C9;
+        text-decoration: underline;
+        font-weight: 500;
+        transition: color 0.15s ease;
+      }
+      .vocab-popup-search-suggestions a:hover,
+      .search-suggestion-link:hover {
+        color: #0d5ca0;
+      }
       .vocab-popup-guidance-list {
         margin: 8px 0;
       }
@@ -780,6 +724,14 @@ export function createPopupManager({
         background: #1e3a8a;
         color: #bfdbfe;
       }
+      .vocab-popup.dark-mode .vocab-popup-search-suggestions a,
+      .vocab-popup.dark-mode .search-suggestion-link {
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-popup-search-suggestions a:hover,
+      .vocab-popup.dark-mode .search-suggestion-link:hover {
+        color: #93c5fd;
+      }
       .vocab-popup.dark-mode .skeleton {
         background: #374151;
         background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%);
@@ -939,10 +891,12 @@ export function createPopupManager({
       const slideContainer = h('div', { className: 'vocab-history-slide' });
       visibleWords.forEach((word) => {
         const chip = h(
-          'span',
+          'button',
           {
+            type: 'button',
             className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
-            title: word,
+            title: `Tra cứu ${word}`,
+            ariaLabel: `Tra cứu ${word}`,
             onClick: (e) => {
               e?.stopPropagation?.();
               navigateToWord(word, { fromHistory: true });
@@ -1120,6 +1074,7 @@ export function createPopupManager({
           pronContainer.appendChild(
             h('button', {
               title: 'US pronunciation',
+              ariaLabel: 'US pronunciation',
               className: 'vocab-popup-audio-btn',
               innerHTML: speakerSVG,
               onClick: (e) => {
@@ -1144,6 +1099,7 @@ export function createPopupManager({
           pronContainer.appendChild(
             h('button', {
               title: 'UK pronunciation',
+              ariaLabel: 'UK pronunciation',
               className: 'vocab-popup-audio-btn',
               innerHTML: speakerSVG,
               onClick: (e) => {
@@ -1162,6 +1118,7 @@ export function createPopupManager({
           pronContainer.appendChild(
             h('button', {
               title: 'Listen pronunciation',
+              ariaLabel: 'Listen pronunciation',
               className: 'vocab-popup-audio-btn',
               innerHTML: speakerSVG,
               onClick: (e) => {
@@ -1209,6 +1166,7 @@ export function createPopupManager({
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
                 title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                ariaLabel: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
                 disabled: isInflected,
                 onClick: (e) => {
                   e?.stopPropagation?.();
