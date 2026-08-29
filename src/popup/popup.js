@@ -19,9 +19,23 @@ function renderStatus(targetElement, enabled) {
   }
 
   targetElement.textContent = enabled
-    ? 'Auto-popup đang bật: bôi đen từ để tra cứu ngay.'
-    : 'Auto-popup đang tắt: bạn có thể bật lại bất cứ lúc nào.';
+    ? 'Auto-popup is enabled: select text on pages to look up immediately.'
+    : 'Auto-popup is disabled: you can enable it anytime.';
 }
+
+const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="15 18 9 12 15 6"></polyline>
+</svg>`;
+
+const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="9 18 15 12 9 6"></polyline>
+</svg>`;
+
+const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>`;
 
 async function bootstrapPopupRuntime({
   chromeApi = globalThis.chrome,
@@ -35,8 +49,10 @@ async function bootstrapPopupRuntime({
   const disclosureElement = documentObj.getElementById('disclosure');
   const searchInput = documentObj.getElementById('vocab-search-input');
   const searchClearBtn = documentObj.getElementById('vocab-search-clear');
-  const searchSuggestionsContainer = documentObj.getElementById('vocab-search-suggestions');
+  const historySliderContainer = documentObj.getElementById('vocab-history-slider-wrapper');
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
+  const sourceMenuBtn = documentObj.getElementById('vocab-source-menu-btn');
+  const sourceMenuPopover = documentObj.getElementById('vocab-source-menu-popover');
 
   if (!toggleElement) {
     throw new Error('missing #auto-popup-toggle');
@@ -67,6 +83,9 @@ async function bootstrapPopupRuntime({
   let autoPopupEnabled = true;
   let darkMode = false;
   let dictionarySource = 'auto';
+  let currentSlideIndex = 0;
+  const ITEMS_PER_PAGE = 5;
+  let isSourceMenuOpen = false;
 
   const updateBodyTheme = (isDark) => {
     if (isDark) {
@@ -76,13 +95,16 @@ async function bootstrapPopupRuntime({
     }
   };
 
-  const updateSourcePillsUI = (source) => {
-    const pills = documentObj.querySelectorAll('.vocab-source-pill');
-    pills.forEach((p) => {
-      if (p.getAttribute('data-source') === source) {
-        p.classList.add('active');
+  const updateSourceMenuUI = (source) => {
+    if (dictionarySourceSelect) {
+      dictionarySourceSelect.value = source;
+    }
+    const menuItems = documentObj.querySelectorAll('#vocab-source-menu-popover .vocab-source-menu-item');
+    menuItems.forEach((item) => {
+      if (item.getAttribute('data-source') === source) {
+        item.classList.add('active');
       } else {
-        p.classList.remove('active');
+        item.classList.remove('active');
       }
     });
   };
@@ -95,10 +117,7 @@ async function bootstrapPopupRuntime({
       dictionarySource = settings?.dictionarySource || 'auto';
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
-      if (dictionarySourceSelect) {
-        dictionarySourceSelect.value = dictionarySource;
-      }
-      updateSourcePillsUI(dictionarySource);
+      updateSourceMenuUI(dictionarySource);
     },
     stop() {},
     isAutoPopupEnabled() {
@@ -121,10 +140,7 @@ async function bootstrapPopupRuntime({
     },
     async setDictionarySource(source) {
       dictionarySource = source || 'auto';
-      if (dictionarySourceSelect) {
-        dictionarySourceSelect.value = dictionarySource;
-      }
-      updateSourcePillsUI(dictionarySource);
+      updateSourceMenuUI(dictionarySource);
       await settingsStore.update({ dictionarySource });
     },
     subscribe(listener) {
@@ -134,10 +150,7 @@ async function bootstrapPopupRuntime({
         dictionarySource = nextSettings?.dictionarySource || 'auto';
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
-        if (dictionarySourceSelect) {
-          dictionarySourceSelect.value = dictionarySource;
-        }
-        updateSourcePillsUI(dictionarySource);
+        updateSourceMenuUI(dictionarySource);
         listener({ autoPopupEnabled, darkMode, dictionarySource });
       });
     },
@@ -153,7 +166,7 @@ async function bootstrapPopupRuntime({
         });
       }
     } catch {
-      // Best-effort runtime bootstrap: popup vẫn hoạt động dù inject thất bại.
+      // Best-effort runtime bootstrap: popup still works even if injection fails.
     }
   }
 
@@ -167,30 +180,36 @@ async function bootstrapPopupRuntime({
   };
   darkModeToggleElement.addEventListener('change', handleDarkModeChange);
 
-  const handleSourceChange = async () => {
-    if (!dictionarySourceSelect) return;
-    await autoPopupController.setDictionarySource(dictionarySourceSelect.value);
-    const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
-    if (currentWord) {
-      performSearch(currentWord);
-    }
-  };
-  if (dictionarySourceSelect) {
-    dictionarySourceSelect.addEventListener('change', handleSourceChange);
-  }
-
-  const sourcePillButtons = documentObj.querySelectorAll('#vocab-source-pills-bar .vocab-source-pill');
-  sourcePillButtons.forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
+  // Source popover event listeners
+  if (sourceMenuBtn && sourceMenuPopover) {
+    sourceMenuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const nextSource = btn.getAttribute('data-source');
-      await autoPopupController.setDictionarySource(nextSource);
-      const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
-      if (currentWord) {
-        performSearch(currentWord);
+      isSourceMenuOpen = !isSourceMenuOpen;
+      sourceMenuPopover.style.display = isSourceMenuOpen ? 'flex' : 'none';
+    });
+
+    documentObj.addEventListener('click', (e) => {
+      if (!sourceMenuBtn.contains(e.target) && !sourceMenuPopover.contains(e.target)) {
+        sourceMenuPopover.style.display = 'none';
+        isSourceMenuOpen = false;
       }
     });
-  });
+
+    const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
+    menuItems.forEach((item) => {
+      item.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const nextSource = item.getAttribute('data-source');
+        sourceMenuPopover.style.display = 'none';
+        isSourceMenuOpen = false;
+        await autoPopupController.setDictionarySource(nextSource);
+        const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (currentWord) {
+          performSearch(currentWord);
+        }
+      });
+    });
+  }
 
   await panel.init();
   renderStatus(statusElement, autoPopupController.isAutoPopupEnabled());
@@ -199,28 +218,79 @@ async function bootstrapPopupRuntime({
     renderStatus(statusElement, nextState?.autoPopupEnabled);
   });
 
-  const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-  </svg>`;
+  const renderHistorySlider = (query = '') => {
+    if (!historySliderContainer) return;
+    historySliderContainer.replaceChildren();
 
-  const updateSuggestions = (query = '') => {
-    if (!searchSuggestionsContainer) return;
-    searchSuggestionsContainer.replaceChildren();
-    const suggestions = historyStore.getSearchSuggestions(query, 5);
-    suggestions.forEach((word) => {
-      const chip = documentObj.createElement('button');
-      chip.className = 'history-chip';
+    let allWords = [];
+    if (query) {
+      allWords = historyStore.getSearchSuggestions(query, 50);
+    } else {
+      allWords = historyStore.getRecentSearchWords(50);
+    }
+
+    if (!allWords || allWords.length === 0) {
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(allWords.length / ITEMS_PER_PAGE));
+    if (currentSlideIndex >= totalPages) {
+      currentSlideIndex = Math.max(0, totalPages - 1);
+    }
+
+    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
+    const visibleWords = allWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    const prevBtn = documentObj.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'vocab-slide-nav-btn';
+    prevBtn.title = 'Previous slide';
+    prevBtn.disabled = currentSlideIndex <= 0;
+    prevBtn.innerHTML = prevSlideSVG;
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
+      }
+    });
+
+    const slideDiv = documentObj.createElement('div');
+    slideDiv.className = 'vocab-history-slide';
+
+    const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    visibleWords.forEach((word) => {
+      const chip = documentObj.createElement('span');
+      chip.className = `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`;
       chip.textContent = word;
+      chip.title = word;
       chip.addEventListener('click', (e) => {
         e.stopPropagation();
         if (searchInput) searchInput.value = word;
         performSearch(word);
-        searchSuggestionsContainer.replaceChildren();
+        renderHistorySlider(word);
       });
-      searchSuggestionsContainer.appendChild(chip);
+      slideDiv.appendChild(chip);
     });
+
+    const nextBtn = documentObj.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'vocab-slide-nav-btn';
+    nextBtn.title = 'Next slide';
+    nextBtn.disabled = currentSlideIndex >= totalPages - 1;
+    nextBtn.innerHTML = nextSlideSVG;
+    nextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentSlideIndex < totalPages - 1) {
+        currentSlideIndex++;
+        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
+      }
+    });
+
+    historySliderContainer.appendChild(prevBtn);
+    historySliderContainer.appendChild(slideDiv);
+    historySliderContainer.appendChild(nextBtn);
   };
 
   function renderState(state, container) {
@@ -302,6 +372,7 @@ async function bootstrapPopupRuntime({
             pronContainer.appendChild(
               h('button', {
                 className: 'vocab-popup-audio-btn',
+                title: 'US pronunciation',
                 innerHTML: speakerSVG,
                 onClick: (e) => {
                   e.stopPropagation();
@@ -318,6 +389,7 @@ async function bootstrapPopupRuntime({
             pronContainer.appendChild(
               h('button', {
                 className: 'vocab-popup-audio-btn',
+                title: 'UK pronunciation',
                 innerHTML: speakerSVG,
                 onClick: (e) => {
                   e.stopPropagation();
@@ -352,14 +424,14 @@ async function bootstrapPopupRuntime({
               'button',
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
-                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                title: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
                 disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
                   if (isInflected) return;
                   if (searchInput) searchInput.value = famWord;
                   performSearch(famWord);
-                  if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();
+                  renderHistorySlider(famWord);
                 },
               },
               famWord
@@ -408,7 +480,7 @@ async function bootstrapPopupRuntime({
     if (!word || typeof word !== 'string' || !/^\w+$/.test(word)) {
       return {
         status: 'error',
-        error: { type: 'invalid-token', message: 'Từ tìm kiếm không hợp lệ.' },
+        error: { type: 'invalid-token', message: 'Invalid search token.' },
       };
     }
     const source = autoPopupController.getDictionarySource();
@@ -459,7 +531,7 @@ async function bootstrapPopupRuntime({
   const handleInput = () => {
     const value = searchInput.value.trim().toLowerCase();
     clearTimeout(debounceTimer);
-    updateSuggestions(value);
+    renderHistorySlider(value);
 
     if (!value) {
       performSearch('');
@@ -474,7 +546,7 @@ async function bootstrapPopupRuntime({
   const handleClear = () => {
     searchInput.value = '';
     performSearch('');
-    updateSuggestions('');
+    renderHistorySlider('');
     searchInput.focus();
   };
 
@@ -484,14 +556,13 @@ async function bootstrapPopupRuntime({
       if (value) {
         clearTimeout(debounceTimer);
         performSearch(value);
-        if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();
       }
     }
   };
 
   const handleFocus = () => {
     const value = searchInput.value.trim().toLowerCase();
-    updateSuggestions(value);
+    renderHistorySlider(value);
   };
 
   if (searchInput) {
@@ -505,16 +576,13 @@ async function bootstrapPopupRuntime({
 
   if (searchInput) {
     searchInput.focus();
-    updateSuggestions('');
+    renderHistorySlider('');
   }
 
   const destroy = () => {
     unsubscribe?.();
     panel.destroy();
     darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
-    if (dictionarySourceSelect) {
-      dictionarySourceSelect.removeEventListener('change', handleSourceChange);
-    }
     if (searchInput) {
       searchInput.removeEventListener('input', handleInput);
       searchInput.removeEventListener('keydown', handleKeyDown);
