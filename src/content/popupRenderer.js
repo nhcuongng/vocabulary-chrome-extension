@@ -28,6 +28,10 @@ export function renderSuccessContent(viewModel) {
       value: viewModel?.pronunciation ?? '',
       audio: viewModel?.audio || {},
     },
+    {
+      type: 'definition',
+      value: definitions,
+    },
   ];
 
   if (wordFamily.length > 0) {
@@ -36,11 +40,6 @@ export function renderSuccessContent(viewModel) {
       value: wordFamily,
     });
   }
-
-  items.push({
-    type: 'definition',
-    value: definitions,
-  });
 
   items.push(...renderComplianceFooterContent());
 

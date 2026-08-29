@@ -270,11 +270,11 @@ async function bootstrapPopupRuntime({
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {
-          const details = h('details', { className: 'vocab-details', open: '' });
+          const details = h('details', { className: 'vocab-details' });
           const summary = h(
             'summary',
             {},
-            h('span', { className: 'vocab-details-label' }, '✭ Word Family'),
+            h('span', { className: 'vocab-details-label' }, `✭ Word Family (${familyList.length})`),
             h('span', { className: 'collapse-icon' }, '▶')
           );
           const contentDiv = h('div', { className: 'details-content' });

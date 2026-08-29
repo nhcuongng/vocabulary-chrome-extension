@@ -13,12 +13,17 @@ const closeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
   <line x1="6" y1="6" x2="18" y2="18"></line>
 </svg>`;
 
-const backSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M19 12H5M12 19l-7-7 7-7"/>
+const searchSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="11" cy="11" r="8"></circle>
+  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 </svg>`;
 
-const forwardSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M5 12h14M12 5l7 7-7 7"/>
+const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="15 18 9 12 15 6"></polyline>
+</svg>`;
+
+const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="9 18 15 12 9 6"></polyline>
 </svg>`;
 
 export function createPopupManager({ documentObj, windowObj, onLookupWord, historyAdapter } = {}) {
@@ -26,9 +31,11 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
   let popupCtrl = null;
   let absoluteSelectionRect = null;
   let isListening = false;
+  let lastState = null;
 
-  let navigationStack = [];
-  let currentIndex = -1;
+  let currentSlideIndex = 0;
+  let isHistorySearching = false;
+  let historySearchQuery = '';
 
   const handleScrollResize = () => {
     if (popupElement && absoluteSelectionRect) {
@@ -53,8 +60,10 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       popupElement.parentNode.removeChild(popupElement);
       popupElement = null;
       popupCtrl = null;
-      navigationStack = [];
-      currentIndex = -1;
+      lastState = null;
+      currentSlideIndex = 0;
+      isHistorySearching = false;
+      historySearchQuery = '';
     }
   }
 
@@ -141,57 +150,72 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         transition: opacity 0.15s;
       }
 
-      /* Header Bar & Navigation */
+      /* Header Bar & Slide Navigation */
       .vocab-popup-header-bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 6px;
         margin-bottom: 10px;
         padding-bottom: 6px;
         border-bottom: 1px solid #f3f4f6;
       }
 
-      .vocab-nav-group {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-shrink: 0;
-      }
-
-      .vocab-nav-btn {
+      .vocab-history-search-toggle-btn {
         background: none;
         border: 1px solid #e5e7eb;
         border-radius: 4px;
         cursor: pointer;
-        padding: 3px 6px;
-        color: #4b5563;
+        padding: 3px 5px;
+        color: #6b7280;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
         transition: background-color 0.15s, color 0.15s;
       }
-      .vocab-nav-btn:hover:not(:disabled) {
+      .vocab-history-search-toggle-btn:hover {
         background-color: #f3f4f6;
         color: #111827;
       }
-      .vocab-nav-btn:disabled {
-        opacity: 0.35;
+
+      .vocab-history-slider-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-slide-nav-btn {
+        background: none;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 2px 4px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .vocab-slide-nav-btn:hover:not(:disabled) {
+        background-color: #f3f4f6;
+        color: #111827;
+      }
+      .vocab-slide-nav-btn:disabled {
+        opacity: 0.25;
         cursor: not-allowed;
-        border-color: #f3f4f6;
       }
 
       .vocab-history-slide {
         display: flex;
         align-items: center;
-        gap: 5px;
-        overflow-x: auto;
-        scrollbar-width: none;
+        gap: 4px;
+        overflow: hidden;
         flex: 1;
         min-width: 0;
-      }
-      .vocab-history-slide::-webkit-scrollbar {
-        display: none;
       }
 
       .vocab-history-chip {
@@ -199,13 +223,16 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #374151;
         font-size: 11px;
         font-weight: 500;
-        padding: 2px 8px;
+        padding: 2px 7px;
         border-radius: 12px;
         white-space: nowrap;
         cursor: pointer;
         border: 1px solid transparent;
         transition: background-color 0.15s, color 0.15s;
         flex-shrink: 0;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .vocab-history-chip:hover {
         background: #e0e7ff;
@@ -216,6 +243,55 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #1d4ed8;
         border-color: #93c5fd;
         font-weight: 600;
+      }
+
+      /* Search History Inline Bar */
+      .vocab-history-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-history-search-input {
+        flex: 1;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 12px;
+        outline: none;
+        background: #f9fafb;
+        color: #111827;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .vocab-history-search-input:focus {
+        border-color: #1677C9;
+        background: #fff;
+      }
+
+      .vocab-history-search-clear-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+      .vocab-history-search-clear-btn:hover {
+        color: #4b5563;
+      }
+
+      .vocab-history-empty {
+        font-size: 11px;
+        color: #9ca3af;
+        font-style: italic;
+        padding: 0 4px;
       }
 
       .vocab-popup-close-btn {
@@ -392,17 +468,20 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       .vocab-popup.dark-mode .vocab-popup-header-bar {
         border-bottom-color: #374151;
       }
-      .vocab-popup.dark-mode .vocab-nav-btn {
+      .vocab-popup.dark-mode .vocab-history-search-toggle-btn {
         border-color: #4b5563;
-        color: #d1d5db;
+        color: #9ca3af;
       }
-      .vocab-popup.dark-mode .vocab-nav-btn:hover:not(:disabled) {
+      .vocab-popup.dark-mode .vocab-history-search-toggle-btn:hover {
+        background-color: #374151;
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-slide-nav-btn {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-slide-nav-btn:hover:not(:disabled) {
         background-color: #374151;
         color: #fff;
-      }
-      .vocab-popup.dark-mode .vocab-nav-btn:disabled {
-        border-color: #374151;
-        color: #6b7280;
       }
       .vocab-popup.dark-mode .vocab-history-chip {
         background: #374151;
@@ -416,6 +495,11 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         background: #1e3a8a;
         color: #93c5fd;
         border-color: #3b82f6;
+      }
+      .vocab-popup.dark-mode .vocab-history-search-input {
+        background: #111827;
+        border-color: #4b5563;
+        color: #f3f4f6;
       }
       .vocab-popup.dark-mode .vocab-family-chip {
         background: #064e3b;
@@ -499,23 +583,19 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
     popupElement.style.maxWidth = `${Math.min(390, viewport.width - 16)}px`;
   }
 
-  function navigateToWord(word) {
+  function navigateToWord(word, { fromHistory = false } = {}) {
     if (!word || typeof word !== 'string') return;
     const normalized = word.trim().toLowerCase();
     if (!normalized) return;
 
-    if (navigationStack[currentIndex] !== normalized) {
-      navigationStack = [...navigationStack.slice(0, currentIndex + 1), normalized];
-      currentIndex = navigationStack.length - 1;
-    }
-
     if (typeof onLookupWord === 'function') {
-      onLookupWord(normalized);
+      onLookupWord(normalized, { fromHistory });
     }
   }
 
   function renderPopupContent(state) {
     if (!popupElement) return;
+    lastState = state;
     const popupContainer = popupElement._vocabContainer;
     let viewModel = null;
     let content = [];
@@ -570,71 +650,198 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       return el;
     }
 
-    // 1. Render Header Bar: Back, Forward, Slide history, Close
-    const currentWord = (viewModel?.headword || state.headword || navigationStack[currentIndex] || '').toLowerCase();
-    const recentWords = historyAdapter?.getRecentSearchWords?.(5) ?? navigationStack.slice(-5);
+    // 1. Render Header Bar: Search Toggle, Slide (5 words/slide) with Prev/Next, Close Button
+    const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
+    const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
+
+    let displayWords = allHistoryWords;
+    if (isHistorySearching && historySearchQuery.trim()) {
+      const query = historySearchQuery.trim().toLowerCase();
+      displayWords = allHistoryWords.filter((w) => w.toLowerCase().includes(query));
+    }
+
+    const ITEMS_PER_PAGE = 5;
+    const totalPages = Math.max(1, Math.ceil(displayWords.length / ITEMS_PER_PAGE));
+    if (currentSlideIndex >= totalPages) {
+      currentSlideIndex = Math.max(0, totalPages - 1);
+    }
+    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
+    const visibleWords = displayWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     const headerBar = h('div', { className: 'vocab-popup-header-bar' });
 
-    // Nav buttons
-    const navGroup = h('div', { className: 'vocab-nav-group' });
-    const backBtn = h('button', {
-      className: 'vocab-nav-btn',
-      title: 'Quay lại từ trước',
-      disabled: currentIndex <= 0,
-      innerHTML: backSVG,
-      onClick: (e) => {
-        e?.stopPropagation?.();
-        if (currentIndex > 0) {
-          currentIndex--;
-          const prevWord = navigationStack[currentIndex];
-          if (typeof onLookupWord === 'function') {
-            onLookupWord(prevWord);
+    if (isHistorySearching) {
+      // Inline search mode
+      const searchBar = h('div', { className: 'vocab-history-search-bar' });
+      const searchInput = h('input', {
+        className: 'vocab-history-search-input',
+        type: 'text',
+        placeholder: 'Tìm trong lịch sử...',
+        value: historySearchQuery,
+        onInput: (e) => {
+          historySearchQuery = e.target.value;
+          currentSlideIndex = 0;
+          renderPopupContent(lastState);
+        },
+        onKeyDown: (e) => {
+          e?.stopPropagation?.();
+          if (e.key === 'Escape') {
+            isHistorySearching = false;
+            historySearchQuery = '';
+            renderPopupContent(lastState);
           }
-        }
-      },
-    });
+        },
+      });
 
-    const forwardBtn = h('button', {
-      className: 'vocab-nav-btn',
-      title: 'Đi tới từ tiếp theo',
-      disabled: currentIndex >= navigationStack.length - 1,
-      innerHTML: forwardSVG,
-      onClick: (e) => {
-        e?.stopPropagation?.();
-        if (currentIndex < navigationStack.length - 1) {
-          currentIndex++;
-          const nextWord = navigationStack[currentIndex];
-          if (typeof onLookupWord === 'function') {
-            onLookupWord(nextWord);
-          }
-        }
-      },
-    });
+      const clearSearchBtn = h('button', {
+        className: 'vocab-history-search-clear-btn',
+        title: 'Đóng tìm kiếm',
+        innerHTML: closeSVG,
+        onClick: (e) => {
+          e?.stopPropagation?.();
+          isHistorySearching = false;
+          historySearchQuery = '';
+          currentSlideIndex = 0;
+          renderPopupContent(lastState);
+        },
+      });
 
-    navGroup.appendChild(backBtn);
-    navGroup.appendChild(forwardBtn);
-    headerBar.appendChild(navGroup);
+      searchBar.appendChild(searchInput);
+      searchBar.appendChild(clearSearchBtn);
 
-    // Slide history chips
-    const slideContainer = h('div', { className: 'vocab-history-slide' });
-    recentWords.forEach((word) => {
-      const chip = h(
-        'span',
-        {
-          className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
+      // Also render filtered slide chips if any
+      if (visibleWords.length > 0) {
+        const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
+        const prevBtn = h('button', {
+          className: 'vocab-slide-nav-btn',
+          title: 'Slide trước',
+          disabled: currentSlideIndex <= 0,
+          innerHTML: prevSlideSVG,
           onClick: (e) => {
             e?.stopPropagation?.();
-            navigateToWord(word);
+            if (currentSlideIndex > 0) {
+              currentSlideIndex--;
+              renderPopupContent(lastState);
+            }
           },
-        },
-        word
-      );
-      slideContainer.appendChild(chip);
-    });
-    headerBar.appendChild(slideContainer);
+        });
+        const slideContainer = h('div', { className: 'vocab-history-slide' });
+        visibleWords.forEach((word) => {
+          const chip = h(
+            'span',
+            {
+              className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
+              title: word,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                navigateToWord(word, { fromHistory: true });
+              },
+            },
+            word
+          );
+          slideContainer.appendChild(chip);
+        });
+        const nextBtn = h('button', {
+          className: 'vocab-slide-nav-btn',
+          title: 'Slide tiếp theo',
+          disabled: currentSlideIndex >= totalPages - 1,
+          innerHTML: nextSlideSVG,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            if (currentSlideIndex < totalPages - 1) {
+              currentSlideIndex++;
+              renderPopupContent(lastState);
+            }
+          },
+        });
 
-    // Close button
+        sliderWrapper.appendChild(prevBtn);
+        sliderWrapper.appendChild(slideContainer);
+        sliderWrapper.appendChild(nextBtn);
+        searchBar.appendChild(sliderWrapper);
+      }
+
+      headerBar.appendChild(searchBar);
+      setTimeout(() => searchInput.focus(), 0);
+    } else {
+      // Normal slide mode
+      // 1. Search toggle icon button
+      if (allHistoryWords.length > 0) {
+        const searchToggleBtn = h('button', {
+          className: 'vocab-history-search-toggle-btn',
+          title: 'Tìm kiếm trong lịch sử',
+          innerHTML: searchSVG,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            isHistorySearching = true;
+            historySearchQuery = '';
+            currentSlideIndex = 0;
+            renderPopupContent(lastState);
+          },
+        });
+        headerBar.appendChild(searchToggleBtn);
+      }
+
+      // 2. Slide Navigation Wrapper (Prev Button + 5 Chips + Next Button)
+      if (visibleWords.length > 0) {
+        const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
+
+        const prevBtn = h('button', {
+          className: 'vocab-slide-nav-btn',
+          title: 'Slide trước',
+          disabled: currentSlideIndex <= 0,
+          innerHTML: prevSlideSVG,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            if (currentSlideIndex > 0) {
+              currentSlideIndex--;
+              renderPopupContent(lastState);
+            }
+          },
+        });
+
+        const slideContainer = h('div', { className: 'vocab-history-slide' });
+        visibleWords.forEach((word) => {
+          const chip = h(
+            'span',
+            {
+              className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
+              title: word,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                navigateToWord(word, { fromHistory: true });
+              },
+            },
+            word
+          );
+          slideContainer.appendChild(chip);
+        });
+
+        const nextBtn = h('button', {
+          className: 'vocab-slide-nav-btn',
+          title: 'Slide tiếp theo',
+          disabled: currentSlideIndex >= totalPages - 1,
+          innerHTML: nextSlideSVG,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            if (currentSlideIndex < totalPages - 1) {
+              currentSlideIndex++;
+              renderPopupContent(lastState);
+            }
+          },
+        });
+
+        sliderWrapper.appendChild(prevBtn);
+        sliderWrapper.appendChild(slideContainer);
+        sliderWrapper.appendChild(nextBtn);
+        headerBar.appendChild(sliderWrapper);
+      } else {
+        const emptySlide = h('div', { className: 'vocab-history-slide' });
+        headerBar.appendChild(emptySlide);
+      }
+    }
+
+    // 3. Close button
     const closeBtn = h('button', {
       className: 'vocab-popup-close-btn',
       title: 'Đóng popup',
@@ -718,14 +925,28 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
           pronContainer.appendChild(h('span', {}, item.value));
         }
         popupContainer.appendChild(pronContainer);
+      } else if (item.type === 'definition') {
+        const defs = Array.isArray(item.value) ? item.value : [item.value];
+        defs.forEach((defHtml) => {
+          if (defHtml) {
+            const defContainer = h('div', { className: 'vocab-popup-definition', innerHTML: defHtml });
+            const detailsElements = defContainer.querySelectorAll('details.vocab-details');
+            detailsElements.forEach((details) => {
+              details.addEventListener('toggle', () => {
+                updatePopupPosition();
+              });
+            });
+            popupContainer.appendChild(defContainer);
+          }
+        });
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {
-          const details = h('details', { className: 'vocab-details', open: '' });
+          const details = h('details', { className: 'vocab-details' });
           const summary = h(
             'summary',
             {},
-            h('span', { className: 'vocab-details-label' }, '✭ Word Family'),
+            h('span', { className: 'vocab-details-label' }, `✭ Word Family (${familyList.length})`),
             h('span', { className: 'collapse-icon' }, '▶')
           );
           const contentDiv = h('div', { className: 'details-content' });
@@ -754,20 +975,6 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
           details.addEventListener('toggle', () => updatePopupPosition());
           popupContainer.appendChild(details);
         }
-      } else if (item.type === 'definition') {
-        const defs = Array.isArray(item.value) ? item.value : [item.value];
-        defs.forEach((defHtml) => {
-          if (defHtml) {
-            const defContainer = h('div', { className: 'vocab-popup-definition', innerHTML: defHtml });
-            const detailsElements = defContainer.querySelectorAll('details.vocab-details');
-            detailsElements.forEach((details) => {
-              details.addEventListener('toggle', () => {
-                updatePopupPosition();
-              });
-            });
-            popupContainer.appendChild(defContainer);
-          }
-        });
       } else if (item.type === 'title') {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
       } else if (item.type === 'message') {
@@ -807,25 +1014,6 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         width: selectionRect.width,
         height: selectionRect.height,
       };
-    }
-
-    const word = (
-      state.headword ||
-      state.data?.parsedPayload?.headword ||
-      state.data?.headword ||
-      ''
-    )
-      .trim()
-      .toLowerCase();
-
-    if (word) {
-      if (navigationStack.length === 0) {
-        navigationStack = [word];
-        currentIndex = 0;
-      } else if (navigationStack[currentIndex] !== word) {
-        navigationStack = [...navigationStack.slice(0, currentIndex + 1), word];
-        currentIndex = navigationStack.length - 1;
-      }
     }
 
     createPopup();

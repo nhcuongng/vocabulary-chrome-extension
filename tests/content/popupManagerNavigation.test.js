@@ -22,6 +22,7 @@ function createMockDocument() {
       tabIndex: -1,
       innerHTML: '',
       textContent: '',
+      value: '',
       addEventListener: (type, handler) => {
         const list = listeners.get(type) || [];
         list.push(handler);
@@ -126,7 +127,7 @@ test('popupManager: showPopup renders header bar and navigation without error', 
   const popupManager = createPopupManager({
     documentObj,
     windowObj,
-    onLookupWord: (word) => lookedUpWords.push(word),
+    onLookupWord: (word, opts) => lookedUpWords.push({ word, opts }),
     historyAdapter,
   });
 
@@ -176,12 +177,9 @@ test('popupManager: clicking word family chip triggers onLookupWord', () => {
 
   popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
 
-  // Find family chip in popup elements
   const popupEl = documentObj.body.childNodes[0];
-  const shadow = popupEl._vocabShadow;
   const container = popupEl._vocabContainer;
 
-  // Find created chip in elements
   const allCreated = [];
   function collect(node) {
     if (!node) return;
@@ -193,12 +191,145 @@ test('popupManager: clicking word family chip triggers onLookupWord', () => {
   const familyChips = allCreated.filter((el) => el.className === 'vocab-family-chip');
   assert.equal(familyChips.length, 2);
 
-  // Click on 'created'
   familyChips[0].dispatchEvent('click');
   assert.deepEqual(lookedUpWords, ['created']);
 
-  // Click on 'creative'
   familyChips[1].dispatchEvent('click');
   assert.deepEqual(lookedUpWords, ['created', 'creative']);
 });
 
+test('popupManager: history slide displays 5 words per page and paginates with prev/next buttons', async () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  const lookedUpCalls = [];
+
+  const words = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8'];
+  const store = { vocab_search_history: words };
+  const historyAdapter = createChromeStorageHistoryAdapter({
+    storageArea: {
+      get: async (k) => ({ [k]: store[k] }),
+      set: async (p) => Object.assign(store, p),
+    },
+  });
+  await historyAdapter.load();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    onLookupWord: (word, opts) => lookedUpCalls.push({ word, opts }),
+    historyAdapter,
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'w1',
+    data: {
+      parsedPayload: {
+        headword: 'w1',
+        definitions: ['Def 1'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  function getAllElements() {
+    const all = [];
+    function collect(node) {
+      if (!node) return;
+      all.push(node);
+      for (const c of node.childNodes || []) collect(c);
+    }
+    collect(container);
+    return all;
+  }
+
+  let elements = getAllElements();
+  let chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 5); // 5 words in first slide
+
+  // Click on chip 'w2' -> passes fromHistory: true
+  chips[1].dispatchEvent('click');
+  assert.deepEqual(lookedUpCalls, [{ word: 'w2', opts: { fromHistory: true } }]);
+
+  // Find next slide button
+  const slideNavBtns = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-slide-nav-btn'));
+  assert.equal(slideNavBtns.length, 2);
+  const nextBtn = slideNavBtns[1];
+
+  // Click next slide button
+  nextBtn.dispatchEvent('click');
+
+  elements = getAllElements();
+  chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
+});
+
+test('popupManager: clicking search toggle button opens history search input', async () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const words = ['apple', 'application', 'banana', 'orange'];
+  const store = { vocab_search_history: words };
+  const historyAdapter = createChromeStorageHistoryAdapter({
+    storageArea: {
+      get: async (k) => ({ [k]: store[k] }),
+      set: async (p) => Object.assign(store, p),
+    },
+  });
+  await historyAdapter.load();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter,
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'apple',
+    data: {
+      parsedPayload: {
+        headword: 'apple',
+        definitions: ['Fruit'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  function getAllElements() {
+    const all = [];
+    function collect(node) {
+      if (!node) return;
+      all.push(node);
+      for (const c of node.childNodes || []) collect(c);
+    }
+    collect(container);
+    return all;
+  }
+
+  let elements = getAllElements();
+  const searchToggleBtn = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-search-toggle-btn'));
+  assert.ok(searchToggleBtn);
+
+  // Click search toggle button
+  searchToggleBtn.dispatchEvent('click');
+
+  elements = getAllElements();
+  const searchInput = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-search-input'));
+  assert.ok(searchInput);
+
+  // Type "app" into search input
+  searchInput.dispatchEvent('input', { target: { value: 'app' } });
+
+  elements = getAllElements();
+  const chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 2); // 'apple' and 'application'
+});

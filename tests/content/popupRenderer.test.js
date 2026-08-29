@@ -36,11 +36,11 @@ test('popup renderer: success state chứa word-family khi có danh sách wordFa
   assert.deepEqual(content.map((item) => item.type), [
     'headword',
     'pronunciation',
-    'word-family',
     'definition',
+    'word-family',
     'compliance-footer',
   ]);
-  assert.deepEqual(content[2].value, [{ word: 'created' }, { word: 'creative' }]);
+  assert.deepEqual(content[3].value, [{ word: 'created' }, { word: 'creative' }]);
 });
 
 test('popup renderer: not-found state hiển thị message, search suggestions và guidance list', () => {

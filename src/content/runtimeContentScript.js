@@ -51,9 +51,11 @@ export async function bootstrapContentRuntime({
     });
   };
 
-  const handlePopupLookupWord = (word) => {
+  const handlePopupLookupWord = (word, { fromHistory = false } = {}) => {
     isUserInitiated = true;
-    historyStore.addSearchWord(word).catch(() => {});
+    if (!fromHistory) {
+      historyStore.addSearchWord(word).catch(() => {});
+    }
     orchestrator.runLookup({ payload: { token: word } });
   };
 
