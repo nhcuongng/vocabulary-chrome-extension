@@ -188,14 +188,18 @@ test('popupManager: clicking word family chip triggers onLookupWord', () => {
   }
   collect(container);
 
-  const familyChips = allCreated.filter((el) => el.className === 'vocab-family-chip');
+  const familyChips = allCreated.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-family-chip'));
   assert.equal(familyChips.length, 2);
 
+  // 'created' is an inflected form -> has disabled-inflection class, clicking does not trigger lookup
+  assert.ok(familyChips[0].className.includes('disabled-inflection'));
   familyChips[0].dispatchEvent('click');
-  assert.deepEqual(lookedUpWords, ['created']);
+  assert.deepEqual(lookedUpWords, []);
 
+  // 'creative' is a derivative -> normal chip, clicking triggers lookup
+  assert.equal(familyChips[1].className, 'vocab-family-chip');
   familyChips[1].dispatchEvent('click');
-  assert.deepEqual(lookedUpWords, ['created', 'creative']);
+  assert.deepEqual(lookedUpWords, ['creative']);
 });
 
 test('popupManager: history slide displays 5 words per page and paginates with prev/next buttons', async () => {

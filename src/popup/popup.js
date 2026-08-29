@@ -11,6 +11,7 @@ import {
   renderErrorContent,
 } from '../content/popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
+import { isInflectedForm } from '../domain/wordInflectionUtils.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -270,6 +271,7 @@ async function bootstrapPopupRuntime({
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {
+          const currentHw = (viewModel?.headword || state.headword || '').toLowerCase();
           const details = h('details', { className: 'vocab-details' });
           const summary = h(
             'summary',
@@ -282,13 +284,16 @@ async function bootstrapPopupRuntime({
 
           familyList.forEach((fam) => {
             const famWord = typeof fam === 'string' ? fam : fam.word;
+            const isInflected = isInflectedForm(famWord, currentHw);
             const chip = h(
               'button',
               {
-                className: 'vocab-family-chip',
-                title: `Tra cứu từ ${famWord}`,
+                className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
+                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
+                  if (isInflected) return;
                   if (searchInput) searchInput.value = famWord;
                   performSearch(famWord);
                   if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();

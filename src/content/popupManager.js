@@ -1,6 +1,7 @@
 import { createPopupController } from './popupController.js';
 import { renderSuccessContent, renderNotFoundContent, renderErrorContent } from './popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
+import { isInflectedForm } from '../domain/wordInflectionUtils.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -455,6 +456,18 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #14532d;
         border-color: #86efac;
       }
+      .vocab-family-chip.disabled-inflection {
+        cursor: not-allowed;
+        opacity: 0.65;
+        background: #f3f4f6;
+        color: #6b7280;
+        border-color: #e5e7eb;
+      }
+      .vocab-family-chip.disabled-inflection:hover {
+        background: #f3f4f6;
+        color: #6b7280;
+        border-color: #e5e7eb;
+      }
 
       /* Dark mode styles */
       .vocab-popup.dark-mode {
@@ -509,6 +522,16 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       .vocab-popup.dark-mode .vocab-family-chip:hover {
         background: #065f46;
         color: #d1fae5;
+      }
+      .vocab-popup.dark-mode .vocab-family-chip.disabled-inflection {
+        background: #374151;
+        color: #9ca3af;
+        border-color: #4b5563;
+      }
+      .vocab-popup.dark-mode .vocab-family-chip.disabled-inflection:hover {
+        background: #374151;
+        color: #9ca3af;
+        border-color: #4b5563;
       }
       .vocab-popup.dark-mode .vocab-popup-pronunciation,
       .vocab-popup.dark-mode .vocab-popup-audio-btn,
@@ -942,6 +965,7 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {
+          const currentHw = (viewModel?.headword || state.headword || '').toLowerCase();
           const details = h('details', { className: 'vocab-details' });
           const summary = h(
             'summary',
@@ -954,13 +978,16 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
 
           familyList.forEach((fam) => {
             const famWord = typeof fam === 'string' ? fam : fam.word;
+            const isInflected = isInflectedForm(famWord, currentHw);
             const chip = h(
               'button',
               {
-                className: 'vocab-family-chip',
-                title: `Tra cứu từ ${famWord}`,
+                className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
+                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                disabled: isInflected,
                 onClick: (e) => {
                   e?.stopPropagation?.();
+                  if (isInflected) return;
                   navigateToWord(famWord);
                 },
               },

@@ -1,5 +1,6 @@
 import { renderSuccessContent, renderNotFoundContent, renderErrorContent } from './popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
+import { isInflectedForm } from '../domain/wordInflectionUtils.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -162,6 +163,8 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .vocab-word-family-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
       .vocab-family-chip { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; font-weight: 500; transition: background 0.15s, color 0.15s; }
       .vocab-family-chip:hover { background: #dcfce7; color: #14532d; border-color: #86efac; }
+      .vocab-family-chip.disabled-inflection { cursor: not-allowed; opacity: 0.65; background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+      .vocab-family-chip.disabled-inflection:hover { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
 
       /* Dark mode */
       .container.dark-mode { background: #1f2937; color: #f3f4f6; border: 1px solid #374151; }
@@ -175,6 +178,8 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .container.dark-mode .history-chip { background: #374151; color: #d1d5db; }
       .container.dark-mode .history-chip:hover { background: #1e3a8a; color: #bfdbfe; }
       .container.dark-mode .vocab-family-chip { background: #064e3b; color: #a7f3d0; border-color: #047857; }
+      .container.dark-mode .vocab-family-chip.disabled-inflection { background: #374151; color: #9ca3af; border-color: #4b5563; }
+      .container.dark-mode .vocab-family-chip.disabled-inflection:hover { background: #374151; color: #9ca3af; border-color: #4b5563; }
       .container.dark-mode .skeleton { background: #374151; background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%); }
     `;
 
@@ -405,6 +410,7 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {
+          const currentHw = (currentHeadword || '').toLowerCase();
           const details = h('details', { className: 'vocab-details' });
           const summary = h(
             'summary',
@@ -417,13 +423,16 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
 
           familyList.forEach((fam) => {
             const famWord = typeof fam === 'string' ? fam : fam.word;
+            const isInflected = isInflectedForm(famWord, currentHw);
             const chip = h(
               'button',
               {
-                className: 'vocab-family-chip',
-                title: `Tra cứu từ ${famWord}`,
+                className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
+                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
+                  if (isInflected) return;
                   if (overlayElement?._input) {
                     overlayElement._input.value = famWord;
                   }
