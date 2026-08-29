@@ -1,9 +1,11 @@
 import {
   createLookupErrorResponse,
+  createLookupNotFoundResponse,
   createLookupSuccessResponse,
   LOOKUP_ERROR_TYPE,
 } from '../shared/lookupContract.js';
-import { buildDictionaryLookupUrl } from './lookupRequestBuilder.js';
+import { buildDictionaryLookupUrl, buildDictionaryFetchUrl } from './lookupRequestBuilder.js';
+import { parseFreeDictionaryApiResponse } from '../infrastructure/adapters/freeDictionaryApiAdapter.js';
 
 export const DEFAULT_LOOKUP_TIMEOUT_MS = 3000;
 export const DEFAULT_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -401,9 +403,23 @@ export async function performDictionaryLookup({
     }
   }
 
+  const fetchUrl = buildDictionaryFetchUrl(headword, source);
+
   for (let attempt = 1; attempt <= resolvedRetryPolicy.maxAttempts; attempt += 1) {
     try {
-      const { response } = await fetchWithTimeout(fetchImpl, lookupUrl, safeTimeoutMs);
+      const { response } = await fetchWithTimeout(fetchImpl, fetchUrl, safeTimeoutMs);
+
+      if (response?.status === 404) {
+        return createLookupNotFoundResponse({
+          token: headword,
+          headword,
+          source,
+          lookupUrl,
+          attempts: attempt,
+          startedAtMs,
+          finishedAtMs: now(),
+        });
+      }
 
       if (!response?.ok) {
         const statusCode = response?.status ?? 0;
@@ -427,22 +443,62 @@ export async function performDictionaryLookup({
         });
       }
 
-      const html = await response.text();
+      const rawText = await response.text();
       const finishedAtMs = now();
-      const successPayload = {
-        headword,
-        source,
-        lookupUrl,
-        html,
-        attempts: attempt,
-        startedAtMs,
-        finishedAtMs,
-        durationMs: finishedAtMs - startedAtMs,
-        cache: {
-          hit: false,
-          word: cacheKey,
-        },
-      };
+
+      let successPayload;
+      if (source === 'cambridge') {
+        let jsonData = null;
+        try {
+          jsonData = JSON.parse(rawText);
+        } catch {}
+
+        const parsedPayload = parseFreeDictionaryApiResponse(jsonData, headword);
+        if (!parsedPayload.hasCoreData) {
+          return createLookupNotFoundResponse({
+            token: headword,
+            headword,
+            source,
+            lookupUrl,
+            attempts: attempt,
+            startedAtMs,
+            finishedAtMs: now(),
+          });
+        }
+
+        successPayload = {
+          headword,
+          source,
+          lookupUrl,
+          parsedPayload: {
+            ...parsedPayload,
+            lookupUrl,
+          },
+          attempts: attempt,
+          startedAtMs,
+          finishedAtMs,
+          durationMs: finishedAtMs - startedAtMs,
+          cache: {
+            hit: false,
+            word: cacheKey,
+          },
+        };
+      } else {
+        successPayload = {
+          headword,
+          source,
+          lookupUrl,
+          html: rawText,
+          attempts: attempt,
+          startedAtMs,
+          finishedAtMs,
+          durationMs: finishedAtMs - startedAtMs,
+          cache: {
+            hit: false,
+            word: cacheKey,
+          },
+        };
+      }
 
       if (cacheStore && typeof cacheStore.set === 'function') {
         try {

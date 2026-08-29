@@ -49,7 +49,11 @@ test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, đ�
   assert.ok(result.pronunciation.includes('UK /ˈbjuːtɪfəl/'));
   assert.equal(result.audio.uk, 'https://api.dictionaryapi.dev/media/pronunciations/en/beautiful-uk.mp3');
   assert.equal(result.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/beautiful-us.mp3');
-  assert.equal(result.definitions.length, 2);
+  assert.equal(result.definitions.length, 4);
+  assert.ok(result.definitions.some((d) => d.includes('Short Definition')));
+  assert.ok(result.definitions.some((d) => d.includes('Long Definition')));
+  assert.ok(result.definitions.some((d) => d.includes('Adjective')));
+  assert.ok(result.definitions.some((d) => d.includes('Noun')));
   assert.ok(result.hasCoreData);
   assert.equal(result.source, 'cambridge');
   assert.ok(result.wordFamily.some((f) => f.word === 'lovely' || f.word === 'pretty'));
