@@ -27,7 +27,14 @@ const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height=
   <polyline points="9 18 15 12 9 6"></polyline>
 </svg>`;
 
-export function createPopupManager({ documentObj, windowObj, onLookupWord, historyAdapter } = {}) {
+export function createPopupManager({
+  documentObj,
+  windowObj,
+  onLookupWord,
+  historyAdapter,
+  settingsAdapter,
+  onSourceChange,
+} = {}) {
   let popupElement = null;
   let popupCtrl = null;
   let absoluteSelectionRect = null;
@@ -244,6 +251,25 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #1d4ed8;
         border-color: #93c5fd;
         font-weight: 600;
+      }
+
+      .vocab-popup-source-select {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 2px 4px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+        margin: 0 4px;
+        flex-shrink: 0;
+        transition: border-color 0.15s, background-color 0.15s;
+      }
+      .vocab-popup-source-select:hover {
+        background-color: #e5e7eb;
+        border-color: #d1d5db;
       }
 
       /* Search History Inline Bar */
@@ -509,6 +535,14 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #93c5fd;
         border-color: #3b82f6;
       }
+      .vocab-popup.dark-mode .vocab-popup-source-select {
+        background: #374151;
+        color: #f3f4f6;
+        border-color: #4b5563;
+      }
+      .vocab-popup.dark-mode .vocab-popup-source-select:hover {
+        background-color: #4b5563;
+      }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
         border-color: #4b5563;
@@ -606,13 +640,17 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
     popupElement.style.maxWidth = `${Math.min(390, viewport.width - 16)}px`;
   }
 
-  function navigateToWord(word, { fromHistory = false } = {}) {
+  function navigateToWord(word, { fromHistory = false, source } = {}) {
     if (!word || typeof word !== 'string') return;
     const normalized = word.trim().toLowerCase();
     if (!normalized) return;
 
     if (typeof onLookupWord === 'function') {
-      onLookupWord(normalized, { fromHistory });
+      const opts = { fromHistory };
+      if (source) {
+        opts.source = source;
+      }
+      onLookupWord(normalized, opts);
     }
   }
 
@@ -673,7 +711,7 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       return el;
     }
 
-    // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Close Button
+    // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Source Switcher, Close Button
     const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
@@ -745,7 +783,39 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       headerBar.appendChild(emptySlide);
     }
 
-    // 2. Close button
+    // 2. Source Selector in Header
+    const activeDictSource =
+      settingsAdapter?.getSnapshot?.()?.dictionarySource ||
+      viewModel?.source ||
+      'auto';
+
+    const sourceSelect = h(
+      'select',
+      {
+        className: 'vocab-popup-source-select',
+        title: 'Nguồn từ điển (Tự động, Vocabulary.com, Cambridge)',
+        ariaLabel: 'Dictionary source selector',
+        onChange: async (e) => {
+          e?.stopPropagation?.();
+          const nextSource = e.target.value;
+          if (settingsAdapter?.update) {
+            await settingsAdapter.update({ dictionarySource: nextSource });
+          }
+          if (typeof onSourceChange === 'function') {
+            onSourceChange(nextSource);
+          }
+          if (currentWord) {
+            navigateToWord(currentWord, { source: nextSource });
+          }
+        },
+      },
+      h('option', { value: 'auto', selected: activeDictSource === 'auto' ? '' : null }, '⚡ Auto'),
+      h('option', { value: 'vocabulary', selected: activeDictSource === 'vocabulary' ? '' : null }, 'Vocab'),
+      h('option', { value: 'cambridge', selected: activeDictSource === 'cambridge' ? '' : null }, 'Cambridge')
+    );
+    headerBar.appendChild(sourceSelect);
+
+    // 3. Close button
     const closeBtn = h('button', {
       className: 'vocab-popup-close-btn',
       title: 'Đóng popup',

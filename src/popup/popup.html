@@ -555,6 +555,22 @@
             </svg>
           </button>
         </div>
+
+        <div class="row" style="margin-top: 4px; align-items: center; justify-content: space-between;">
+          <div class="setting-label-wrapper">
+            <label for="dictionary-source-select" style="font-size: 12px; font-weight: 500; color: var(--hint-color);">Nguồn từ điển:</label>
+            <div class="tooltip-container">
+              <span class="help-icon" aria-label="Hướng dẫn chọn nguồn">?</span>
+              <span class="tooltip-text">Tự động (ưu tiên Vocabulary rồi Cambridge), hoặc chọn cố định 1 nguồn.</span>
+            </div>
+          </div>
+          <select id="dictionary-source-select" class="source-select" style="padding: 3px 6px; font-size: 11px; font-weight: 500; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); outline: none; cursor: pointer;">
+            <option value="auto">⚡ Tự động (Vocab → Cambridge)</option>
+            <option value="vocabulary">Vocabulary.com</option>
+            <option value="cambridge">Cambridge Dictionary</option>
+          </select>
+        </div>
+
         <div id="vocab-search-suggestions" class="suggestions-area"></div>
       </div>
 
@@ -577,23 +593,6 @@
         <div class="setting-item">
           <label for="dark-mode-toggle">Dark mode</label>
           <input id="dark-mode-toggle" type="checkbox" />
-        </div>
-      </div>
-
-      <div class="row settings-row" style="margin-top: 4px;">
-        <div class="setting-item" style="width: 100%; justify-content: space-between;">
-          <div class="setting-label-wrapper">
-            <label for="dictionary-source-select" style="font-size: 13px;">Nguồn từ điển</label>
-            <div class="tooltip-container">
-              <span class="help-icon" aria-label="Hướng dẫn chọn nguồn">?</span>
-              <span class="tooltip-text">Chọn nguồn tra từ: Tự động (ưu tiên Vocabulary rồi Cambridge), hoặc chỉ định 1 nguồn cố định.</span>
-            </div>
-          </div>
-          <select id="dictionary-source-select" class="source-select" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); outline: none; cursor: pointer;">
-            <option value="auto">Tự động (Vocab → Cambridge)</option>
-            <option value="vocabulary">Vocabulary.com</option>
-            <option value="cambridge">Cambridge Dictionary</option>
-          </select>
         </div>
       </div>
 

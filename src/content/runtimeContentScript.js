@@ -62,12 +62,15 @@ export async function bootstrapContentRuntime({
     });
   };
 
-  const handlePopupLookupWord = (word, { fromHistory = false } = {}) => {
+  const handlePopupLookupWord = (word, { fromHistory = false, source } = {}) => {
     isUserInitiated = true;
+    if (source) {
+      dictionarySource = source;
+    }
     if (!fromHistory) {
       historyStore.addSearchWord(word).catch(() => {});
     }
-    orchestrator.runLookup({ payload: { token: word } });
+    orchestrator.runLookup({ payload: { token: word, source: dictionarySource } });
   };
 
   const popupManager = createPopupManager({
@@ -75,6 +78,10 @@ export async function bootstrapContentRuntime({
     windowObj,
     onLookupWord: handlePopupLookupWord,
     historyAdapter: historyStore,
+    settingsAdapter: settingsStore,
+    onSourceChange: (newSource) => {
+      dictionarySource = newSource || 'auto';
+    },
   });
 
   const triggerIconManager = createTriggerIconManager({

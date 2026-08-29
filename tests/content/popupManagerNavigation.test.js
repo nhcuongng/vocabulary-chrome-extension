@@ -271,3 +271,51 @@ test('popupManager: history slide displays 5 words per page and paginates with p
   chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
   assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
 });
+
+test('popupManager: header bar contains dictionary source selector and triggers lookup on change', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  const lookedUpCalls = [];
+  const sourceChanges = [];
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    onLookupWord: (word, opts) => lookedUpCalls.push({ word, opts }),
+    onSourceChange: (source) => sourceChanges.push(source),
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'test',
+    data: {
+      parsedPayload: {
+        headword: 'test',
+        definitions: ['Def 1'],
+        source: 'auto',
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  const sourceSelects = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-source-select'));
+  assert.equal(sourceSelects.length, 1);
+
+  // Change source to cambridge
+  sourceSelects[0].dispatchEvent('change', { target: { value: 'cambridge' } });
+
+  assert.deepEqual(sourceChanges, ['cambridge']);
+  assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);
+});
