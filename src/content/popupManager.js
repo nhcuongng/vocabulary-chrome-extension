@@ -2,6 +2,15 @@ import { createPopupController } from './popupController.js';
 import { renderSuccessContent, renderNotFoundContent, renderErrorContent } from './popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
 import { isInflectedForm } from '../domain/wordInflectionUtils.js';
+import {
+  playAudioWithFallback,
+  speakWord,
+  stopCurrentAudio,
+} from '../domain/audioPlaybackUtils.js';
+import {
+  createHistorySliderElement,
+  UI_COPY,
+} from './historySliderRenderer.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -19,90 +28,10 @@ const searchSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12
   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 </svg>`;
 
-const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="15 18 9 12 15 6"></polyline>
-</svg>`;
-
-const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="9 18 15 12 9 6"></polyline>
-</svg>`;
-
 const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
 </svg>`;
-
-function speakWord(word, lang = 'en-US') {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return false;
-  }
-
-  try {
-    const synth = window.speechSynthesis;
-    if (synth.paused) {
-      synth.resume();
-    }
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(word);
-    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-    utterance.lang = targetLang;
-    utterance.rate = 0.9;
-
-    const voices = synth.getVoices() || [];
-    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-    }
-
-    synth.speak(utterance);
-    return true;
-  } catch (e) {
-    console.warn('SpeechSynthesis error:', e);
-    return false;
-  }
-}
-
-function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
-  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-  const encodedWord = encodeURIComponent(fallbackWord || '');
-
-  const candidateUrls = [];
-  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
-    let cleanUrl = String(audioUrl).trim();
-    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
-    candidateUrls.push(cleanUrl);
-  }
-
-  if (fallbackWord) {
-    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
-  }
-
-  let index = 0;
-  function tryPlayNext() {
-    if (index >= candidateUrls.length) {
-      if (fallbackWord) {
-        speakWord(fallbackWord, targetLang);
-      }
-      return;
-    }
-
-    const currentUrl = candidateUrls[index++];
-    try {
-      const audio = new Audio(currentUrl);
-      const promise = audio.play();
-      if (promise !== undefined) {
-        promise.catch(() => {
-          tryPlayNext();
-        });
-      }
-    } catch {
-      tryPlayNext();
-    }
-  }
-
-  tryPlayNext();
-}
 
 export function createPopupManager({
   documentObj,
@@ -220,6 +149,27 @@ export function createPopupManager({
         max-height: 340px;
         min-height: 120px;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #e5e7eb transparent;
+        box-sizing: border-box;
+      }
+
+      .vocab-popup::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .vocab-popup::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .vocab-popup::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 4px;
+      }
+
+      .vocab-popup::-webkit-scrollbar-thumb:hover {
+        background-color: #9ca3af;
       }
 
       .vocab-popup-theme {
@@ -268,8 +218,11 @@ export function createPopupManager({
         display: flex;
         align-items: center;
         gap: 2px;
-        flex: 1;
+        flex: 1 1 0px;
         min-width: 0;
+        width: 0;
+        max-width: 100%;
+        overflow: hidden;
       }
 
       .vocab-slide-nav-btn {
@@ -299,25 +252,33 @@ export function createPopupManager({
         align-items: center;
         gap: 4px;
         overflow: hidden;
-        flex: 1;
+        flex: 1 1 0px;
         min-width: 0;
+        width: 0;
+        max-width: 100%;
       }
 
       .vocab-history-chip {
+        font-family: inherit;
         background: #f3f4f6;
         color: #374151;
         font-size: 11px;
         font-weight: 500;
-        padding: 2px 7px;
+        padding: 3px 4px;
         border-radius: 12px;
         white-space: nowrap;
         cursor: pointer;
         border: 1px solid transparent;
         transition: background-color 0.15s, color 0.15s;
-        flex-shrink: 0;
-        max-width: 90px;
+        flex: 1 1 0px;
+        min-width: 0;
+        width: 0;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: block;
+        text-align: center;
+        box-sizing: border-box;
       }
       .vocab-history-chip:hover {
         background: #e0e7ff;
@@ -548,6 +509,17 @@ export function createPopupManager({
         margin-top: 10px;
         font-size: 13px;
         color: #4B5563;
+      }
+      .vocab-popup-search-suggestions a,
+      .search-suggestion-link {
+        color: #1677C9;
+        text-decoration: underline;
+        font-weight: 500;
+        transition: color 0.15s ease;
+      }
+      .vocab-popup-search-suggestions a:hover,
+      .search-suggestion-link:hover {
+        color: #0d5ca0;
       }
       .vocab-popup-guidance-list {
         margin: 8px 0;
@@ -780,6 +752,14 @@ export function createPopupManager({
         background: #1e3a8a;
         color: #bfdbfe;
       }
+      .vocab-popup.dark-mode .vocab-popup-search-suggestions a,
+      .vocab-popup.dark-mode .search-suggestion-link {
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-popup-search-suggestions a:hover,
+      .vocab-popup.dark-mode .search-suggestion-link:hover {
+        color: #93c5fd;
+      }
       .vocab-popup.dark-mode .skeleton {
         background: #374151;
         background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%);
@@ -908,73 +888,24 @@ export function createPopupManager({
     const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
-    const ITEMS_PER_PAGE = 5;
-    const totalPages = Math.max(1, Math.ceil(allHistoryWords.length / ITEMS_PER_PAGE));
-    if (currentSlideIndex >= totalPages) {
-      currentSlideIndex = Math.max(0, totalPages - 1);
-    }
-    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
-    const visibleWords = allHistoryWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
     const headerBar = h('div', { className: 'vocab-popup-header-bar' });
 
-    // Slide Navigation Wrapper (Prev Button + 5 Chips + Next Button)
-    if (visibleWords.length > 0) {
-      const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
-
-      const prevBtn = h('button', {
-        className: 'vocab-slide-nav-btn',
-        title: 'Slide trước',
-        disabled: currentSlideIndex <= 0,
-        innerHTML: prevSlideSVG,
-        onClick: (e) => {
-          e?.stopPropagation?.();
-          if (currentSlideIndex > 0) {
-            currentSlideIndex--;
-            renderPopupContent(lastState);
-          }
-        },
-      });
-
-      const slideContainer = h('div', { className: 'vocab-history-slide' });
-      visibleWords.forEach((word) => {
-        const chip = h(
-          'span',
-          {
-            className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
-            title: word,
-            onClick: (e) => {
-              e?.stopPropagation?.();
-              navigateToWord(word, { fromHistory: true });
-            },
-          },
-          word
-        );
-        slideContainer.appendChild(chip);
-      });
-
-      const nextBtn = h('button', {
-        className: 'vocab-slide-nav-btn',
-        title: 'Slide tiếp theo',
-        disabled: currentSlideIndex >= totalPages - 1,
-        innerHTML: nextSlideSVG,
-        onClick: (e) => {
-          e?.stopPropagation?.();
-          if (currentSlideIndex < totalPages - 1) {
-            currentSlideIndex++;
-            renderPopupContent(lastState);
-          }
-        },
-      });
-
-      sliderWrapper.appendChild(prevBtn);
-      sliderWrapper.appendChild(slideContainer);
-      sliderWrapper.appendChild(nextBtn);
-      headerBar.appendChild(sliderWrapper);
-    } else {
-      const emptySlide = h('div', { className: 'vocab-history-slide' });
-      headerBar.appendChild(emptySlide);
-    }
+    const sliderWrapper = createHistorySliderElement({
+      documentObj,
+      allWords: allHistoryWords,
+      currentWord,
+      currentSlideIndex,
+      itemsPerPage: 5,
+      h,
+      onSelectWord: (word) => {
+        navigateToWord(word, { fromHistory: true });
+      },
+      onSlideChange: (newIndex) => {
+        currentSlideIndex = newIndex;
+        renderPopupContent(lastState);
+      },
+    });
+    headerBar.appendChild(sliderWrapper);
 
     // 2. Header Actions: Source Menu Button (Icon with vertical popover) + Close Button
     const headerActions = h('div', { className: 'vocab-popup-header-actions' });
@@ -988,14 +919,10 @@ export function createPopupManager({
     let isMenuOpen = false;
     const popoverMenu = h('div', { className: 'vocab-source-menu-popover', style: { display: 'none' } });
 
-    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, 'Nguồn từ điển');
+    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
     popoverMenu.appendChild(menuTitle);
 
-    const sourceOptions = [
-      { id: 'auto', name: '⚡ Tự động (Auto)', hint: 'Vocab.com → Cambridge' },
-      { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Nghĩa giải thích & từ gia đình' },
-      { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Phát âm UK/US chuẩn & IPA' },
-    ];
+    const sourceOptions = UI_COPY.DICTIONARY_SOURCE_OPTIONS;
 
     sourceOptions.forEach((s) => {
       const isActive = activeDictSource === s.id;
@@ -1005,7 +932,7 @@ export function createPopupManager({
           type: 'button',
           className: `vocab-source-menu-item ${isActive ? 'active' : ''}`,
           'data-source': s.id,
-          title: `Chọn nguồn: ${s.name}`,
+          title: `Select source: ${s.name}`,
           onClick: async (e) => {
             e?.stopPropagation?.();
             popoverMenu.style.display = 'none';
@@ -1036,8 +963,8 @@ export function createPopupManager({
     const sourceBtn = h('button', {
       type: 'button',
       className: 'vocab-source-menu-btn',
-      title: 'Chọn nguồn từ điển',
-      ariaLabel: 'Chọn nguồn từ điển',
+      title: UI_COPY.SELECT_SOURCE_TITLE,
+      ariaLabel: UI_COPY.SELECT_SOURCE_TITLE,
       innerHTML: dictionarySVG,
       onClick: (e) => {
         e?.stopPropagation?.();
@@ -1053,8 +980,8 @@ export function createPopupManager({
     const closeBtn = h('button', {
       type: 'button',
       className: 'vocab-popup-close-btn',
-      title: 'Đóng popup',
-      ariaLabel: 'Close popup',
+      title: UI_COPY.CLOSE_POPUP,
+      ariaLabel: UI_COPY.CLOSE_POPUP,
       innerHTML: closeSVG,
       onClick: (e) => {
         e?.stopPropagation?.();
@@ -1120,6 +1047,7 @@ export function createPopupManager({
           pronContainer.appendChild(
             h('button', {
               title: 'US pronunciation',
+              ariaLabel: 'US pronunciation',
               className: 'vocab-popup-audio-btn',
               innerHTML: speakerSVG,
               onClick: (e) => {
@@ -1144,6 +1072,7 @@ export function createPopupManager({
           pronContainer.appendChild(
             h('button', {
               title: 'UK pronunciation',
+              ariaLabel: 'UK pronunciation',
               className: 'vocab-popup-audio-btn',
               innerHTML: speakerSVG,
               onClick: (e) => {
@@ -1162,6 +1091,7 @@ export function createPopupManager({
           pronContainer.appendChild(
             h('button', {
               title: 'Listen pronunciation',
+              ariaLabel: 'Listen pronunciation',
               className: 'vocab-popup-audio-btn',
               innerHTML: speakerSVG,
               onClick: (e) => {
@@ -1208,7 +1138,8 @@ export function createPopupManager({
               'button',
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
-                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                title: isInflected ? UI_COPY.INFLECTED_FORM_TOOLTIP(famWord) : UI_COPY.LOOKUP_FAMILY_TOOLTIP(famWord),
+                ariaLabel: isInflected ? UI_COPY.INFLECTED_FORM_TOOLTIP(famWord) : UI_COPY.LOOKUP_FAMILY_TOOLTIP(famWord),
                 disabled: isInflected,
                 onClick: (e) => {
                   e?.stopPropagation?.();

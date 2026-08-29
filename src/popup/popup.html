@@ -21,17 +21,37 @@
         --border-color: #374151;
       }
 
+      html {
+        width: 380px;
+        min-width: 380px;
+        max-width: 380px;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        min-width: 320px;
+        width: 380px;
+        min-width: 380px;
+        max-width: 380px;
+        box-sizing: border-box;
         background: var(--bg-color);
         color: var(--text-color);
       }
 
       main {
+        width: 380px;
+        max-width: 380px;
+        min-width: 0;
+        box-sizing: border-box;
         padding: 14px;
         display: grid;
         gap: 10px;
+        position: relative;
       }
 
       .row {
@@ -106,6 +126,11 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        position: relative;
+        z-index: 50;
       }
 
       .search-input-wrapper {
@@ -113,6 +138,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        z-index: 60;
       }
 
       .search-input {
@@ -140,7 +166,7 @@
 
       .clear-btn {
         position: absolute;
-        right: 42px;
+        right: 76px;
         background: none;
         border: none;
         cursor: pointer;
@@ -157,14 +183,24 @@
         background-color: var(--border-color);
       }
 
-      /* Source Menu in Toolbar Popup */
-      .vocab-source-menu-wrapper {
+      .vocab-toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      /* Source Menu & Settings Menu in Toolbar */
+      .vocab-source-menu-wrapper,
+      .vocab-settings-menu-wrapper {
         position: relative;
         display: flex;
         align-items: center;
+        z-index: 100;
       }
 
-      .vocab-source-menu-btn {
+      .vocab-source-menu-btn,
+      .vocab-settings-menu-btn {
         background: var(--bg-color);
         border: 1.5px solid var(--border-color);
         cursor: pointer;
@@ -178,18 +214,21 @@
         flex-shrink: 0;
       }
 
-      .vocab-source-menu-btn:hover {
+      .vocab-source-menu-btn:hover,
+      .vocab-settings-menu-btn:hover {
         background-color: var(--border-color);
         color: #1677C9;
         border-color: #1677C9;
       }
 
-      body.dark-mode .vocab-source-menu-btn:hover {
+      body.dark-mode .vocab-source-menu-btn:hover,
+      body.dark-mode .vocab-settings-menu-btn:hover {
         color: #60a5fa;
         border-color: #60a5fa;
       }
 
-      .vocab-source-menu-popover {
+      .vocab-source-menu-popover,
+      .vocab-settings-menu-popover {
         position: absolute;
         top: calc(100% + 6px);
         right: 0;
@@ -198,27 +237,82 @@
         background: var(--bg-color);
         border: 1px solid var(--border-color);
         border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
-        padding: 6px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.08);
+        padding: 8px;
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        gap: 6px;
       }
 
-      body.dark-mode .vocab-source-menu-popover {
+      body.dark-mode .vocab-source-menu-popover,
+      body.dark-mode .vocab-settings-menu-popover {
         background: #1f2937;
         border-color: #374151;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
       }
 
-      .vocab-source-menu-title {
+      .vocab-source-menu-title,
+      .vocab-settings-menu-title {
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.6px;
         color: var(--hint-color);
-        padding: 4px 8px 2px 8px;
+        padding: 2px 4px 4px 4px;
         user-select: none;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 2px;
+      }
+
+      .vocab-settings-option-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 4px 4px;
+      }
+
+      .vocab-settings-option-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-settings-option-label-row {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .vocab-settings-option-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-color);
+        cursor: pointer;
+      }
+
+      .vocab-settings-option-hint {
+        font-size: 10px;
+        color: var(--hint-color);
+      }
+
+      .vocab-checkbox-toggle {
+        cursor: pointer;
+        width: 15px;
+        height: 15px;
+        accent-color: #1677C9;
+        margin: 0;
+      }
+
+      .vocab-settings-status {
+        font-size: 10.5px;
+        color: var(--hint-color);
+        margin: 4px 0 0 0;
+        padding: 4px;
+        border-top: 1px dashed var(--border-color);
+        line-height: 1.35;
       }
 
       .vocab-source-menu-item {
@@ -301,12 +395,17 @@
       }
 
       /* History Slider Bar */
+      #vocab-history-slider-wrapper,
       .vocab-history-slider-wrapper {
         display: flex;
         align-items: center;
         gap: 3px;
         margin-top: 4px;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        box-sizing: border-box;
       }
 
       .vocab-slide-nav-btn {
@@ -338,25 +437,35 @@
         align-items: center;
         gap: 4px;
         overflow: hidden;
-        flex: 1;
+        flex: 1 1 0px;
         min-width: 0;
+        width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .vocab-history-chip {
+        font-family: inherit;
         background: #f3f4f6;
         color: #374151;
         font-size: 11px;
         font-weight: 500;
-        padding: 2px 7px;
+        padding: 3px 4px;
         border-radius: 12px;
         white-space: nowrap;
         cursor: pointer;
         border: 1px solid transparent;
+        outline: none;
         transition: background-color 0.15s, color 0.15s;
-        flex-shrink: 0;
-        max-width: 90px;
+        flex: 1 1 0px;
+        min-width: 0;
+        width: 0;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: block;
+        text-align: center;
+        box-sizing: border-box;
       }
 
       .vocab-history-chip:hover {
@@ -445,12 +554,36 @@
       }
 
       .results-container {
-        margin-top: 10px;
+        margin-top: 6px;
         border-top: 1px solid var(--border-color);
         padding-top: 10px;
+        padding-bottom: 6px;
+        padding-right: 6px;
+        margin-right: -6px;
         max-height: 380px;
         overflow-y: auto;
+        overflow-x: hidden;
         display: none;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+        box-sizing: border-box;
+      }
+
+      .results-container::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .results-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .results-container::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 4px;
+      }
+
+      .results-container::-webkit-scrollbar-thumb:hover {
+        background-color: var(--hint-color);
       }
 
       .results-container.active {
@@ -583,6 +716,29 @@
         margin-top: 10px;
         font-size: 13px;
         color: var(--hint-color);
+      }
+
+      .vocab-popup-search-suggestions a,
+      .search-suggestion-link {
+        color: #1677C9;
+        text-decoration: underline;
+        font-weight: 500;
+        transition: color 0.15s ease;
+      }
+
+      .vocab-popup-search-suggestions a:hover,
+      .search-suggestion-link:hover {
+        color: #0d5ca0;
+      }
+
+      body.dark-mode .vocab-popup-search-suggestions a,
+      body.dark-mode .search-suggestion-link {
+        color: #60a5fa;
+      }
+
+      body.dark-mode .vocab-popup-search-suggestions a:hover,
+      body.dark-mode .search-suggestion-link:hover {
+        color: #93c5fd;
       }
 
       .vocab-popup-guidance-list {
@@ -732,36 +888,76 @@
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
-          <div class="vocab-source-menu-wrapper">
-            <button id="vocab-source-menu-btn" class="vocab-source-menu-btn" type="button" title="Select dictionary source" aria-label="Select dictionary source">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
-            </button>
-            <div id="vocab-source-menu-popover" class="vocab-source-menu-popover" style="display: none;">
-              <div class="vocab-source-menu-title">Dictionary Source</div>
-              <button type="button" class="vocab-source-menu-item active" data-source="auto">
-                <div class="source-item-text">
-                  <span class="source-item-name">⚡ Auto</span>
-                  <span class="source-item-hint">Vocab.com → Cambridge</span>
-                </div>
-                <span class="source-item-check">✓</span>
+          <div class="vocab-toolbar-actions">
+            <!-- Dictionary Source Menu -->
+            <div class="vocab-source-menu-wrapper">
+              <button id="vocab-source-menu-btn" class="vocab-source-menu-btn" type="button" title="Select dictionary source" aria-label="Select dictionary source">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
               </button>
-              <button type="button" class="vocab-source-menu-item" data-source="vocabulary">
-                <div class="source-item-text">
-                  <span class="source-item-name">📘 Vocabulary.com</span>
-                  <span class="source-item-hint">Explanations & word family</span>
-                </div>
-                <span class="source-item-check">✓</span>
+              <div id="vocab-source-menu-popover" class="vocab-source-menu-popover" style="display: none;">
+                <div class="vocab-source-menu-title">Dictionary Source</div>
+                <button type="button" class="vocab-source-menu-item active" data-source="auto">
+                  <div class="source-item-text">
+                    <span class="source-item-name">⚡ Auto</span>
+                    <span class="source-item-hint">Vocab.com → Cambridge</span>
+                  </div>
+                  <span class="source-item-check">✓</span>
+                </button>
+                <button type="button" class="vocab-source-menu-item" data-source="vocabulary">
+                  <div class="source-item-text">
+                    <span class="source-item-name">📘 Vocabulary.com</span>
+                    <span class="source-item-hint">Explanations & word family</span>
+                  </div>
+                  <span class="source-item-check">✓</span>
+                </button>
+                <button type="button" class="vocab-source-menu-item" data-source="cambridge">
+                  <div class="source-item-text">
+                    <span class="source-item-name">🏛 Cambridge Dictionary</span>
+                    <span class="source-item-hint">Native UK/US audio & IPA</span>
+                  </div>
+                  <span class="source-item-check">✓</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Settings Menu -->
+            <div class="vocab-settings-menu-wrapper">
+              <button id="vocab-settings-menu-btn" class="vocab-settings-menu-btn" type="button" title="Extension Settings" aria-label="Extension Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
               </button>
-              <button type="button" class="vocab-source-menu-item" data-source="cambridge">
-                <div class="source-item-text">
-                  <span class="source-item-name">🏛 Cambridge Dictionary</span>
-                  <span class="source-item-hint">Native UK/US audio & IPA</span>
+              <div id="vocab-settings-menu-popover" class="vocab-settings-menu-popover" style="display: none;">
+                <div class="vocab-settings-menu-title">Settings</div>
+                
+                <div class="vocab-settings-option-item">
+                  <div class="vocab-settings-option-info">
+                    <div class="vocab-settings-option-label-row">
+                      <label for="auto-popup-toggle" class="vocab-settings-option-label">Auto-popup</label>
+                      <div class="tooltip-container">
+                        <span class="help-icon" aria-label="How to use">?</span>
+                        <span class="tooltip-text">Select an English word on any webpage to automatically display lookup popup.</span>
+                      </div>
+                    </div>
+                    <span class="vocab-settings-option-hint">Lookup on word selection</span>
+                  </div>
+                  <input id="auto-popup-toggle" type="checkbox" class="vocab-checkbox-toggle" />
                 </div>
-                <span class="source-item-check">✓</span>
-              </button>
+
+                <div class="vocab-settings-option-item">
+                  <div class="vocab-settings-option-info">
+                    <label for="dark-mode-toggle" class="vocab-settings-option-label">Dark mode</label>
+                    <span class="vocab-settings-option-hint">Dark theme for popup</span>
+                  </div>
+                  <input id="dark-mode-toggle" type="checkbox" class="vocab-checkbox-toggle" />
+                </div>
+
+                <p id="auto-popup-status" class="hint vocab-settings-status" aria-live="polite"></p>
+              </div>
             </div>
           </div>
           <select id="dictionary-source-select" style="display: none;">
@@ -775,28 +971,6 @@
       </div>
 
       <div id="vocab-search-results" class="results-container"></div>
-
-      <hr style="border: none; border-top: 1px solid var(--border-color); margin: 8px 0 4px 0;" />
-
-      <div class="row settings-row">
-        <div class="setting-item">
-          <div class="setting-label-wrapper">
-            <label for="auto-popup-toggle">Auto-popup</label>
-            <div class="tooltip-container">
-              <span class="help-icon" aria-label="How to use">?</span>
-              <span class="tooltip-text">Select an English word on any webpage to automatically display the lookup popup.</span>
-            </div>
-          </div>
-          <input id="auto-popup-toggle" type="checkbox" />
-        </div>
-
-        <div class="setting-item">
-          <label for="dark-mode-toggle">Dark mode</label>
-          <input id="dark-mode-toggle" type="checkbox" />
-        </div>
-      </div>
-
-      <p id="auto-popup-status" class="hint" aria-live="polite"></p>
     </main>
 
     <script type="module" src="./popup.js"></script>

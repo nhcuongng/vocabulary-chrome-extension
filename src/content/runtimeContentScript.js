@@ -43,7 +43,8 @@ export async function bootstrapContentRuntime({
   let dictionarySource = 'auto';
 
   const lookupExecutor = async ({ headword }) => {
-    if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
+    const cleanWord = typeof headword === 'string' ? headword.trim().toLowerCase() : '';
+    if (!cleanWord || !/^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
       return {
         status: 'error',
         error: { type: 'invalid-token', message: 'headword token is required' },
@@ -53,7 +54,7 @@ export async function bootstrapContentRuntime({
       chromeApi.runtime.sendMessage(
         {
           type: 'LOOKUP_REQUEST',
-          payload: { token: headword, source: dictionarySource },
+          payload: { token: cleanWord, source: dictionarySource },
         },
         (response) => {
           resolve(response);

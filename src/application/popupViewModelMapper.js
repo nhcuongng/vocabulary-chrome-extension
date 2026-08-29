@@ -25,7 +25,7 @@ function buildSearchSuggestionsHtml(token) {
   const linksHtml = links
     .map(
       (link) =>
-        `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: #0B5EA8; text-decoration: underline;">${link.label}</a>`
+        `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="search-suggestion-link">${link.label}</a>`
     )
     .join(' | ');
 

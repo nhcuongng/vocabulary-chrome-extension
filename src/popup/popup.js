@@ -12,6 +12,12 @@ import {
 } from '../content/popupRenderer.js';
 import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
 import { isInflectedForm } from '../domain/wordInflectionUtils.js';
+import {
+  playAudioWithFallback,
+  speakWord,
+  stopCurrentAudio,
+} from '../domain/audioPlaybackUtils.js';
+import { createHistorySliderElement } from '../content/historySliderRenderer.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -23,91 +29,11 @@ function renderStatus(targetElement, enabled) {
     : 'Auto-popup is disabled: you can enable it anytime.';
 }
 
-const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="15 18 9 12 15 6"></polyline>
-</svg>`;
-
-const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="9 18 15 12 9 6"></polyline>
-</svg>`;
-
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
   <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
 </svg>`;
-
-function speakWord(word, lang = 'en-US') {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return false;
-  }
-
-  try {
-    const synth = window.speechSynthesis;
-    if (synth.paused) {
-      synth.resume();
-    }
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(word);
-    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-    utterance.lang = targetLang;
-    utterance.rate = 0.9;
-
-    const voices = synth.getVoices() || [];
-    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-    }
-
-    synth.speak(utterance);
-    return true;
-  } catch (e) {
-    console.warn('SpeechSynthesis error:', e);
-    return false;
-  }
-}
-
-function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
-  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
-  const encodedWord = encodeURIComponent(fallbackWord || '');
-
-  const candidateUrls = [];
-  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
-    let cleanUrl = String(audioUrl).trim();
-    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
-    candidateUrls.push(cleanUrl);
-  }
-
-  if (fallbackWord) {
-    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
-  }
-
-  let index = 0;
-  function tryPlayNext() {
-    if (index >= candidateUrls.length) {
-      if (fallbackWord) {
-        speakWord(fallbackWord, targetLang);
-      }
-      return;
-    }
-
-    const currentUrl = candidateUrls[index++];
-    try {
-      const audio = new Audio(currentUrl);
-      const promise = audio.play();
-      if (promise !== undefined) {
-        promise.catch(() => {
-          tryPlayNext();
-        });
-      }
-    } catch {
-      tryPlayNext();
-    }
-  }
-
-  tryPlayNext();
-}
 
 async function bootstrapPopupRuntime({
   chromeApi = globalThis.chrome,
@@ -125,6 +51,8 @@ async function bootstrapPopupRuntime({
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
   const sourceMenuBtn = documentObj.getElementById('vocab-source-menu-btn');
   const sourceMenuPopover = documentObj.getElementById('vocab-source-menu-popover');
+  const settingsMenuBtn = documentObj.getElementById('vocab-settings-menu-btn');
+  const settingsMenuPopover = documentObj.getElementById('vocab-settings-menu-popover');
 
   if (!toggleElement) {
     throw new Error('missing #auto-popup-toggle');
@@ -158,6 +86,7 @@ async function bootstrapPopupRuntime({
   let currentSlideIndex = 0;
   const ITEMS_PER_PAGE = 5;
   let isSourceMenuOpen = false;
+  let isSettingsMenuOpen = false;
 
   const updateBodyTheme = (isDark) => {
     if (isDark) {
@@ -258,12 +187,9 @@ async function bootstrapPopupRuntime({
       e.stopPropagation();
       isSourceMenuOpen = !isSourceMenuOpen;
       sourceMenuPopover.style.display = isSourceMenuOpen ? 'flex' : 'none';
-    });
-
-    documentObj.addEventListener('click', (e) => {
-      if (!sourceMenuBtn.contains(e.target) && !sourceMenuPopover.contains(e.target)) {
-        sourceMenuPopover.style.display = 'none';
-        isSourceMenuOpen = false;
+      if (settingsMenuPopover && isSourceMenuOpen) {
+        settingsMenuPopover.style.display = 'none';
+        isSettingsMenuOpen = false;
       }
     });
 
@@ -282,6 +208,34 @@ async function bootstrapPopupRuntime({
       });
     });
   }
+
+  // Settings popover event listeners
+  if (settingsMenuBtn && settingsMenuPopover) {
+    settingsMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isSettingsMenuOpen = !isSettingsMenuOpen;
+      settingsMenuPopover.style.display = isSettingsMenuOpen ? 'flex' : 'none';
+      if (sourceMenuPopover && isSettingsMenuOpen) {
+        sourceMenuPopover.style.display = 'none';
+        isSourceMenuOpen = false;
+      }
+    });
+
+    settingsMenuPopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  documentObj.addEventListener('click', (e) => {
+    if (sourceMenuBtn && sourceMenuPopover && !sourceMenuBtn.contains(e.target) && !sourceMenuPopover.contains(e.target)) {
+      sourceMenuPopover.style.display = 'none';
+      isSourceMenuOpen = false;
+    }
+    if (settingsMenuBtn && settingsMenuPopover && !settingsMenuBtn.contains(e.target) && !settingsMenuPopover.contains(e.target)) {
+      settingsMenuPopover.style.display = 'none';
+      isSettingsMenuOpen = false;
+    }
+  });
 
   await panel.init();
   renderStatus(statusElement, autoPopupController.isAutoPopupEnabled());
@@ -305,64 +259,25 @@ async function bootstrapPopupRuntime({
       return;
     }
 
-    const totalPages = Math.max(1, Math.ceil(allWords.length / ITEMS_PER_PAGE));
-    if (currentSlideIndex >= totalPages) {
-      currentSlideIndex = Math.max(0, totalPages - 1);
-    }
-
-    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
-    const visibleWords = allWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-    const prevBtn = documentObj.createElement('button');
-    prevBtn.type = 'button';
-    prevBtn.className = 'vocab-slide-nav-btn';
-    prevBtn.title = 'Previous slide';
-    prevBtn.disabled = currentSlideIndex <= 0;
-    prevBtn.innerHTML = prevSlideSVG;
-    prevBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (currentSlideIndex > 0) {
-        currentSlideIndex--;
-        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
-      }
-    });
-
-    const slideDiv = documentObj.createElement('div');
-    slideDiv.className = 'vocab-history-slide';
-
     const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
-
-    visibleWords.forEach((word) => {
-      const chip = documentObj.createElement('span');
-      chip.className = `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`;
-      chip.textContent = word;
-      chip.title = word;
-      chip.addEventListener('click', (e) => {
-        e.stopPropagation();
+    const sliderElement = createHistorySliderElement({
+      documentObj,
+      allWords,
+      currentWord,
+      currentSlideIndex,
+      itemsPerPage: ITEMS_PER_PAGE,
+      onSelectWord: (word) => {
         if (searchInput) searchInput.value = word;
         performSearch(word);
         renderHistorySlider(word);
-      });
-      slideDiv.appendChild(chip);
-    });
-
-    const nextBtn = documentObj.createElement('button');
-    nextBtn.type = 'button';
-    nextBtn.className = 'vocab-slide-nav-btn';
-    nextBtn.title = 'Next slide';
-    nextBtn.disabled = currentSlideIndex >= totalPages - 1;
-    nextBtn.innerHTML = nextSlideSVG;
-    nextBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (currentSlideIndex < totalPages - 1) {
-        currentSlideIndex++;
+      },
+      onSlideChange: (newIndex) => {
+        currentSlideIndex = newIndex;
         renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
-      }
+      },
     });
 
-    historySliderContainer.appendChild(prevBtn);
-    historySliderContainer.appendChild(slideDiv);
-    historySliderContainer.appendChild(nextBtn);
+    historySliderContainer.appendChild(sliderElement);
   };
 
   function renderState(state, container) {
@@ -457,6 +372,7 @@ async function bootstrapPopupRuntime({
             h('button', {
               className: 'vocab-popup-audio-btn',
               title: 'US pronunciation',
+              ariaLabel: 'US pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -481,6 +397,7 @@ async function bootstrapPopupRuntime({
             h('button', {
               className: 'vocab-popup-audio-btn',
               title: 'UK pronunciation',
+              ariaLabel: 'UK pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -499,6 +416,7 @@ async function bootstrapPopupRuntime({
             h('button', {
               className: 'vocab-popup-audio-btn',
               title: 'Listen pronunciation',
+              ariaLabel: 'Listen pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -531,6 +449,7 @@ async function bootstrapPopupRuntime({
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
                 title: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
+                ariaLabel: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
                 disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
@@ -583,7 +502,8 @@ async function bootstrapPopupRuntime({
   }
 
   const lookupExecutor = async (word) => {
-    if (!word || typeof word !== 'string' || !/^\w+$/.test(word)) {
+    const cleanWord = typeof word === 'string' ? word.trim().toLowerCase() : '';
+    if (!cleanWord || !/^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
       return {
         status: 'error',
         error: { type: 'invalid-token', message: 'Invalid search token.' },
@@ -592,7 +512,7 @@ async function bootstrapPopupRuntime({
     const source = autoPopupController.getDictionarySource();
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
-        { type: 'LOOKUP_REQUEST', payload: { token: word, source } },
+        { type: 'LOOKUP_REQUEST', payload: { token: cleanWord, source } },
         (response) => {
           resolve(response);
         },
