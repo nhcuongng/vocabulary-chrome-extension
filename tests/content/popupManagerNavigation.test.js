@@ -271,3 +271,59 @@ test('popupManager: history slide displays 5 words per page and paginates with p
   chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
   assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
 });
+
+test('popupManager: header bar contains source menu icon button and clicking opens vertical popover to switch source', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  const lookedUpCalls = [];
+  const sourceChanges = [];
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    onLookupWord: (word, opts) => lookedUpCalls.push({ word, opts }),
+    onSourceChange: (source) => sourceChanges.push(source),
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'test',
+    data: {
+      parsedPayload: {
+        headword: 'test',
+        definitions: ['Def 1'],
+        source: 'auto',
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  // 1. Verify source menu button exists next to close button
+  const sourceBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-btn'));
+  assert.ok(sourceBtn);
+
+  // 2. Verify vertical popover menu items exist
+  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
+  assert.equal(menuItems.length, 3);
+
+  // 3. Find Cambridge menu option and click it
+  const cambridgeOption = menuItems.find((el) => el.getAttribute('data-source') === 'cambridge');
+  assert.ok(cambridgeOption);
+
+  cambridgeOption.dispatchEvent('click');
+
+  assert.deepEqual(sourceChanges, ['cambridge']);
+  assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);
+});

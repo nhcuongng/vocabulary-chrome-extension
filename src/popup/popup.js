@@ -19,8 +19,94 @@ function renderStatus(targetElement, enabled) {
   }
 
   targetElement.textContent = enabled
-    ? 'Auto-popup đang bật: bôi đen từ để tra cứu ngay.'
-    : 'Auto-popup đang tắt: bạn có thể bật lại bất cứ lúc nào.';
+    ? 'Auto-popup is enabled: select text on pages to look up immediately.'
+    : 'Auto-popup is disabled: you can enable it anytime.';
+}
+
+const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="15 18 9 12 15 6"></polyline>
+</svg>`;
+
+const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="9 18 15 12 9 6"></polyline>
+</svg>`;
+
+const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>`;
+
+function speakWord(word, lang = 'en-US') {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return false;
+  }
+
+  try {
+    const synth = window.speechSynthesis;
+    if (synth.paused) {
+      synth.resume();
+    }
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+    utterance.lang = targetLang;
+    utterance.rate = 0.9;
+
+    const voices = synth.getVoices() || [];
+    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    }
+
+    synth.speak(utterance);
+    return true;
+  } catch (e) {
+    console.warn('SpeechSynthesis error:', e);
+    return false;
+  }
+}
+
+function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
+  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+  const encodedWord = encodeURIComponent(fallbackWord || '');
+
+  const candidateUrls = [];
+  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
+    let cleanUrl = String(audioUrl).trim();
+    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
+    candidateUrls.push(cleanUrl);
+  }
+
+  if (fallbackWord) {
+    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
+  }
+
+  let index = 0;
+  function tryPlayNext() {
+    if (index >= candidateUrls.length) {
+      if (fallbackWord) {
+        speakWord(fallbackWord, targetLang);
+      }
+      return;
+    }
+
+    const currentUrl = candidateUrls[index++];
+    try {
+      const audio = new Audio(currentUrl);
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          tryPlayNext();
+        });
+      }
+    } catch {
+      tryPlayNext();
+    }
+  }
+
+  tryPlayNext();
 }
 
 async function bootstrapPopupRuntime({
@@ -29,13 +115,16 @@ async function bootstrapPopupRuntime({
 } = {}) {
   const toggleElement = documentObj.getElementById('auto-popup-toggle');
   const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
+  const dictionarySourceSelect = documentObj.getElementById('dictionary-source-select');
   const statusElement = documentObj.getElementById('auto-popup-status');
   const attributionElement = documentObj.getElementById('attribution');
   const disclosureElement = documentObj.getElementById('disclosure');
   const searchInput = documentObj.getElementById('vocab-search-input');
   const searchClearBtn = documentObj.getElementById('vocab-search-clear');
-  const searchSuggestionsContainer = documentObj.getElementById('vocab-search-suggestions');
+  const historySliderContainer = documentObj.getElementById('vocab-history-slider-wrapper');
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
+  const sourceMenuBtn = documentObj.getElementById('vocab-source-menu-btn');
+  const sourceMenuPopover = documentObj.getElementById('vocab-source-menu-popover');
 
   if (!toggleElement) {
     throw new Error('missing #auto-popup-toggle');
@@ -65,6 +154,10 @@ async function bootstrapPopupRuntime({
 
   let autoPopupEnabled = true;
   let darkMode = false;
+  let dictionarySource = 'auto';
+  let currentSlideIndex = 0;
+  const ITEMS_PER_PAGE = 5;
+  let isSourceMenuOpen = false;
 
   const updateBodyTheme = (isDark) => {
     if (isDark) {
@@ -74,13 +167,29 @@ async function bootstrapPopupRuntime({
     }
   };
 
+  const updateSourceMenuUI = (source) => {
+    if (dictionarySourceSelect) {
+      dictionarySourceSelect.value = source;
+    }
+    const menuItems = documentObj.querySelectorAll('#vocab-source-menu-popover .vocab-source-menu-item');
+    menuItems.forEach((item) => {
+      if (item.getAttribute('data-source') === source) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  };
+
   const autoPopupController = {
     async start() {
       const settings = await settingsStore.load();
       autoPopupEnabled = Boolean(settings?.autoPopupEnabled);
       darkMode = Boolean(settings?.darkMode);
+      dictionarySource = settings?.dictionarySource || 'auto';
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
+      updateSourceMenuUI(dictionarySource);
     },
     stop() {},
     isAutoPopupEnabled() {
@@ -88,6 +197,9 @@ async function bootstrapPopupRuntime({
     },
     isDarkMode() {
       return darkMode;
+    },
+    getDictionarySource() {
+      return dictionarySource;
     },
     async setAutoPopupEnabled(enabled) {
       autoPopupEnabled = Boolean(enabled);
@@ -98,13 +210,20 @@ async function bootstrapPopupRuntime({
       updateBodyTheme(darkMode);
       await settingsStore.update({ darkMode });
     },
+    async setDictionarySource(source) {
+      dictionarySource = source || 'auto';
+      updateSourceMenuUI(dictionarySource);
+      await settingsStore.update({ dictionarySource });
+    },
     subscribe(listener) {
       return settingsStore.subscribe((nextSettings) => {
         autoPopupEnabled = Boolean(nextSettings?.autoPopupEnabled);
         darkMode = Boolean(nextSettings?.darkMode);
+        dictionarySource = nextSettings?.dictionarySource || 'auto';
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
-        listener({ autoPopupEnabled, darkMode });
+        updateSourceMenuUI(dictionarySource);
+        listener({ autoPopupEnabled, darkMode, dictionarySource });
       });
     },
   };
@@ -119,7 +238,7 @@ async function bootstrapPopupRuntime({
         });
       }
     } catch {
-      // Best-effort runtime bootstrap: popup vẫn hoạt động dù inject thất bại.
+      // Best-effort runtime bootstrap: popup still works even if injection fails.
     }
   }
 
@@ -133,6 +252,37 @@ async function bootstrapPopupRuntime({
   };
   darkModeToggleElement.addEventListener('change', handleDarkModeChange);
 
+  // Source popover event listeners
+  if (sourceMenuBtn && sourceMenuPopover) {
+    sourceMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isSourceMenuOpen = !isSourceMenuOpen;
+      sourceMenuPopover.style.display = isSourceMenuOpen ? 'flex' : 'none';
+    });
+
+    documentObj.addEventListener('click', (e) => {
+      if (!sourceMenuBtn.contains(e.target) && !sourceMenuPopover.contains(e.target)) {
+        sourceMenuPopover.style.display = 'none';
+        isSourceMenuOpen = false;
+      }
+    });
+
+    const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
+    menuItems.forEach((item) => {
+      item.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const nextSource = item.getAttribute('data-source');
+        sourceMenuPopover.style.display = 'none';
+        isSourceMenuOpen = false;
+        await autoPopupController.setDictionarySource(nextSource);
+        const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (currentWord) {
+          performSearch(currentWord);
+        }
+      });
+    });
+  }
+
   await panel.init();
   renderStatus(statusElement, autoPopupController.isAutoPopupEnabled());
 
@@ -140,28 +290,79 @@ async function bootstrapPopupRuntime({
     renderStatus(statusElement, nextState?.autoPopupEnabled);
   });
 
-  const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-  </svg>`;
+  const renderHistorySlider = (query = '') => {
+    if (!historySliderContainer) return;
+    historySliderContainer.replaceChildren();
 
-  const updateSuggestions = (query = '') => {
-    if (!searchSuggestionsContainer) return;
-    searchSuggestionsContainer.replaceChildren();
-    const suggestions = historyStore.getSearchSuggestions(query, 5);
-    suggestions.forEach((word) => {
-      const chip = documentObj.createElement('button');
-      chip.className = 'history-chip';
+    let allWords = [];
+    if (query) {
+      allWords = historyStore.getSearchSuggestions(query, 50);
+    } else {
+      allWords = historyStore.getRecentSearchWords(50);
+    }
+
+    if (!allWords || allWords.length === 0) {
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(allWords.length / ITEMS_PER_PAGE));
+    if (currentSlideIndex >= totalPages) {
+      currentSlideIndex = Math.max(0, totalPages - 1);
+    }
+
+    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
+    const visibleWords = allWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    const prevBtn = documentObj.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'vocab-slide-nav-btn';
+    prevBtn.title = 'Previous slide';
+    prevBtn.disabled = currentSlideIndex <= 0;
+    prevBtn.innerHTML = prevSlideSVG;
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
+      }
+    });
+
+    const slideDiv = documentObj.createElement('div');
+    slideDiv.className = 'vocab-history-slide';
+
+    const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    visibleWords.forEach((word) => {
+      const chip = documentObj.createElement('span');
+      chip.className = `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`;
       chip.textContent = word;
+      chip.title = word;
       chip.addEventListener('click', (e) => {
         e.stopPropagation();
         if (searchInput) searchInput.value = word;
         performSearch(word);
-        searchSuggestionsContainer.replaceChildren();
+        renderHistorySlider(word);
       });
-      searchSuggestionsContainer.appendChild(chip);
+      slideDiv.appendChild(chip);
     });
+
+    const nextBtn = documentObj.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'vocab-slide-nav-btn';
+    nextBtn.title = 'Next slide';
+    nextBtn.disabled = currentSlideIndex >= totalPages - 1;
+    nextBtn.innerHTML = nextSlideSVG;
+    nextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentSlideIndex < totalPages - 1) {
+        currentSlideIndex++;
+        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
+      }
+    });
+
+    historySliderContainer.appendChild(prevBtn);
+    historySliderContainer.appendChild(slideDiv);
+    historySliderContainer.appendChild(nextBtn);
   };
 
   function renderState(state, container) {
@@ -222,51 +423,91 @@ async function bootstrapPopupRuntime({
         container.appendChild(h('div', { className: cls }));
       } else if (item.type === 'headword') {
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
-        const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
+        const source = viewModel?.source || item.source || 'vocabulary';
+        const defaultUrl = source === 'cambridge'
+          ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
+          : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
+        const lookupUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
         container.appendChild(
           h(
             'p',
             { className: 'vocab-popup-headword' },
-            h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
+            h('a', { href: lookupUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
       } else if (item.type === 'pronunciation') {
         const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
-        if (item.audio?.us && item.value.includes('US')) {
-          const usMatch = item.value.match(/US\s*([^·]+)/);
-          if (usMatch) {
-            pronContainer.appendChild(h('span', {}, `US ${usMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.us).play().catch(() => {});
-                },
-              })
-            );
+        const textValue = typeof item.value === 'string' ? item.value.trim() : '';
+        const audioObj = item.audio || {};
+        const word = (viewModel?.headword || searchInput?.value || '').trim();
+
+        let hasRendered = false;
+
+        if (audioObj.us || textValue.includes('US')) {
+          let usText = 'US';
+          const usMatch = textValue.match(/US\s*([^·]+)/);
+          if (usMatch && usMatch[1].trim()) {
+            usText = `US ${usMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('UK')) {
+            usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, usText));
+          pronContainer.appendChild(
+            h('button', {
+              className: 'vocab-popup-audio-btn',
+              title: 'US pronunciation',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us, word, 'en-US');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (item.audio?.uk && item.value.includes('UK')) {
-          const ukMatch = item.value.match(/UK\s*([^·]+)/);
-          if (ukMatch) {
-            pronContainer.appendChild(h('span', {}, `UK ${ukMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.uk).play().catch(() => {});
-                },
-              })
-            );
+
+        if (audioObj.uk || textValue.includes('UK')) {
+          let ukText = 'UK';
+          const ukMatch = textValue.match(/UK\s*([^·]+)/);
+          if (ukMatch && ukMatch[1].trim()) {
+            ukText = `UK ${ukMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('US')) {
+            ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, ukText));
+          pronContainer.appendChild(
+            h('button', {
+              className: 'vocab-popup-audio-btn',
+              title: 'UK pronunciation',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.uk, word, 'en-GB');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (!item.audio?.us && !item.audio?.uk) {
-          pronContainer.appendChild(h('span', {}, item.value));
+
+        if (!hasRendered) {
+          if (textValue) {
+            pronContainer.appendChild(h('span', {}, textValue));
+          }
+          pronContainer.appendChild(
+            h('button', {
+              className: 'vocab-popup-audio-btn',
+              title: 'Listen pronunciation',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
+              },
+            })
+          );
         }
+
         container.appendChild(pronContainer);
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
@@ -289,14 +530,14 @@ async function bootstrapPopupRuntime({
               'button',
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
-                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                title: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
                 disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
                   if (isInflected) return;
                   if (searchInput) searchInput.value = famWord;
                   performSearch(famWord);
-                  if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();
+                  renderHistorySlider(famWord);
                 },
               },
               famWord
@@ -345,13 +586,17 @@ async function bootstrapPopupRuntime({
     if (!word || typeof word !== 'string' || !/^\w+$/.test(word)) {
       return {
         status: 'error',
-        error: { type: 'invalid-token', message: 'Từ tìm kiếm không hợp lệ.' },
+        error: { type: 'invalid-token', message: 'Invalid search token.' },
       };
     }
+    const source = autoPopupController.getDictionarySource();
     return new Promise((resolve) => {
-      chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: word } }, (response) => {
-        resolve(response);
-      });
+      chromeApi.runtime.sendMessage(
+        { type: 'LOOKUP_REQUEST', payload: { token: word, source } },
+        (response) => {
+          resolve(response);
+        },
+      );
     });
   };
 
@@ -374,10 +619,13 @@ async function bootstrapPopupRuntime({
       renderState({ status: 'loading' }, searchResultsContainer);
     }
 
-    historyStore.addSearchWord(word).catch(() => {});
-
     try {
       const response = await lookupExecutor(word);
+      if (response && response.status === 'success') {
+        const canonicalWord = response.data?.parsedPayload?.headword || word;
+        await historyStore.addSearchWord(canonicalWord).catch(() => {});
+        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
+      }
       if (searchResultsContainer) {
         renderState(response, searchResultsContainer);
       }
@@ -392,7 +640,7 @@ async function bootstrapPopupRuntime({
   const handleInput = () => {
     const value = searchInput.value.trim().toLowerCase();
     clearTimeout(debounceTimer);
-    updateSuggestions(value);
+    renderHistorySlider(value);
 
     if (!value) {
       performSearch('');
@@ -407,7 +655,7 @@ async function bootstrapPopupRuntime({
   const handleClear = () => {
     searchInput.value = '';
     performSearch('');
-    updateSuggestions('');
+    renderHistorySlider('');
     searchInput.focus();
   };
 
@@ -417,14 +665,13 @@ async function bootstrapPopupRuntime({
       if (value) {
         clearTimeout(debounceTimer);
         performSearch(value);
-        if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();
       }
     }
   };
 
   const handleFocus = () => {
     const value = searchInput.value.trim().toLowerCase();
-    updateSuggestions(value);
+    renderHistorySlider(value);
   };
 
   if (searchInput) {
@@ -438,7 +685,7 @@ async function bootstrapPopupRuntime({
 
   if (searchInput) {
     searchInput.focus();
-    updateSuggestions('');
+    renderHistorySlider('');
   }
 
   const destroy = () => {

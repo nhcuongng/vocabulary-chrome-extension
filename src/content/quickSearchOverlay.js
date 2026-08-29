@@ -8,6 +8,78 @@ const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="2
   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
 </svg>`;
 
+function speakWord(word, lang = 'en-US') {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return false;
+  }
+
+  try {
+    const synth = window.speechSynthesis;
+    if (synth.paused) {
+      synth.resume();
+    }
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+    utterance.lang = targetLang;
+    utterance.rate = 0.9;
+
+    const voices = synth.getVoices() || [];
+    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    }
+
+    synth.speak(utterance);
+    return true;
+  } catch (e) {
+    console.warn('SpeechSynthesis error:', e);
+    return false;
+  }
+}
+
+function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
+  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+  const encodedWord = encodeURIComponent(fallbackWord || '');
+
+  const candidateUrls = [];
+  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
+    let cleanUrl = String(audioUrl).trim();
+    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
+    candidateUrls.push(cleanUrl);
+  }
+
+  if (fallbackWord) {
+    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
+  }
+
+  let index = 0;
+  function tryPlayNext() {
+    if (index >= candidateUrls.length) {
+      if (fallbackWord) {
+        speakWord(fallbackWord, targetLang);
+      }
+      return;
+    }
+
+    const currentUrl = candidateUrls[index++];
+    try {
+      const audio = new Audio(currentUrl);
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          tryPlayNext();
+        });
+      }
+    } catch {
+      tryPlayNext();
+    }
+  }
+
+  tryPlayNext();
+}
+
 export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecutor, historyAdapter }) {
   let overlayElement = null;
   let isVisible = false;
@@ -164,7 +236,45 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .vocab-family-chip { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; font-weight: 500; transition: background 0.15s, color 0.15s; }
       .vocab-family-chip:hover { background: #dcfce7; color: #14532d; border-color: #86efac; }
       .vocab-family-chip.disabled-inflection { cursor: not-allowed; opacity: 0.65; background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
-      .vocab-family-chip.disabled-inflection:hover { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+      .vocab-source-pills-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 8px;
+        margin-top: 2px;
+      }
+      .vocab-source-pill-label {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-right: 2px;
+        user-select: none;
+      }
+      .vocab-source-pill {
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.15s ease;
+        line-height: 1.3;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .vocab-source-pill:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+      .vocab-source-pill.active {
+        background-color: #e0e7ff;
+        color: #3730a3;
+        border-color: #c7d2fe;
+        font-weight: 600;
+      }
 
       /* Dark mode */
       .container.dark-mode { background: #1f2937; color: #f3f4f6; border: 1px solid #374151; }
@@ -180,6 +290,10 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .container.dark-mode .vocab-family-chip { background: #064e3b; color: #a7f3d0; border-color: #047857; }
       .container.dark-mode .vocab-family-chip.disabled-inflection { background: #374151; color: #9ca3af; border-color: #4b5563; }
       .container.dark-mode .vocab-family-chip.disabled-inflection:hover { background: #374151; color: #9ca3af; border-color: #4b5563; }
+      .container.dark-mode .vocab-source-pill { background: #374151; color: #9ca3af; border-color: #4b5563; }
+      .container.dark-mode .vocab-source-pill:hover { background: #4b5563; color: #f3f4f6; }
+      .container.dark-mode .vocab-source-pill.active { background: #1e3a8a; color: #bfdbfe; border-color: #3b82f6; }
+      .container.dark-mode .vocab-source-pill-label { color: #6b7280; }
       .container.dark-mode .skeleton { background: #374151; background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%); }
     `;
 
@@ -288,15 +402,18 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
     overlayElement._updateSuggestions = updateSuggestions;
   }
 
-  async function performSearch(word, resultsArea) {
+  async function performSearch(word, resultsArea, source) {
     currentHeadword = word;
-    if (historyAdapter?.addSearchWord) {
-      historyAdapter.addSearchWord(word).catch(() => {});
-    }
     renderState({ status: 'loading' }, resultsArea);
 
     try {
-      const response = await lookupExecutor({ headword: word });
+      const response = await lookupExecutor({ headword: word, source });
+      if (response && response.status === 'success') {
+        const canonicalWord = response.data?.parsedPayload?.headword || word;
+        if (historyAdapter?.addSearchWord) {
+          await historyAdapter.addSearchWord(canonicalWord).catch(() => {});
+        }
+      }
       renderState(response, resultsArea);
     } catch (error) {
       renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, resultsArea);
@@ -360,52 +477,122 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
         const cls = item.value === 'def-short' ? 'skeleton skeleton-def short' : `skeleton skeleton-${item.value}`;
         container.appendChild(h('div', { className: cls }));
       } else if (item.type === 'headword') {
+        const activeSource = viewModel?.source || item.source || 'auto';
+        const pillsBar = h('div', { className: 'vocab-source-pills-bar' });
+        const label = h('span', { className: 'vocab-source-pill-label' }, 'Nguồn:');
+        pillsBar.appendChild(label);
+
+        [
+          { id: 'auto', label: '⚡ Auto' },
+          { id: 'vocabulary', label: 'Vocabulary.com' },
+          { id: 'cambridge', label: 'Cambridge' },
+        ].forEach((opt) => {
+          const isActive = activeSource === opt.id;
+          const pill = h(
+            'button',
+            {
+              type: 'button',
+              className: `vocab-source-pill ${isActive ? 'active' : ''}`,
+              title: `Chuyển nguồn tra từ sang ${opt.label}`,
+              'data-source': opt.id,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                if (isActive) return;
+                performSearch(currentHeadword, container, opt.id);
+              },
+            },
+            opt.label
+          );
+          pillsBar.appendChild(pill);
+        });
+        container.appendChild(pillsBar);
+
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
-        const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
+        const source = viewModel?.source || item.source || 'vocabulary';
+        const defaultUrl = source === 'cambridge'
+          ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
+          : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
+        const lookupUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
         container.appendChild(
           h(
             'p',
             { className: 'vocab-popup-headword' },
-            h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
+            h('a', { href: lookupUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
       } else if (item.type === 'pronunciation') {
         const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
-        if (item.audio?.us && item.value.includes('US')) {
-          const usMatch = item.value.match(/US\s*([^·]+)/);
-          if (usMatch) {
-            pronContainer.appendChild(h('span', {}, `US ${usMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.us).play().catch(() => {});
-                },
-              })
-            );
+        const textValue = typeof item.value === 'string' ? item.value.trim() : '';
+        const audioObj = item.audio || {};
+        const word = (viewModel?.headword || currentHeadword || '').trim();
+
+        let hasRendered = false;
+
+        if (audioObj.us || textValue.includes('US')) {
+          let usText = 'US';
+          const usMatch = textValue.match(/US\s*([^·]+)/);
+          if (usMatch && usMatch[1].trim()) {
+            usText = `US ${usMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('UK')) {
+            usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, usText));
+          pronContainer.appendChild(
+            h('button', {
+              title: 'US pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us, word, 'en-US');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (item.audio?.uk && item.value.includes('UK')) {
-          const ukMatch = item.value.match(/UK\s*([^·]+)/);
-          if (ukMatch) {
-            pronContainer.appendChild(h('span', {}, `UK ${ukMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.uk).play().catch(() => {});
-                },
-              })
-            );
+
+        if (audioObj.uk || textValue.includes('UK')) {
+          let ukText = 'UK';
+          const ukMatch = textValue.match(/UK\s*([^·]+)/);
+          if (ukMatch && ukMatch[1].trim()) {
+            ukText = `UK ${ukMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('US')) {
+            ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, ukText));
+          pronContainer.appendChild(
+            h('button', {
+              title: 'UK pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.uk, word, 'en-GB');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (!item.audio?.us && !item.audio?.uk) {
-          pronContainer.appendChild(h('span', {}, item.value));
+
+        if (!hasRendered) {
+          if (textValue) {
+            pronContainer.appendChild(h('span', {}, textValue));
+          }
+          pronContainer.appendChild(
+            h('button', {
+              title: 'Listen pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
+              },
+            })
+          );
         }
+
         container.appendChild(pronContainer);
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];

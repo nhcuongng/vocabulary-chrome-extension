@@ -21,17 +21,28 @@ test('normalizeUserSettings: tương thích ngược với dữ liệu legacy kh
   assert.equal(normalized.autoPopupEnabled, false);
 });
 
+test('normalizeUserSettings: chuẩn hóa dictionarySource chính xác hoặc fallback về auto', () => {
+  assert.equal(normalizeUserSettings({ dictionarySource: 'cambridge' }).dictionarySource, 'cambridge');
+  assert.equal(normalizeUserSettings({ dictionarySource: 'vocabulary' }).dictionarySource, 'vocabulary');
+  assert.equal(normalizeUserSettings({ dictionarySource: 'auto' }).dictionarySource, 'auto');
+  assert.equal(normalizeUserSettings({ dictionarySource: 'unknown-source' }).dictionarySource, 'auto');
+});
+
 test('mergeUserSettings: merge patch nhưng vẫn chuẩn hóa theo schema hiện tại', () => {
   const merged = mergeUserSettings(
     {
       schemaVersion: 999,
       autoPopupEnabled: true,
+      dictionarySource: 'auto',
     },
     {
       autoPopupEnabled: false,
+      dictionarySource: 'cambridge',
     },
   );
 
   assert.equal(merged.schemaVersion, USER_SETTINGS_SCHEMA_VERSION);
   assert.equal(merged.autoPopupEnabled, false);
+  assert.equal(merged.dictionarySource, 'cambridge');
 });
+

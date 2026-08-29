@@ -85,3 +85,16 @@ test('history adapter: clearSearchHistory empties the history', async () => {
   await adapter.clearSearchHistory();
   assert.deepEqual(adapter.getSnapshot(), []);
 });
+
+test('history adapter: handles empty or non-string word safely', async () => {
+  const storageArea = createMockStorageArea();
+  const adapter = createChromeStorageHistoryAdapter({ storageArea });
+  await adapter.load();
+
+  await adapter.addSearchWord('valid');
+  await adapter.addSearchWord('');
+  await adapter.addSearchWord(null);
+
+  assert.deepEqual(adapter.getSnapshot(), ['valid']);
+});
+

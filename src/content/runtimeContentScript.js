@@ -37,6 +37,11 @@ export async function bootstrapContentRuntime({
   });
   await historyStore.load().catch(() => {});
 
+  let pendingTriggerRequest = null;
+  let isUserInitiated = false;
+  let darkMode = false;
+  let dictionarySource = 'auto';
+
   const lookupExecutor = async ({ headword }) => {
     if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
       return {
@@ -45,18 +50,24 @@ export async function bootstrapContentRuntime({
       };
     }
     return new Promise((resolve) => {
-      chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: headword } }, (response) => {
-        resolve(response);
-      });
+      chromeApi.runtime.sendMessage(
+        {
+          type: 'LOOKUP_REQUEST',
+          payload: { token: headword, source: dictionarySource },
+        },
+        (response) => {
+          resolve(response);
+        },
+      );
     });
   };
 
-  const handlePopupLookupWord = (word, { fromHistory = false } = {}) => {
+  const handlePopupLookupWord = (word, { fromHistory = false, source } = {}) => {
     isUserInitiated = true;
-    if (!fromHistory) {
-      historyStore.addSearchWord(word).catch(() => {});
+    if (source) {
+      dictionarySource = source;
     }
-    orchestrator.runLookup({ payload: { token: word } });
+    orchestrator.runLookup({ payload: { token: word, source: dictionarySource } });
   };
 
   const popupManager = createPopupManager({
@@ -64,11 +75,11 @@ export async function bootstrapContentRuntime({
     windowObj,
     onLookupWord: handlePopupLookupWord,
     historyAdapter: historyStore,
+    settingsAdapter: settingsStore,
+    onSourceChange: (newSource) => {
+      dictionarySource = newSource || 'auto';
+    },
   });
-
-  let pendingTriggerRequest = null;
-  let isUserInitiated = false;
-  let darkMode = false;
 
   const triggerIconManager = createTriggerIconManager({
     documentObj,
@@ -77,8 +88,6 @@ export async function bootstrapContentRuntime({
       if (pendingTriggerRequest) {
         isUserInitiated = true;
         triggerIconManager.removeIcon();
-        const token = pendingTriggerRequest.payload.token;
-        if (token) historyStore.addSearchWord(token).catch(() => {});
         const currentState = orchestrator.getState();
         if (currentState.status !== 'idle') {
           const selection = readSelectionSnapshot(windowObj);
@@ -96,6 +105,12 @@ export async function bootstrapContentRuntime({
     lookupExecutor,
     onStateChange: (state) => {
       const autoPopupEnabled = autoPopupController.isAutoPopupEnabled();
+      if (state.status === 'success') {
+        const foundWord = state.data?.parsedPayload?.headword || state.headword;
+        if (foundWord) {
+          historyStore.addSearchWord(foundWord).catch(() => {});
+        }
+      }
       if (state.status === 'success' || state.status === 'not-found' || state.status === 'error' || state.status === 'loading') {
         if (!autoPopupEnabled && !isUserInitiated) {
           return;
@@ -119,8 +134,6 @@ export async function bootstrapContentRuntime({
       isUserInitiated = true;
       triggerIconManager.removeIcon();
       pendingTriggerRequest = null;
-      const token = request?.payload?.token;
-      if (token) historyStore.addSearchWord(token).catch(() => {});
       orchestrator.runLookup(request);
     },
     onTriggerIconRequest: (request) => {
@@ -146,6 +159,7 @@ export async function bootstrapContentRuntime({
       pendingTriggerRequest = null;
     }
     darkMode = Boolean(nextState.darkMode);
+    dictionarySource = nextState.dictionarySource || 'auto';
   });
 
   await autoPopupController.start();

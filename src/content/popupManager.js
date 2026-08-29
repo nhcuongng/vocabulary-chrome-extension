@@ -27,7 +27,91 @@ const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height=
   <polyline points="9 18 15 12 9 6"></polyline>
 </svg>`;
 
-export function createPopupManager({ documentObj, windowObj, onLookupWord, historyAdapter } = {}) {
+const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+</svg>`;
+
+function speakWord(word, lang = 'en-US') {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return false;
+  }
+
+  try {
+    const synth = window.speechSynthesis;
+    if (synth.paused) {
+      synth.resume();
+    }
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+    utterance.lang = targetLang;
+    utterance.rate = 0.9;
+
+    const voices = synth.getVoices() || [];
+    const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    }
+
+    synth.speak(utterance);
+    return true;
+  } catch (e) {
+    console.warn('SpeechSynthesis error:', e);
+    return false;
+  }
+}
+
+function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
+  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+  const encodedWord = encodeURIComponent(fallbackWord || '');
+
+  const candidateUrls = [];
+  if (audioUrl && !audioUrl.includes('api.dictionaryapi.dev/media/')) {
+    let cleanUrl = String(audioUrl).trim();
+    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
+    candidateUrls.push(cleanUrl);
+  }
+
+  if (fallbackWord) {
+    candidateUrls.push(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${encodedWord}`);
+  }
+
+  let index = 0;
+  function tryPlayNext() {
+    if (index >= candidateUrls.length) {
+      if (fallbackWord) {
+        speakWord(fallbackWord, targetLang);
+      }
+      return;
+    }
+
+    const currentUrl = candidateUrls[index++];
+    try {
+      const audio = new Audio(currentUrl);
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          tryPlayNext();
+        });
+      }
+    } catch {
+      tryPlayNext();
+    }
+  }
+
+  tryPlayNext();
+}
+
+export function createPopupManager({
+  documentObj,
+  windowObj,
+  onLookupWord,
+  historyAdapter,
+  settingsAdapter,
+  onSourceChange,
+} = {}) {
   let popupElement = null;
   let popupCtrl = null;
   let absoluteSelectionRect = null;
@@ -244,6 +328,116 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #1d4ed8;
         border-color: #93c5fd;
         font-weight: 600;
+      }
+
+      .vocab-popup-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        flex-shrink: 0;
+        position: relative;
+      }
+
+      .vocab-source-menu-wrapper {
+        position: relative;
+      }
+
+      .vocab-source-menu-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+      }
+      .vocab-source-menu-btn:hover {
+        background-color: #f3f4f6;
+        color: #1677C9;
+      }
+
+      .vocab-source-menu-popover {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 1000;
+        min-width: 230px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0,0,0,0.06);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .vocab-source-menu-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #9ca3af;
+        padding: 4px 8px 2px 8px;
+        user-select: none;
+      }
+
+      .vocab-source-menu-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        box-sizing: border-box;
+        transition: background-color 0.15s ease;
+      }
+      .vocab-source-menu-item:hover {
+        background-color: #f3f4f6;
+      }
+      .vocab-source-menu-item.active {
+        background-color: #e0e7ff;
+      }
+      .vocab-source-menu-item .source-item-text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        flex: 1;
+        min-width: 0;
+      }
+      .vocab-source-menu-item .source-item-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+      }
+      .vocab-source-menu-item.active .source-item-name {
+        color: #3730a3;
+      }
+      .vocab-source-menu-item .source-item-hint {
+        font-size: 10px;
+        color: #6b7280;
+      }
+      .vocab-source-menu-item.active .source-item-hint {
+        color: #4f46e5;
+      }
+      .vocab-source-menu-item .source-item-check {
+        font-size: 13px;
+        font-weight: 700;
+        color: #4f46e5;
+        opacity: 0;
+        margin-left: 8px;
+        flex-shrink: 0;
+      }
+      .vocab-source-menu-item.active .source-item-check {
+        opacity: 1;
       }
 
       /* Search History Inline Bar */
@@ -509,6 +703,39 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         color: #93c5fd;
         border-color: #3b82f6;
       }
+      .vocab-popup.dark-mode .vocab-source-menu-btn:hover {
+        background-color: #374151;
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-popover {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-title {
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item:hover {
+        background-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active {
+        background-color: #1e3a8a;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item .source-item-name {
+        color: #e5e7eb;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-name {
+        color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item .source-item-hint {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-hint {
+        color: #bfdbfe;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-check {
+        color: #60a5fa;
+      }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
         border-color: #4b5563;
@@ -606,13 +833,17 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
     popupElement.style.maxWidth = `${Math.min(390, viewport.width - 16)}px`;
   }
 
-  function navigateToWord(word, { fromHistory = false } = {}) {
+  function navigateToWord(word, { fromHistory = false, source } = {}) {
     if (!word || typeof word !== 'string') return;
     const normalized = word.trim().toLowerCase();
     if (!normalized) return;
 
     if (typeof onLookupWord === 'function') {
-      onLookupWord(normalized, { fromHistory });
+      const opts = { fromHistory };
+      if (source) {
+        opts.source = source;
+      }
+      onLookupWord(normalized, opts);
     }
   }
 
@@ -673,7 +904,7 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       return el;
     }
 
-    // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Close Button
+    // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Source Switcher, Close Button
     const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
@@ -745,8 +976,82 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
       headerBar.appendChild(emptySlide);
     }
 
-    // 2. Close button
+    // 2. Header Actions: Source Menu Button (Icon with vertical popover) + Close Button
+    const headerActions = h('div', { className: 'vocab-popup-header-actions' });
+    const sourceWrapper = h('div', { className: 'vocab-source-menu-wrapper' });
+
+    const activeDictSource =
+      settingsAdapter?.getSnapshot?.()?.dictionarySource ||
+      viewModel?.source ||
+      'auto';
+
+    let isMenuOpen = false;
+    const popoverMenu = h('div', { className: 'vocab-source-menu-popover', style: { display: 'none' } });
+
+    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, 'Nguồn từ điển');
+    popoverMenu.appendChild(menuTitle);
+
+    const sourceOptions = [
+      { id: 'auto', name: '⚡ Tự động (Auto)', hint: 'Vocab.com → Cambridge' },
+      { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Nghĩa giải thích & từ gia đình' },
+      { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Phát âm UK/US chuẩn & IPA' },
+    ];
+
+    sourceOptions.forEach((s) => {
+      const isActive = activeDictSource === s.id;
+      const itemBtn = h(
+        'button',
+        {
+          type: 'button',
+          className: `vocab-source-menu-item ${isActive ? 'active' : ''}`,
+          'data-source': s.id,
+          title: `Chọn nguồn: ${s.name}`,
+          onClick: async (e) => {
+            e?.stopPropagation?.();
+            popoverMenu.style.display = 'none';
+            isMenuOpen = false;
+            if (isActive) return;
+            if (settingsAdapter?.update) {
+              await settingsAdapter.update({ dictionarySource: s.id });
+            }
+            if (typeof onSourceChange === 'function') {
+              onSourceChange(s.id);
+            }
+            if (currentWord) {
+              navigateToWord(currentWord, { source: s.id });
+            }
+          },
+        },
+        h(
+          'div',
+          { className: 'source-item-text' },
+          h('span', { className: 'source-item-name' }, s.name),
+          h('span', { className: 'source-item-hint' }, s.hint)
+        ),
+        h('span', { className: 'source-item-check' }, '✓')
+      );
+      popoverMenu.appendChild(itemBtn);
+    });
+
+    const sourceBtn = h('button', {
+      type: 'button',
+      className: 'vocab-source-menu-btn',
+      title: 'Chọn nguồn từ điển',
+      ariaLabel: 'Chọn nguồn từ điển',
+      innerHTML: dictionarySVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        isMenuOpen = !isMenuOpen;
+        popoverMenu.style.display = isMenuOpen ? 'flex' : 'none';
+      },
+    });
+
+    sourceWrapper.appendChild(sourceBtn);
+    sourceWrapper.appendChild(popoverMenu);
+    headerActions.appendChild(sourceWrapper);
+
     const closeBtn = h('button', {
+      type: 'button',
       className: 'vocab-popup-close-btn',
       title: 'Đóng popup',
       ariaLabel: 'Close popup',
@@ -760,8 +1065,9 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
         }
       },
     });
-    headerBar.appendChild(closeBtn);
+    headerActions.appendChild(closeBtn);
 
+    headerBar.appendChild(headerActions);
     popupContainer.appendChild(headerBar);
 
     // 2. Render Main Body Content
@@ -781,53 +1087,91 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
           typeof item.value === 'string' && item.value.length > 0
             ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
             : item.value;
-        const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
+        const source = viewModel?.source || item.source || 'vocabulary';
+        const defaultUrl = source === 'cambridge'
+          ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
+          : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
+        const headwordUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
         popupContainer.appendChild(
           h(
             'p',
             { className: 'vocab-popup-headword' },
-            h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
+            h('a', { href: headwordUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
       } else if (item.type === 'pronunciation') {
         const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
-        if (item.audio && item.audio.us && item.value.includes('US')) {
-          const usMatch = item.value.match(/US\s*([^·]+)/);
-          if (usMatch) {
-            pronContainer.appendChild(h('span', {}, `US ${usMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                title: 'US pronunciation',
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.us).play().catch((err) => console.warn('Audio play failed', err));
-                },
-              })
-            );
+        const textValue = typeof item.value === 'string' ? item.value.trim() : '';
+        const audioObj = item.audio || {};
+        const word = (viewModel?.headword || '').trim();
+
+        let hasRendered = false;
+
+        if (audioObj.us || textValue.includes('US')) {
+          let usText = 'US';
+          const usMatch = textValue.match(/US\s*([^·]+)/);
+          if (usMatch && usMatch[1].trim()) {
+            usText = `US ${usMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('UK')) {
+            usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, usText));
+          pronContainer.appendChild(
+            h('button', {
+              title: 'US pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us, word, 'en-US');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (item.audio && item.audio.uk && item.value.includes('UK')) {
-          const ukMatch = item.value.match(/UK\s*([^·]+)/);
-          if (ukMatch) {
-            pronContainer.appendChild(h('span', {}, `UK ${ukMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                title: 'UK pronunciation',
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.uk).play().catch((err) => console.warn('Audio play failed', err));
-                },
-              })
-            );
+
+        if (audioObj.uk || textValue.includes('UK')) {
+          let ukText = 'UK';
+          const ukMatch = textValue.match(/UK\s*([^·]+)/);
+          if (ukMatch && ukMatch[1].trim()) {
+            ukText = `UK ${ukMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('US')) {
+            ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, ukText));
+          pronContainer.appendChild(
+            h('button', {
+              title: 'UK pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.uk, word, 'en-GB');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (!(item.audio && (item.audio.us || item.audio.uk))) {
-          pronContainer.appendChild(h('span', {}, item.value));
+
+        if (!hasRendered) {
+          if (textValue) {
+            pronContainer.appendChild(h('span', {}, textValue));
+          }
+          pronContainer.appendChild(
+            h('button', {
+              title: 'Listen pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
+              },
+            })
+          );
         }
+
         popupContainer.appendChild(pronContainer);
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
