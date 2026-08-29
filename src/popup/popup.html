@@ -38,7 +38,7 @@
         width: 380px;
         min-width: 380px;
         max-width: 380px;
-        overflow-x: hidden;
+        min-height: 250px;
         box-sizing: border-box;
         background: var(--bg-color);
         color: var(--text-color);
@@ -48,11 +48,11 @@
         width: 380px;
         max-width: 380px;
         min-width: 0;
-        overflow-x: hidden;
         box-sizing: border-box;
         padding: 14px;
         display: grid;
         gap: 10px;
+        position: relative;
       }
 
       .row {
@@ -130,7 +130,8 @@
         width: 100%;
         max-width: 100%;
         min-width: 0;
-        overflow: hidden;
+        position: relative;
+        z-index: 50;
       }
 
       .search-input-wrapper {
@@ -138,6 +139,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        z-index: 60;
       }
 
       .search-input {
@@ -187,6 +189,7 @@
         position: relative;
         display: flex;
         align-items: center;
+        z-index: 100;
       }
 
       .vocab-source-menu-btn {
