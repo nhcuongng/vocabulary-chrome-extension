@@ -8,16 +8,27 @@ const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="2
   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
 </svg>`;
 
-const closeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+const closeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <line x1="18" y1="6" x2="6" y2="18"></line>
   <line x1="6" y1="6" x2="18" y2="18"></line>
 </svg>`;
 
-export function createPopupManager({ documentObj, windowObj }) {
+const backSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M19 12H5M12 19l-7-7 7-7"/>
+</svg>`;
+
+const forwardSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M5 12h14M12 5l7 7-7 7"/>
+</svg>`;
+
+export function createPopupManager({ documentObj, windowObj, onLookupWord, historyAdapter } = {}) {
   let popupElement = null;
   let popupCtrl = null;
   let absoluteSelectionRect = null;
   let isListening = false;
+
+  let navigationStack = [];
+  let currentIndex = -1;
 
   const handleScrollResize = () => {
     if (popupElement && absoluteSelectionRect) {
@@ -25,7 +36,6 @@ export function createPopupManager({ documentObj, windowObj }) {
     }
   };
 
-  // Simple throttle
   let throttleTimeout = null;
   const throttledHandleScrollResize = () => {
     if (throttleTimeout) return;
@@ -43,6 +53,8 @@ export function createPopupManager({ documentObj, windowObj }) {
       popupElement.parentNode.removeChild(popupElement);
       popupElement = null;
       popupCtrl = null;
+      navigationStack = [];
+      currentIndex = -1;
     }
   }
 
@@ -105,41 +117,126 @@ export function createPopupManager({ documentObj, windowObj }) {
       }
 
       .custom-definition-list .definition {
-          font-size: 14px;
-          margin-right: 10px;
-          margin-bottom: 10px;
+        font-size: 14px;
+        margin-right: 10px;
+        margin-bottom: 10px;
       }
 
-       .custom-definition-list .pos-icon {
-            color: #007BC4;
-            border-color: #007BC4;
-            display: inline-block;
-            font-size: 14px;
-            height: 24px;
-            border-radius: 12px;
-            border-style: solid;
-            border-width: 1px;
-            padding: 0 8px;
-        }
-
       .vocab-popup {
-        max-height: 300px;
+        max-height: 340px;
         min-height: 120px;
         overflow-y: auto;
       }
 
       .vocab-popup-theme {
         background: #fff;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-        border-radius: 10px;
-        padding: 12px;
-        max-width: 380px;
-        min-width: 150px;
-        font-family: inherit;
-        font-size: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+        border-radius: 12px;
+        padding: 12px 14px;
+        max-width: 390px;
+        min-width: 260px;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        font-size: 15px;
         color: #222;
         transition: opacity 0.15s;
       }
+
+      /* Header Bar & Navigation */
+      .vocab-popup-header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #f3f4f6;
+      }
+
+      .vocab-nav-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .vocab-nav-btn {
+        background: none;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 3px 6px;
+        color: #4b5563;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .vocab-nav-btn:hover:not(:disabled) {
+        background-color: #f3f4f6;
+        color: #111827;
+      }
+      .vocab-nav-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        border-color: #f3f4f6;
+      }
+
+      .vocab-history-slide {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        flex: 1;
+        min-width: 0;
+      }
+      .vocab-history-slide::-webkit-scrollbar {
+        display: none;
+      }
+
+      .vocab-history-chip {
+        background: #f3f4f6;
+        color: #374151;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 12px;
+        white-space: nowrap;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: background-color 0.15s, color 0.15s;
+        flex-shrink: 0;
+      }
+      .vocab-history-chip:hover {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .vocab-history-chip.active {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-color: #93c5fd;
+        font-weight: 600;
+      }
+
+      .vocab-popup-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+      }
+      .vocab-popup-close-btn:hover {
+        background-color: #f3f4f6;
+        color: #4b5563;
+      }
+
+      /* Content Elements */
       .vocab-popup-theme .head-word:hover {
         text-decoration: underline;
       }
@@ -147,15 +244,15 @@ export function createPopupManager({ documentObj, windowObj }) {
         text-decoration: none;
       }
       .vocab-popup-headword {
-        font-size: 30px;
+        font-size: 26px;
         font-weight: 700;
-        margin: 0 0 8px;
+        margin: 0 0 6px;
         color: #1677C9;
       }
       .vocab-popup-pronunciation {
         color: #4B5563;
-        font-size: 14px;
-        margin-bottom: 10px;
+        font-size: 13px;
+        margin-bottom: 8px;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -169,18 +266,16 @@ export function createPopupManager({ documentObj, windowObj }) {
         display: flex;
       }
       .vocab-popup-definition {
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1.5;
-        margin: 10px 0;
+        margin: 8px 0;
       }
       .vocab-popup-title {
         font-weight: bold;
       }
-      .vocab-popup-message {
-      }
       .vocab-popup-search-suggestions {
         margin-top: 10px;
-        font-size: 14px;
+        font-size: 13px;
         color: #4B5563;
       }
       .vocab-popup-guidance-list {
@@ -190,40 +285,21 @@ export function createPopupManager({ documentObj, windowObj }) {
         margin-top: 8px;
       }
       .vocab-popup-compliance-footer {
-        margin-top: 12px;
+        margin-top: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 12px;
         border-top: 1px solid #f3f4f6;
-        padding-top: 8px;
+        padding-top: 6px;
       }
       .vocab-popup-attribution {
         margin-top: 0;
+        font-size: 11px;
       }
       .vocab-popup-permission-disclosure {
-        font-size: 12px;
+        font-size: 11px;
         margin-top: 0;
-      }
-      .vocab-popup-close-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        color: #9ca3af;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: background-color 0.2s, color 0.2s;
-        z-index: 10;
-      }
-      .vocab-popup-close-btn:hover {
-        background-color: #f3f4f6;
-        color: #4b5563;
       }
 
       /* Details & Summary custom styles */
@@ -231,7 +307,7 @@ export function createPopupManager({ documentObj, windowObj }) {
         margin-bottom: 8px;
         border: 1px solid #f3f4f6;
         border-radius: 8px;
-        padding: 8px;
+        padding: 6px 8px;
         background: #fff;
       }
       details.vocab-details summary {
@@ -241,7 +317,7 @@ export function createPopupManager({ documentObj, windowObj }) {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         color: #374151;
       }
@@ -271,13 +347,37 @@ export function createPopupManager({ documentObj, windowObj }) {
         transform: rotate(90deg);
       }
       details.vocab-details .details-content {
-        margin-top: 8px;
+        margin-top: 6px;
         color: #4b5563;
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.5;
       }
       details.vocab-details .details-content p {
         margin: 0;
+      }
+
+      /* Word Family Section */
+      .vocab-word-family-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .vocab-family-chip {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s;
+      }
+      .vocab-family-chip:hover {
+        background: #dcfce7;
+        color: #14532d;
+        border-color: #86efac;
       }
 
       /* Dark mode styles */
@@ -288,6 +388,43 @@ export function createPopupManager({ documentObj, windowObj }) {
       }
       .vocab-popup.dark-mode .vocab-popup-headword {
         color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-popup-header-bar {
+        border-bottom-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-nav-btn {
+        border-color: #4b5563;
+        color: #d1d5db;
+      }
+      .vocab-popup.dark-mode .vocab-nav-btn:hover:not(:disabled) {
+        background-color: #374151;
+        color: #fff;
+      }
+      .vocab-popup.dark-mode .vocab-nav-btn:disabled {
+        border-color: #374151;
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-history-chip {
+        background: #374151;
+        color: #d1d5db;
+      }
+      .vocab-popup.dark-mode .vocab-history-chip:hover {
+        background: #1e3a8a;
+        color: #bfdbfe;
+      }
+      .vocab-popup.dark-mode .vocab-history-chip.active {
+        background: #1e3a8a;
+        color: #93c5fd;
+        border-color: #3b82f6;
+      }
+      .vocab-popup.dark-mode .vocab-family-chip {
+        background: #064e3b;
+        color: #a7f3d0;
+        border-color: #047857;
+      }
+      .vocab-popup.dark-mode .vocab-family-chip:hover {
+        background: #065f46;
+        color: #d1fae5;
       }
       .vocab-popup.dark-mode .vocab-popup-pronunciation,
       .vocab-popup.dark-mode .vocab-popup-audio-btn,
@@ -316,12 +453,11 @@ export function createPopupManager({ documentObj, windowObj }) {
     `;
     shadow.appendChild(style);
     shadow.appendChild(popupContainer);
-    // Stop propagation for all relevant events
+
     ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'pointerdown'].forEach((evt) => {
       popupElement.addEventListener(evt, (e) => e.stopPropagation());
     });
     documentObj.body.appendChild(popupElement);
-    // Attach shadow and container for later use
     popupElement._vocabShadow = shadow;
     popupElement._vocabContainer = popupContainer;
     return popupElement;
@@ -330,7 +466,6 @@ export function createPopupManager({ documentObj, windowObj }) {
   function updatePopupPosition() {
     if (!popupElement || !absoluteSelectionRect) return;
 
-    // Force reflow to ensure offsetWidth/offsetHeight are correct
     const popupWidth = popupElement.offsetWidth;
     const popupHeight = popupElement.offsetHeight;
     const viewport = {
@@ -340,25 +475,20 @@ export function createPopupManager({ documentObj, windowObj }) {
       scrollY: windowObj.scrollY,
     };
 
-    // Compute position: always prefer below selection, fallback above if not enough space
     let left = absoluteSelectionRect.left;
-    let top = absoluteSelectionRect.bottom + 8; // 8px margin below selection
+    let top = absoluteSelectionRect.bottom + 8;
 
-    // If popup would overflow bottom, try above selection
     if (top + popupHeight > viewport.scrollY + viewport.height) {
       const aboveTop = absoluteSelectionRect.top - popupHeight - 8;
       if (aboveTop >= viewport.scrollY) {
         top = aboveTop;
       } else {
-        // Clamp to bottom if still overflow
         top = viewport.scrollY + viewport.height - popupHeight - 8;
       }
     }
 
-    // Clamp top to viewport
     if (top < viewport.scrollY) top = viewport.scrollY + 8;
 
-    // Clamp left to viewport
     if (left + popupWidth > viewport.scrollX + viewport.width) {
       left = viewport.scrollX + viewport.width - popupWidth - 8;
     }
@@ -366,15 +496,30 @@ export function createPopupManager({ documentObj, windowObj }) {
 
     popupElement.style.left = `${left}px`;
     popupElement.style.top = `${top}px`;
-    popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
+    popupElement.style.maxWidth = `${Math.min(390, viewport.width - 16)}px`;
+  }
+
+  function navigateToWord(word) {
+    if (!word || typeof word !== 'string') return;
+    const normalized = word.trim().toLowerCase();
+    if (!normalized) return;
+
+    if (navigationStack[currentIndex] !== normalized) {
+      navigationStack = [...navigationStack.slice(0, currentIndex + 1), normalized];
+      currentIndex = navigationStack.length - 1;
+    }
+
+    if (typeof onLookupWord === 'function') {
+      onLookupWord(normalized);
+    }
   }
 
   function renderPopupContent(state) {
     if (!popupElement) return;
-    const shadow = popupElement._vocabShadow;
     const popupContainer = popupElement._vocabContainer;
     let viewModel = null;
     let content = [];
+
     if (state.status === 'success' || state.status === 'not-found' || state.status === 'error') {
       viewModel = mapLookupResultToPopupViewModel(state);
       if (state.status === 'success') {
@@ -389,12 +534,10 @@ export function createPopupManager({ documentObj, windowObj }) {
         { type: 'skeleton', value: 'headword' },
         { type: 'skeleton', value: 'pron' },
         { type: 'skeleton', value: 'def' },
-        { type: 'skeleton', value: 'def-short' }
+        { type: 'skeleton', value: 'def-short' },
       ];
-    } else {
-      content = [];
     }
-    // D2 - Compact Utility style rendering using programmatic DOM creation
+
     popupContainer.replaceChildren();
 
     function h(tag, props, ...children) {
@@ -409,6 +552,8 @@ export function createPopupManager({ documentObj, windowObj }) {
             el.innerHTML = value;
           } else if (key === 'style' && typeof value === 'object') {
             Object.assign(el.style, value);
+          } else if (key === 'disabled') {
+            if (value) el.setAttribute('disabled', '');
           } else {
             el.setAttribute(key, value);
           }
@@ -418,32 +563,98 @@ export function createPopupManager({ documentObj, windowObj }) {
         if (child == null) continue;
         if (typeof child === 'string' || typeof child === 'number') {
           el.appendChild(documentObj.createTextNode(String(child)));
-        } else if (child instanceof Node) {
+        } else if (typeof child === 'object') {
           el.appendChild(child);
         }
       }
       return el;
     }
 
-    // Always append close button
-    popupContainer.appendChild(
-      h('button', {
-        className: 'vocab-popup-close-btn',
-        title: 'Close popup',
-        ariaLabel: 'Close popup',
-        innerHTML: closeSVG,
-        onClick: (e) => {
-          e.stopPropagation();
-          if (popupCtrl) {
-            popupCtrl.close('close-button');
-          } else {
-            removePopup();
+    // 1. Render Header Bar: Back, Forward, Slide history, Close
+    const currentWord = (viewModel?.headword || state.headword || navigationStack[currentIndex] || '').toLowerCase();
+    const recentWords = historyAdapter?.getRecentSearchWords?.(5) ?? navigationStack.slice(-5);
+
+    const headerBar = h('div', { className: 'vocab-popup-header-bar' });
+
+    // Nav buttons
+    const navGroup = h('div', { className: 'vocab-nav-group' });
+    const backBtn = h('button', {
+      className: 'vocab-nav-btn',
+      title: 'Quay lại từ trước',
+      disabled: currentIndex <= 0,
+      innerHTML: backSVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        if (currentIndex > 0) {
+          currentIndex--;
+          const prevWord = navigationStack[currentIndex];
+          if (typeof onLookupWord === 'function') {
+            onLookupWord(prevWord);
           }
         }
-      })
-    );
+      },
+    });
 
-    content.forEach((item, idx) => {
+    const forwardBtn = h('button', {
+      className: 'vocab-nav-btn',
+      title: 'Đi tới từ tiếp theo',
+      disabled: currentIndex >= navigationStack.length - 1,
+      innerHTML: forwardSVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        if (currentIndex < navigationStack.length - 1) {
+          currentIndex++;
+          const nextWord = navigationStack[currentIndex];
+          if (typeof onLookupWord === 'function') {
+            onLookupWord(nextWord);
+          }
+        }
+      },
+    });
+
+    navGroup.appendChild(backBtn);
+    navGroup.appendChild(forwardBtn);
+    headerBar.appendChild(navGroup);
+
+    // Slide history chips
+    const slideContainer = h('div', { className: 'vocab-history-slide' });
+    recentWords.forEach((word) => {
+      const chip = h(
+        'span',
+        {
+          className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            navigateToWord(word);
+          },
+        },
+        word
+      );
+      slideContainer.appendChild(chip);
+    });
+    headerBar.appendChild(slideContainer);
+
+    // Close button
+    const closeBtn = h('button', {
+      className: 'vocab-popup-close-btn',
+      title: 'Đóng popup',
+      ariaLabel: 'Close popup',
+      innerHTML: closeSVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        if (popupCtrl) {
+          popupCtrl.close('close-button');
+        } else {
+          removePopup();
+        }
+      },
+    });
+    headerBar.appendChild(closeBtn);
+
+    popupContainer.appendChild(headerBar);
+
+    // 2. Render Main Body Content
+    content.forEach((item) => {
       if (item.type === 'skeleton') {
         if (item.value === 'headword') {
           popupContainer.appendChild(h('div', { className: 'skeleton skeleton-headword' }));
@@ -455,18 +666,20 @@ export function createPopupManager({ documentObj, windowObj }) {
           popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
         }
       } else if (item.type === 'headword') {
-        const cap = typeof item.value === 'string' && item.value.length > 0
-          ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
-          : item.value;
+        const cap =
+          typeof item.value === 'string' && item.value.length > 0
+            ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
+            : item.value;
         const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
         popupContainer.appendChild(
-          h('p', { className: 'vocab-popup-headword' },
+          h(
+            'p',
+            { className: 'vocab-popup-headword' },
             h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
       } else if (item.type === 'pronunciation') {
         const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
-        // Render US pronunciation + audio
         if (item.audio && item.audio.us && item.value.includes('US')) {
           const usMatch = item.value.match(/US\s*([^·]+)/);
           if (usMatch) {
@@ -478,13 +691,12 @@ export function createPopupManager({ documentObj, windowObj }) {
                 innerHTML: speakerSVG,
                 onClick: (e) => {
                   e.stopPropagation();
-                  new Audio(item.audio.us).play().catch(err => console.warn('Audio play failed', err));
-                }
+                  new Audio(item.audio.us).play().catch((err) => console.warn('Audio play failed', err));
+                },
               })
             );
           }
         }
-        // Render UK pronunciation + audio
         if (item.audio && item.audio.uk && item.value.includes('UK')) {
           const ukMatch = item.value.match(/UK\s*([^·]+)/);
           if (ukMatch) {
@@ -496,25 +708,59 @@ export function createPopupManager({ documentObj, windowObj }) {
                 innerHTML: speakerSVG,
                 onClick: (e) => {
                   e.stopPropagation();
-                  new Audio(item.audio.uk).play().catch(err => console.warn('Audio play failed', err));
-                }
+                  new Audio(item.audio.uk).play().catch((err) => console.warn('Audio play failed', err));
+                },
               })
             );
           }
         }
-        // Fallback: if no US/UK, just show value
         if (!(item.audio && (item.audio.us || item.audio.uk))) {
           pronContainer.appendChild(h('span', {}, item.value));
         }
         popupContainer.appendChild(pronContainer);
+      } else if (item.type === 'word-family') {
+        const familyList = Array.isArray(item.value) ? item.value : [];
+        if (familyList.length > 0) {
+          const details = h('details', { className: 'vocab-details', open: '' });
+          const summary = h(
+            'summary',
+            {},
+            h('span', { className: 'vocab-details-label' }, '✭ Word Family'),
+            h('span', { className: 'collapse-icon' }, '▶')
+          );
+          const contentDiv = h('div', { className: 'details-content' });
+          const group = h('div', { className: 'vocab-word-family-group' });
+
+          familyList.forEach((fam) => {
+            const famWord = typeof fam === 'string' ? fam : fam.word;
+            const chip = h(
+              'button',
+              {
+                className: 'vocab-family-chip',
+                title: `Tra cứu từ ${famWord}`,
+                onClick: (e) => {
+                  e?.stopPropagation?.();
+                  navigateToWord(famWord);
+                },
+              },
+              famWord
+            );
+            group.appendChild(chip);
+          });
+
+          contentDiv.appendChild(group);
+          details.appendChild(summary);
+          details.appendChild(contentDiv);
+          details.addEventListener('toggle', () => updatePopupPosition());
+          popupContainer.appendChild(details);
+        }
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
-        defs.forEach(defHtml => {
+        defs.forEach((defHtml) => {
           if (defHtml) {
             const defContainer = h('div', { className: 'vocab-popup-definition', innerHTML: defHtml });
-            // Add toggle event to all details elements within this definition
             const detailsElements = defContainer.querySelectorAll('details.vocab-details');
-            detailsElements.forEach(details => {
+            detailsElements.forEach((details) => {
               details.addEventListener('toggle', () => {
                 updatePopupPosition();
               });
@@ -532,13 +778,15 @@ export function createPopupManager({ documentObj, windowObj }) {
         }
       } else if (item.type === 'guidance-list') {
         const ul = h('ul', { className: 'vocab-popup-guidance-list' });
-        item.value.forEach(g => ul.appendChild(h('li', {}, g)));
+        item.value.forEach((g) => ul.appendChild(h('li', {}, g)));
         popupContainer.appendChild(ul);
       } else if (item.type === 'cta') {
         popupContainer.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
       } else if (item.type === 'compliance-footer') {
         popupContainer.appendChild(
-          h('div', { className: 'vocab-popup-compliance-footer' },
+          h(
+            'div',
+            { className: 'vocab-popup-compliance-footer' },
             h('div', { className: 'vocab-popup-attribution', innerHTML: item.value.attribution }),
             h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value.disclosure })
           )
@@ -546,7 +794,6 @@ export function createPopupManager({ documentObj, windowObj }) {
       }
     });
 
-    // Position the popup
     updatePopupPosition();
   }
 
@@ -558,8 +805,27 @@ export function createPopupManager({ documentObj, windowObj }) {
         bottom: selectionRect.bottom + windowObj.scrollY,
         right: selectionRect.right + windowObj.scrollX,
         width: selectionRect.width,
-        height: selectionRect.height
+        height: selectionRect.height,
       };
+    }
+
+    const word = (
+      state.headword ||
+      state.data?.parsedPayload?.headword ||
+      state.data?.headword ||
+      ''
+    )
+      .trim()
+      .toLowerCase();
+
+    if (word) {
+      if (navigationStack.length === 0) {
+        navigationStack = [word];
+        currentIndex = 0;
+      } else if (navigationStack[currentIndex] !== word) {
+        navigationStack = [...navigationStack.slice(0, currentIndex + 1), word];
+        currentIndex = navigationStack.length - 1;
+      }
     }
 
     createPopup();
@@ -573,7 +839,6 @@ export function createPopupManager({ documentObj, windowObj }) {
 
     renderPopupContent(state);
 
-    // Add scroll and resize listeners only once to ensure popup stays clamped to viewport
     if (!isListening) {
       windowObj.addEventListener('scroll', throttledHandleScrollResize, true);
       windowObj.addEventListener('resize', throttledHandleScrollResize, true);
@@ -597,6 +862,6 @@ export function createPopupManager({ documentObj, windowObj }) {
 
   return {
     showPopup,
-    removePopup
+    removePopup,
   };
 }

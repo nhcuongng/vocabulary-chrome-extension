@@ -25,6 +25,24 @@ test('popup renderer: success state hiển thị đúng thứ bậc headword -> 
   assert.deepEqual(content[2].value, ['A greeting']);
 });
 
+test('popup renderer: success state chứa word-family khi có danh sách wordFamily', () => {
+  const content = renderSuccessContent({
+    headword: 'create',
+    pronunciation: '/kriˈeɪt/',
+    wordFamily: [{ word: 'created' }, { word: 'creative' }],
+    definitions: ['To make something'],
+  });
+
+  assert.deepEqual(content.map((item) => item.type), [
+    'headword',
+    'pronunciation',
+    'word-family',
+    'definition',
+    'compliance-footer',
+  ]);
+  assert.deepEqual(content[2].value, [{ word: 'created' }, { word: 'creative' }]);
+});
+
 test('popup renderer: not-found state hiển thị message, search suggestions và guidance list', () => {
   const content = renderNotFoundContent({
     title: 'Không tìm thấy kết quả',

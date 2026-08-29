@@ -4,6 +4,7 @@ import {
 } from '../application/complianceDisclosureCatalog.js';
 import { createAutoPopupSettingsPanel } from '../application/autoPopupSettingsPanel.js';
 import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/chromeStorageSettingsAdapter.js';
+import { createChromeStorageHistoryAdapter } from '../infrastructure/adapters/chromeStorageHistoryAdapter.js';
 import {
   renderSuccessContent,
   renderNotFoundContent,
@@ -32,6 +33,7 @@ async function bootstrapPopupRuntime({
   const disclosureElement = documentObj.getElementById('disclosure');
   const searchInput = documentObj.getElementById('vocab-search-input');
   const searchClearBtn = documentObj.getElementById('vocab-search-clear');
+  const searchSuggestionsContainer = documentObj.getElementById('vocab-search-suggestions');
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
 
   if (!toggleElement) {
@@ -53,6 +55,12 @@ async function bootstrapPopupRuntime({
     storageArea: chromeApi?.storage?.local,
     storageChangeEvent: chromeApi?.storage?.onChanged,
   });
+
+  const historyStore = createChromeStorageHistoryAdapter({
+    storageArea: chromeApi?.storage?.local,
+    storageChangeEvent: chromeApi?.storage?.onChanged,
+  });
+  await historyStore.load().catch(() => {});
 
   let autoPopupEnabled = true;
   let darkMode = false;
@@ -137,6 +145,24 @@ async function bootstrapPopupRuntime({
     <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
   </svg>`;
 
+  const updateSuggestions = (query = '') => {
+    if (!searchSuggestionsContainer) return;
+    searchSuggestionsContainer.replaceChildren();
+    const suggestions = historyStore.getSearchSuggestions(query, 5);
+    suggestions.forEach((word) => {
+      const chip = documentObj.createElement('button');
+      chip.className = 'history-chip';
+      chip.textContent = word;
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (searchInput) searchInput.value = word;
+        performSearch(word);
+        searchSuggestionsContainer.replaceChildren();
+      });
+      searchSuggestionsContainer.appendChild(chip);
+    });
+  };
+
   function renderState(state, container) {
     container.replaceChildren();
 
@@ -161,7 +187,7 @@ async function bootstrapPopupRuntime({
         if (child == null) continue;
         if (typeof child === 'string' || typeof child === 'number') {
           el.appendChild(documentObj.createTextNode(String(child)));
-        } else if (child instanceof Node) {
+        } else if (typeof child === 'object') {
           el.appendChild(child);
         }
       }
@@ -185,7 +211,7 @@ async function bootstrapPopupRuntime({
         { type: 'skeleton', value: 'headword' },
         { type: 'skeleton', value: 'pron' },
         { type: 'skeleton', value: 'def' },
-        { type: 'skeleton', value: 'def-short' }
+        { type: 'skeleton', value: 'def-short' },
       ];
     }
 
@@ -197,7 +223,9 @@ async function bootstrapPopupRuntime({
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
         const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
         container.appendChild(
-          h('p', { className: 'vocab-popup-headword' },
+          h(
+            'p',
+            { className: 'vocab-popup-headword' },
             h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
@@ -207,23 +235,78 @@ async function bootstrapPopupRuntime({
           const usMatch = item.value.match(/US\s*([^·]+)/);
           if (usMatch) {
             pronContainer.appendChild(h('span', {}, `US ${usMatch[1].trim()}`));
-            pronContainer.appendChild(h('button', { className: 'vocab-popup-audio-btn', innerHTML: speakerSVG, onClick: (e) => { e.stopPropagation(); new Audio(item.audio.us).play().catch(() => {}); } }));
+            pronContainer.appendChild(
+              h('button', {
+                className: 'vocab-popup-audio-btn',
+                innerHTML: speakerSVG,
+                onClick: (e) => {
+                  e.stopPropagation();
+                  new Audio(item.audio.us).play().catch(() => {});
+                },
+              })
+            );
           }
         }
         if (item.audio?.uk && item.value.includes('UK')) {
           const ukMatch = item.value.match(/UK\s*([^·]+)/);
           if (ukMatch) {
             pronContainer.appendChild(h('span', {}, `UK ${ukMatch[1].trim()}`));
-            pronContainer.appendChild(h('button', { className: 'vocab-popup-audio-btn', innerHTML: speakerSVG, onClick: (e) => { e.stopPropagation(); new Audio(item.audio.uk).play().catch(() => {}); } }));
+            pronContainer.appendChild(
+              h('button', {
+                className: 'vocab-popup-audio-btn',
+                innerHTML: speakerSVG,
+                onClick: (e) => {
+                  e.stopPropagation();
+                  new Audio(item.audio.uk).play().catch(() => {});
+                },
+              })
+            );
           }
         }
         if (!item.audio?.us && !item.audio?.uk) {
           pronContainer.appendChild(h('span', {}, item.value));
         }
         container.appendChild(pronContainer);
+      } else if (item.type === 'word-family') {
+        const familyList = Array.isArray(item.value) ? item.value : [];
+        if (familyList.length > 0) {
+          const details = h('details', { className: 'vocab-details', open: '' });
+          const summary = h(
+            'summary',
+            {},
+            h('span', { className: 'vocab-details-label' }, '✭ Word Family'),
+            h('span', { className: 'collapse-icon' }, '▶')
+          );
+          const contentDiv = h('div', { className: 'details-content' });
+          const group = h('div', { className: 'vocab-word-family-group' });
+
+          familyList.forEach((fam) => {
+            const famWord = typeof fam === 'string' ? fam : fam.word;
+            const chip = h(
+              'button',
+              {
+                className: 'vocab-family-chip',
+                title: `Tra cứu từ ${famWord}`,
+                onClick: (e) => {
+                  e.stopPropagation();
+                  if (searchInput) searchInput.value = famWord;
+                  performSearch(famWord);
+                  if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();
+                },
+              },
+              famWord
+            );
+            group.appendChild(chip);
+          });
+
+          contentDiv.appendChild(group);
+          details.appendChild(summary);
+          details.appendChild(contentDiv);
+          container.appendChild(details);
+        }
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
-        defs.forEach(defHtml => {
+        defs.forEach((defHtml) => {
           if (defHtml) container.appendChild(h('div', { className: 'vocab-popup-definition', innerHTML: defHtml }));
         });
       } else if (item.type === 'title') {
@@ -236,13 +319,15 @@ async function bootstrapPopupRuntime({
         }
       } else if (item.type === 'guidance-list') {
         const ul = h('ul', { className: 'vocab-popup-guidance-list' });
-        item.value.forEach(g => ul.appendChild(h('li', {}, g)));
+        item.value.forEach((g) => ul.appendChild(h('li', {}, g)));
         container.appendChild(ul);
       } else if (item.type === 'cta') {
         container.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
       } else if (item.type === 'compliance-footer') {
         container.appendChild(
-          h('div', { className: 'vocab-popup-compliance-footer' },
+          h(
+            'div',
+            { className: 'vocab-popup-compliance-footer' },
             h('div', { className: 'vocab-popup-attribution', innerHTML: item.value.attribution }),
             h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value.disclosure })
           )
@@ -284,6 +369,8 @@ async function bootstrapPopupRuntime({
       renderState({ status: 'loading' }, searchResultsContainer);
     }
 
+    historyStore.addSearchWord(word).catch(() => {});
+
     try {
       const response = await lookupExecutor(word);
       if (searchResultsContainer) {
@@ -300,7 +387,8 @@ async function bootstrapPopupRuntime({
   const handleInput = () => {
     const value = searchInput.value.trim().toLowerCase();
     clearTimeout(debounceTimer);
-    
+    updateSuggestions(value);
+
     if (!value) {
       performSearch('');
       return;
@@ -314,6 +402,7 @@ async function bootstrapPopupRuntime({
   const handleClear = () => {
     searchInput.value = '';
     performSearch('');
+    updateSuggestions('');
     searchInput.focus();
   };
 
@@ -323,13 +412,20 @@ async function bootstrapPopupRuntime({
       if (value) {
         clearTimeout(debounceTimer);
         performSearch(value);
+        if (searchSuggestionsContainer) searchSuggestionsContainer.replaceChildren();
       }
     }
+  };
+
+  const handleFocus = () => {
+    const value = searchInput.value.trim().toLowerCase();
+    updateSuggestions(value);
   };
 
   if (searchInput) {
     searchInput.addEventListener('input', handleInput);
     searchInput.addEventListener('keydown', handleKeyDown);
+    searchInput.addEventListener('focus', handleFocus);
   }
   if (searchClearBtn) {
     searchClearBtn.addEventListener('click', handleClear);
@@ -337,6 +433,7 @@ async function bootstrapPopupRuntime({
 
   if (searchInput) {
     searchInput.focus();
+    updateSuggestions('');
   }
 
   const destroy = () => {
@@ -346,11 +443,13 @@ async function bootstrapPopupRuntime({
     if (searchInput) {
       searchInput.removeEventListener('input', handleInput);
       searchInput.removeEventListener('keydown', handleKeyDown);
+      searchInput.removeEventListener('focus', handleFocus);
     }
     if (searchClearBtn) {
       searchClearBtn.removeEventListener('click', handleClear);
     }
     settingsStore.destroy?.();
+    historyStore.destroy?.();
   };
 
   globalThis.addEventListener('unload', destroy, { once: true });

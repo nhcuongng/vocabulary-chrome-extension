@@ -37,6 +37,9 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const pronunciation = parsedPayload?.pronunciation ?? '';
   const audio = parsedPayload?.audio || {};
   const definitions = normalizeDefinitions(parsedPayload?.definitions);
+  const wordFamily = Array.isArray(parsedPayload?.wordFamily)
+    ? parsedPayload.wordFamily
+    : [];
 
   if (!headword || !definitions || definitions.length === 0) {
     const token = headword || parsedPayload?.token || '';
@@ -56,6 +59,7 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
     headword,
     pronunciation,
     audio,
+    wordFamily,
     definitions,
   };
 }

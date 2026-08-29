@@ -152,13 +152,49 @@ export function parseVocabularyHtml(html) {
       addDefinition(label, content);
     }
   }
-  
+
+  // Trích xuất Word Family từ <vcom:wordfamily>
+  const wordFamily = [];
+  const wordFamilyMatch = safeHtml.match(/<vcom:wordfamily[^>]*data=["']([\s\S]*?)["']/i);
+  if (wordFamilyMatch) {
+    try {
+      const rawJson = wordFamilyMatch[1]
+        .replace(/&#034;/g, '"')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+      const familyData = JSON.parse(rawJson);
+      if (Array.isArray(familyData)) {
+        const seenWords = new Set();
+        const currentHeadwordLower = (headword || '').trim().toLowerCase();
+
+        // Ưu tiên sắp xếp theo tần suất freq giảm dần
+        const sorted = [...familyData].sort((a, b) => (Number(b.freq) || 0) - (Number(a.freq) || 0));
+
+        for (const item of sorted) {
+          const itemWord = typeof item.word === 'string' ? item.word.trim().toLowerCase() : '';
+          if (itemWord && itemWord !== currentHeadwordLower && !seenWords.has(itemWord)) {
+            seenWords.add(itemWord);
+            wordFamily.push({
+              word: itemWord,
+              freq: Number(item.freq) || 0,
+              type: item.type,
+              hw: Boolean(item.hw),
+              parent: item.parent || '',
+            });
+          }
+        }
+      }
+    } catch {
+      // Safe fallback khi parse json thất bại
+    }
+  }
 
   return {
     headword: headword ? headword.trim() : '',
     pronunciation,
     audio,
     definitions,
+    wordFamily,
     hasCoreData: Boolean(headword && (ipaUs || ipaUk)),
   };
 }
