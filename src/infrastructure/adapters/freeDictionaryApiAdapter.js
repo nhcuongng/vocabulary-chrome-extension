@@ -37,31 +37,52 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
 
   const phonetics = Array.isArray(entry.phonetics) ? entry.phonetics : [];
   phonetics.forEach((p) => {
-    const audioUrl = typeof p.audio === 'string' ? p.audio.trim() : '';
+    let audioUrl = typeof p.audio === 'string' ? p.audio.trim() : '';
+    if (audioUrl.startsWith('//')) {
+      audioUrl = `https:${audioUrl}`;
+    }
     const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
 
-    if (audioUrl.includes('-us.') || audioUrl.includes('/us/') || audioUrl.endsWith('-us.mp3')) {
+    const isUS = audioUrl.includes('-us.') || audioUrl.includes('/us/') || audioUrl.endsWith('-us.mp3') || audioUrl.endsWith('-us.ogg');
+    const isUK = audioUrl.includes('-uk.') || audioUrl.includes('/uk/') || audioUrl.endsWith('-uk.mp3') || audioUrl.endsWith('-uk.ogg');
+    const isAU = audioUrl.includes('-au.') || audioUrl.includes('/au/') || audioUrl.endsWith('-au.mp3') || audioUrl.endsWith('-au.ogg');
+    const isCA = audioUrl.includes('-ca.') || audioUrl.includes('/ca/') || audioUrl.endsWith('-ca.mp3') || audioUrl.endsWith('-ca.ogg');
+
+    if (isUS) {
       if (!audioUs) audioUs = audioUrl;
       if (text && !ipaUs) ipaUs = text;
-    } else if (audioUrl.includes('-uk.') || audioUrl.includes('/uk/') || audioUrl.endsWith('-uk.mp3')) {
+    } else if (isUK) {
       if (!audioUk) audioUk = audioUrl;
+      if (text && !ipaUk) ipaUk = text;
+    } else if (isAU || isCA) {
+      if (!audioUk) audioUk = audioUrl;
+      else if (!audioUs) audioUs = audioUrl;
       if (text && !ipaUk) ipaUk = text;
     } else if (audioUrl) {
       if (!audioUs) audioUs = audioUrl;
       else if (!audioUk) audioUk = audioUrl;
       if (text && !ipaUs) ipaUs = text;
-    } else if (text && !ipaUs) {
-      ipaUs = text;
+    } else if (text) {
+      if (!ipaUs) ipaUs = text;
+      else if (!ipaUk) ipaUk = text;
     }
   });
 
   if (!ipaUs && typeof entry.phonetic === 'string') {
     ipaUs = entry.phonetic.replace(/^\/|\/$/g, '').trim();
   }
+  if (!ipaUk && ipaUs) {
+    ipaUk = ipaUs;
+  }
+  if (!ipaUs && ipaUk) {
+    ipaUs = ipaUk;
+  }
 
   const pronParts = [];
   if (ipaUs) pronParts.push(`US /${ipaUs}/`);
-  if (ipaUk) pronParts.push(`UK /${ipaUk}/`);
+  if (ipaUk && (ipaUk !== ipaUs || audioUk || !ipaUs)) {
+    pronParts.push(`UK /${ipaUk}/`);
+  }
   const pronunciation = pronParts.length > 0 ? pronParts.join(' · ') : (ipaUs ? `/${ipaUs}/` : '');
 
   // 2. Extract meanings, definitions, synonyms/antonyms

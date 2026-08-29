@@ -32,6 +32,51 @@ const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height
   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
 </svg>`;
 
+function speakWord(word, lang = 'en-US') {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = lang === 'uk' || lang === 'en-GB' ? 'en-GB' : 'en-US';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+      return true;
+    } catch (e) {
+      console.warn('SpeechSynthesis failed', e);
+    }
+  }
+  return false;
+}
+
+function playAudioWithFallback(audioUrl, fallbackWord = '', lang = 'en-US') {
+  if (audioUrl) {
+    let cleanUrl = String(audioUrl).trim();
+    if (cleanUrl.startsWith('//')) {
+      cleanUrl = `https:${cleanUrl}`;
+    }
+
+    try {
+      const audio = new Audio(cleanUrl);
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Audio.play() failed, falling back to Web Speech API:', err);
+          if (fallbackWord) {
+            speakWord(fallbackWord, lang);
+          }
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Audio construction failed, falling back to Web Speech API:', err);
+    }
+  }
+
+  if (fallbackWord) {
+    speakWord(fallbackWord, lang);
+  }
+}
+
 export function createPopupManager({
   documentObj,
   windowObj,
@@ -1029,43 +1074,77 @@ export function createPopupManager({
         );
       } else if (item.type === 'pronunciation') {
         const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
-        if (item.audio && item.audio.us && item.value.includes('US')) {
-          const usMatch = item.value.match(/US\s*([^·]+)/);
-          if (usMatch) {
-            pronContainer.appendChild(h('span', {}, `US ${usMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                title: 'US pronunciation',
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.us).play().catch((err) => console.warn('Audio play failed', err));
-                },
-              })
-            );
+        const textValue = typeof item.value === 'string' ? item.value.trim() : '';
+        const audioObj = item.audio || {};
+        const word = (viewModel?.headword || '').trim();
+
+        let hasRendered = false;
+
+        if (audioObj.us || textValue.includes('US')) {
+          let usText = 'US';
+          const usMatch = textValue.match(/US\s*([^·]+)/);
+          if (usMatch && usMatch[1].trim()) {
+            usText = `US ${usMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('UK')) {
+            usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, usText));
+          pronContainer.appendChild(
+            h('button', {
+              title: 'US pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us, word, 'en-US');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (item.audio && item.audio.uk && item.value.includes('UK')) {
-          const ukMatch = item.value.match(/UK\s*([^·]+)/);
-          if (ukMatch) {
-            pronContainer.appendChild(h('span', {}, `UK ${ukMatch[1].trim()}`));
-            pronContainer.appendChild(
-              h('button', {
-                title: 'UK pronunciation',
-                className: 'vocab-popup-audio-btn',
-                innerHTML: speakerSVG,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  new Audio(item.audio.uk).play().catch((err) => console.warn('Audio play failed', err));
-                },
-              })
-            );
+
+        if (audioObj.uk || textValue.includes('UK')) {
+          let ukText = 'UK';
+          const ukMatch = textValue.match(/UK\s*([^·]+)/);
+          if (ukMatch && ukMatch[1].trim()) {
+            ukText = `UK ${ukMatch[1].trim()}`;
+          } else if (textValue && !textValue.includes('US')) {
+            ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }
+
+          pronContainer.appendChild(h('span', {}, ukText));
+          pronContainer.appendChild(
+            h('button', {
+              title: 'UK pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.uk, word, 'en-GB');
+              },
+            })
+          );
+          hasRendered = true;
         }
-        if (!(item.audio && (item.audio.us || item.audio.uk))) {
-          pronContainer.appendChild(h('span', {}, item.value));
+
+        if (!hasRendered) {
+          if (textValue) {
+            pronContainer.appendChild(h('span', {}, textValue));
+          }
+          pronContainer.appendChild(
+            h('button', {
+              title: 'Listen pronunciation',
+              className: 'vocab-popup-audio-btn',
+              innerHTML: speakerSVG,
+              onClick: (e) => {
+                e.stopPropagation();
+                playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
+              },
+            })
+          );
         }
+
         popupContainer.appendChild(pronContainer);
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
