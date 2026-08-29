@@ -51,6 +51,8 @@ async function bootstrapPopupRuntime({
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
   const sourceMenuBtn = documentObj.getElementById('vocab-source-menu-btn');
   const sourceMenuPopover = documentObj.getElementById('vocab-source-menu-popover');
+  const settingsMenuBtn = documentObj.getElementById('vocab-settings-menu-btn');
+  const settingsMenuPopover = documentObj.getElementById('vocab-settings-menu-popover');
 
   if (!toggleElement) {
     throw new Error('missing #auto-popup-toggle');
@@ -84,6 +86,7 @@ async function bootstrapPopupRuntime({
   let currentSlideIndex = 0;
   const ITEMS_PER_PAGE = 5;
   let isSourceMenuOpen = false;
+  let isSettingsMenuOpen = false;
 
   const updateBodyTheme = (isDark) => {
     if (isDark) {
@@ -184,12 +187,9 @@ async function bootstrapPopupRuntime({
       e.stopPropagation();
       isSourceMenuOpen = !isSourceMenuOpen;
       sourceMenuPopover.style.display = isSourceMenuOpen ? 'flex' : 'none';
-    });
-
-    documentObj.addEventListener('click', (e) => {
-      if (!sourceMenuBtn.contains(e.target) && !sourceMenuPopover.contains(e.target)) {
-        sourceMenuPopover.style.display = 'none';
-        isSourceMenuOpen = false;
+      if (settingsMenuPopover && isSourceMenuOpen) {
+        settingsMenuPopover.style.display = 'none';
+        isSettingsMenuOpen = false;
       }
     });
 
@@ -208,6 +208,34 @@ async function bootstrapPopupRuntime({
       });
     });
   }
+
+  // Settings popover event listeners
+  if (settingsMenuBtn && settingsMenuPopover) {
+    settingsMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isSettingsMenuOpen = !isSettingsMenuOpen;
+      settingsMenuPopover.style.display = isSettingsMenuOpen ? 'flex' : 'none';
+      if (sourceMenuPopover && isSettingsMenuOpen) {
+        sourceMenuPopover.style.display = 'none';
+        isSourceMenuOpen = false;
+      }
+    });
+
+    settingsMenuPopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  documentObj.addEventListener('click', (e) => {
+    if (sourceMenuBtn && sourceMenuPopover && !sourceMenuBtn.contains(e.target) && !sourceMenuPopover.contains(e.target)) {
+      sourceMenuPopover.style.display = 'none';
+      isSourceMenuOpen = false;
+    }
+    if (settingsMenuBtn && settingsMenuPopover && !settingsMenuBtn.contains(e.target) && !settingsMenuPopover.contains(e.target)) {
+      settingsMenuPopover.style.display = 'none';
+      isSettingsMenuOpen = false;
+    }
+  });
 
   await panel.init();
   renderStatus(statusElement, autoPopupController.isAutoPopupEnabled());
