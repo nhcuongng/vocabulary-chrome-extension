@@ -53,10 +53,15 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
     };
   }
 
+  const source = parsedPayload?.source || 'vocabulary';
+  const lookupUrl = parsedPayload?.lookupUrl || '';
+
   return {
     state: 'success',
     orderedFields: ['headword', 'pronunciation', 'definition'],
     headword,
+    source,
+    lookupUrl,
     pronunciation,
     audio,
     wordFamily,

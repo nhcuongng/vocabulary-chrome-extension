@@ -781,12 +781,16 @@ export function createPopupManager({ documentObj, windowObj, onLookupWord, histo
           typeof item.value === 'string' && item.value.length > 0
             ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
             : item.value;
-        const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
+        const source = viewModel?.source || item.source || 'vocabulary';
+        const defaultUrl = source === 'cambridge'
+          ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
+          : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
+        const headwordUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
         popupContainer.appendChild(
           h(
             'p',
             { className: 'vocab-popup-headword' },
-            h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
+            h('a', { href: headwordUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
       } else if (item.type === 'pronunciation') {

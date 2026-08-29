@@ -21,6 +21,10 @@ export const PERMISSION_DISCLOSURE_ITEMS = [
     permission: 'host:https://www.vocabulary.com/*',
     rationale: 'Gửi yêu cầu tra cứu từ và nhận nội dung định nghĩa từ nguồn đã công bố.',
   },
+  {
+    permission: 'host:https://dictionary.cambridge.org/*',
+    rationale: 'Gửi yêu cầu tra cứu từ và nhận nội dung định nghĩa từ Cambridge Dictionary.',
+  },
 ];
 
 function normalizePermissionName(permission) {
@@ -58,12 +62,16 @@ function dedupe(values) {
 }
 
 // Attribution with icon and hover tooltip for full text
-export function buildAttributionText() {
+export function buildAttributionText(source = 'vocabulary') {
+  const isCambridge = source === 'cambridge';
+  const providerName = isCambridge ? 'Cambridge Dictionary' : 'Vocabulary.com';
+  const providerUrl = isCambridge ? 'https://dictionary.cambridge.org/' : 'https://www.vocabulary.com/';
+
   return `<span style="display:inline-block;vertical-align:middle;">
-    <span title='Nguồn dữ liệu: Vocabulary.com (https://www.vocabulary.com/)' style="cursor:help;">
+    <span title='Nguồn dữ liệu: ${providerName} (${providerUrl})' style="cursor:help;">
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><circle cx="10" cy="10" r="9" stroke="#888" stroke-width="2" fill="#f6f8fa"/><text x="10" y="15" text-anchor="middle" font-size="12" fill="#888" font-family="Arial, sans-serif">i</text></svg>
     </span>
-    <span style="color:#888;font-size:12px;">Vocabulary.com</span>
+    <span style="color:#888;font-size:12px;">${providerName}</span>
   </span>`;
 }
 

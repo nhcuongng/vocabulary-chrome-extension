@@ -20,4 +20,3 @@
 
 ## Linked checklist
 - docs/transparency-release-checklist.md
-

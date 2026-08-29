@@ -270,6 +270,7 @@ async function fetchWithTimeout(fetchImpl, url, timeoutMs) {
 
 export async function performDictionaryLookup({
   headword,
+  source = 'vocabulary',
   fetchImpl = globalThis.fetch,
   now = () => Date.now(),
   timeoutMs = DEFAULT_LOOKUP_TIMEOUT_MS,
@@ -292,6 +293,7 @@ export async function performDictionaryLookup({
     return createLookupErrorResponse(LOOKUP_ERROR_TYPE.NETWORK, {
       message: 'fetch implementation is not available',
       headword,
+      source,
       lookupUrl,
       attempts: 0,
       startedAtMs,
@@ -300,11 +302,12 @@ export async function performDictionaryLookup({
   }
 
   try {
-    lookupUrl = buildDictionaryLookupUrl(headword);
+    lookupUrl = buildDictionaryLookupUrl(headword, source);
   } catch (error) {
     return createLookupErrorResponse(LOOKUP_ERROR_TYPE.INVALID_TOKEN, {
       message: error instanceof Error ? error.message : String(error),
       headword,
+      source,
       lookupUrl,
       attempts: 0,
       startedAtMs,
@@ -312,7 +315,7 @@ export async function performDictionaryLookup({
     });
   }
 
-  const cacheKey = headword;
+  const cacheKey = `${source}:${headword}`;
 
   if (cacheStore && typeof cacheStore.get === 'function') {
     try {
@@ -428,6 +431,7 @@ export async function performDictionaryLookup({
       const finishedAtMs = now();
       const successPayload = {
         headword,
+        source,
         lookupUrl,
         html,
         attempts: attempt,

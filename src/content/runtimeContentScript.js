@@ -37,6 +37,11 @@ export async function bootstrapContentRuntime({
   });
   await historyStore.load().catch(() => {});
 
+  let pendingTriggerRequest = null;
+  let isUserInitiated = false;
+  let darkMode = false;
+  let dictionarySource = 'auto';
+
   const lookupExecutor = async ({ headword }) => {
     if (!headword || typeof headword !== 'string' || !/^\w+$/.test(headword)) {
       return {
@@ -45,9 +50,15 @@ export async function bootstrapContentRuntime({
       };
     }
     return new Promise((resolve) => {
-      chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: headword } }, (response) => {
-        resolve(response);
-      });
+      chromeApi.runtime.sendMessage(
+        {
+          type: 'LOOKUP_REQUEST',
+          payload: { token: headword, source: dictionarySource },
+        },
+        (response) => {
+          resolve(response);
+        },
+      );
     });
   };
 
@@ -65,10 +76,6 @@ export async function bootstrapContentRuntime({
     onLookupWord: handlePopupLookupWord,
     historyAdapter: historyStore,
   });
-
-  let pendingTriggerRequest = null;
-  let isUserInitiated = false;
-  let darkMode = false;
 
   const triggerIconManager = createTriggerIconManager({
     documentObj,
@@ -146,6 +153,7 @@ export async function bootstrapContentRuntime({
       pendingTriggerRequest = null;
     }
     darkMode = Boolean(nextState.darkMode);
+    dictionarySource = nextState.dictionarySource || 'auto';
   });
 
   await autoPopupController.start();

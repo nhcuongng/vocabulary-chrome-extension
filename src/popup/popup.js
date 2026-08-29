@@ -29,6 +29,7 @@ async function bootstrapPopupRuntime({
 } = {}) {
   const toggleElement = documentObj.getElementById('auto-popup-toggle');
   const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
+  const dictionarySourceSelect = documentObj.getElementById('dictionary-source-select');
   const statusElement = documentObj.getElementById('auto-popup-status');
   const attributionElement = documentObj.getElementById('attribution');
   const disclosureElement = documentObj.getElementById('disclosure');
@@ -65,6 +66,7 @@ async function bootstrapPopupRuntime({
 
   let autoPopupEnabled = true;
   let darkMode = false;
+  let dictionarySource = 'auto';
 
   const updateBodyTheme = (isDark) => {
     if (isDark) {
@@ -79,8 +81,12 @@ async function bootstrapPopupRuntime({
       const settings = await settingsStore.load();
       autoPopupEnabled = Boolean(settings?.autoPopupEnabled);
       darkMode = Boolean(settings?.darkMode);
+      dictionarySource = settings?.dictionarySource || 'auto';
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
+      if (dictionarySourceSelect) {
+        dictionarySourceSelect.value = dictionarySource;
+      }
     },
     stop() {},
     isAutoPopupEnabled() {
@@ -88,6 +94,9 @@ async function bootstrapPopupRuntime({
     },
     isDarkMode() {
       return darkMode;
+    },
+    getDictionarySource() {
+      return dictionarySource;
     },
     async setAutoPopupEnabled(enabled) {
       autoPopupEnabled = Boolean(enabled);
@@ -98,13 +107,21 @@ async function bootstrapPopupRuntime({
       updateBodyTheme(darkMode);
       await settingsStore.update({ darkMode });
     },
+    async setDictionarySource(source) {
+      dictionarySource = source || 'auto';
+      await settingsStore.update({ dictionarySource });
+    },
     subscribe(listener) {
       return settingsStore.subscribe((nextSettings) => {
         autoPopupEnabled = Boolean(nextSettings?.autoPopupEnabled);
         darkMode = Boolean(nextSettings?.darkMode);
+        dictionarySource = nextSettings?.dictionarySource || 'auto';
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
-        listener({ autoPopupEnabled, darkMode });
+        if (dictionarySourceSelect) {
+          dictionarySourceSelect.value = dictionarySource;
+        }
+        listener({ autoPopupEnabled, darkMode, dictionarySource });
       });
     },
   };
@@ -132,6 +149,18 @@ async function bootstrapPopupRuntime({
     await autoPopupController.setDarkMode(darkModeToggleElement.checked);
   };
   darkModeToggleElement.addEventListener('change', handleDarkModeChange);
+
+  const handleSourceChange = async () => {
+    if (!dictionarySourceSelect) return;
+    await autoPopupController.setDictionarySource(dictionarySourceSelect.value);
+    const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    if (currentWord) {
+      performSearch(currentWord);
+    }
+  };
+  if (dictionarySourceSelect) {
+    dictionarySourceSelect.addEventListener('change', handleSourceChange);
+  }
 
   await panel.init();
   renderStatus(statusElement, autoPopupController.isAutoPopupEnabled());
@@ -222,12 +251,16 @@ async function bootstrapPopupRuntime({
         container.appendChild(h('div', { className: cls }));
       } else if (item.type === 'headword') {
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
-        const vocabUrl = `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || '')}`;
+        const source = viewModel?.source || item.source || 'vocabulary';
+        const defaultUrl = source === 'cambridge'
+          ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
+          : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
+        const lookupUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
         container.appendChild(
           h(
             'p',
             { className: 'vocab-popup-headword' },
-            h('a', { href: vocabUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
+            h('a', { href: lookupUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
           )
         );
       } else if (item.type === 'pronunciation') {
@@ -348,10 +381,14 @@ async function bootstrapPopupRuntime({
         error: { type: 'invalid-token', message: 'Từ tìm kiếm không hợp lệ.' },
       };
     }
+    const source = autoPopupController.getDictionarySource();
     return new Promise((resolve) => {
-      chromeApi.runtime.sendMessage({ type: 'LOOKUP_REQUEST', payload: { token: word } }, (response) => {
-        resolve(response);
-      });
+      chromeApi.runtime.sendMessage(
+        { type: 'LOOKUP_REQUEST', payload: { token: word, source } },
+        (response) => {
+          resolve(response);
+        },
+      );
     });
   };
 
@@ -445,6 +482,9 @@ async function bootstrapPopupRuntime({
     unsubscribe?.();
     panel.destroy();
     darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
+    if (dictionarySourceSelect) {
+      dictionarySourceSelect.removeEventListener('change', handleSourceChange);
+    }
     if (searchInput) {
       searchInput.removeEventListener('input', handleInput);
       searchInput.removeEventListener('keydown', handleKeyDown);

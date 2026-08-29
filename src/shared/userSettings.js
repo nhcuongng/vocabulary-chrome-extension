@@ -1,10 +1,17 @@
 export const USER_SETTINGS_SCHEMA_VERSION = 1;
 export const USER_SETTINGS_STORAGE_KEY = 'user-settings';
 
+export const DICTIONARY_SOURCE = Object.freeze({
+  AUTO: 'auto',
+  VOCABULARY: 'vocabulary',
+  CAMBRIDGE: 'cambridge',
+});
+
 export const DEFAULT_USER_SETTINGS = Object.freeze({
   schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
   autoPopupEnabled: true,
   darkMode: false,
+  dictionarySource: DICTIONARY_SOURCE.AUTO,
 });
 
 function toBooleanOrNull(value) {
@@ -23,6 +30,23 @@ function toBooleanOrNull(value) {
   return null;
 }
 
+function normalizeDictionarySource(source) {
+  if (typeof source !== 'string') {
+    return DEFAULT_USER_SETTINGS.dictionarySource;
+  }
+
+  const trimmed = source.trim().toLowerCase();
+  if (
+    trimmed === DICTIONARY_SOURCE.AUTO ||
+    trimmed === DICTIONARY_SOURCE.VOCABULARY ||
+    trimmed === DICTIONARY_SOURCE.CAMBRIDGE
+  ) {
+    return trimmed;
+  }
+
+  return DEFAULT_USER_SETTINGS.dictionarySource;
+}
+
 export function normalizeUserSettings(rawValue) {
   if (rawValue == null) {
     return { ...DEFAULT_USER_SETTINGS };
@@ -32,6 +56,8 @@ export function normalizeUserSettings(rawValue) {
     return {
       schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
       autoPopupEnabled: rawValue,
+      darkMode: DEFAULT_USER_SETTINGS.darkMode,
+      dictionarySource: DEFAULT_USER_SETTINGS.dictionarySource,
     };
   }
 
@@ -45,10 +71,13 @@ export function normalizeUserSettings(rawValue) {
   const normalizedDarkMode =
     toBooleanOrNull(rawValue.darkMode) ?? DEFAULT_USER_SETTINGS.darkMode;
 
+  const normalizedDictionarySource = normalizeDictionarySource(rawValue.dictionarySource);
+
   return {
     schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
     autoPopupEnabled: normalizedAutoPopupEnabled,
     darkMode: normalizedDarkMode,
+    dictionarySource: normalizedDictionarySource,
   };
 }
 

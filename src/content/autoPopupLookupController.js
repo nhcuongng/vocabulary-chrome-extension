@@ -21,6 +21,7 @@ export function createAutoPopupLookupController({
   let runtimeStarted = false;
   let autoPopupEnabled = true;
   let darkMode = false;
+  let dictionarySource = 'auto';
   let unsubscribeSettingsStore = null;
   const listeners = new Set();
 
@@ -47,6 +48,7 @@ export function createAutoPopupLookupController({
     const payload = {
       autoPopupEnabled,
       darkMode,
+      dictionarySource,
     };
 
     for (const listener of listeners) {
@@ -57,6 +59,7 @@ export function createAutoPopupLookupController({
   const applySettings = (settings) => {
     autoPopupEnabled = Boolean(settings?.autoPopupEnabled ?? true);
     darkMode = Boolean(settings?.darkMode ?? false);
+    dictionarySource = settings?.dictionarySource || 'auto';
 
     if (runtimeStarted) {
       selectionController.start();
