@@ -7,6 +7,10 @@ import {
   speakWord,
   stopCurrentAudio,
 } from '../domain/audioPlaybackUtils.js';
+import {
+  createHistorySliderElement,
+  UI_COPY,
+} from './historySliderRenderer.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -22,14 +26,6 @@ const closeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
 const searchSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
   <circle cx="11" cy="11" r="8"></circle>
   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-</svg>`;
-
-const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="15 18 9 12 15 6"></polyline>
-</svg>`;
-
-const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="9 18 15 12 9 6"></polyline>
 </svg>`;
 
 const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -860,75 +856,24 @@ export function createPopupManager({
     const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
-    const ITEMS_PER_PAGE = 5;
-    const totalPages = Math.max(1, Math.ceil(allHistoryWords.length / ITEMS_PER_PAGE));
-    if (currentSlideIndex >= totalPages) {
-      currentSlideIndex = Math.max(0, totalPages - 1);
-    }
-    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
-    const visibleWords = allHistoryWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
     const headerBar = h('div', { className: 'vocab-popup-header-bar' });
 
-    // Slide Navigation Wrapper (Prev Button + 5 Chips + Next Button)
-    if (visibleWords.length > 0) {
-      const sliderWrapper = h('div', { className: 'vocab-history-slider-wrapper' });
-
-      const prevBtn = h('button', {
-        className: 'vocab-slide-nav-btn',
-        title: 'Slide trước',
-        disabled: currentSlideIndex <= 0,
-        innerHTML: prevSlideSVG,
-        onClick: (e) => {
-          e?.stopPropagation?.();
-          if (currentSlideIndex > 0) {
-            currentSlideIndex--;
-            renderPopupContent(lastState);
-          }
-        },
-      });
-
-      const slideContainer = h('div', { className: 'vocab-history-slide' });
-      visibleWords.forEach((word) => {
-        const chip = h(
-          'button',
-          {
-            type: 'button',
-            className: `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`,
-            title: `Tra cứu ${word}`,
-            ariaLabel: `Tra cứu ${word}`,
-            onClick: (e) => {
-              e?.stopPropagation?.();
-              navigateToWord(word, { fromHistory: true });
-            },
-          },
-          word
-        );
-        slideContainer.appendChild(chip);
-      });
-
-      const nextBtn = h('button', {
-        className: 'vocab-slide-nav-btn',
-        title: 'Slide tiếp theo',
-        disabled: currentSlideIndex >= totalPages - 1,
-        innerHTML: nextSlideSVG,
-        onClick: (e) => {
-          e?.stopPropagation?.();
-          if (currentSlideIndex < totalPages - 1) {
-            currentSlideIndex++;
-            renderPopupContent(lastState);
-          }
-        },
-      });
-
-      sliderWrapper.appendChild(prevBtn);
-      sliderWrapper.appendChild(slideContainer);
-      sliderWrapper.appendChild(nextBtn);
-      headerBar.appendChild(sliderWrapper);
-    } else {
-      const emptySlide = h('div', { className: 'vocab-history-slide' });
-      headerBar.appendChild(emptySlide);
-    }
+    const sliderWrapper = createHistorySliderElement({
+      documentObj,
+      allWords: allHistoryWords,
+      currentWord,
+      currentSlideIndex,
+      itemsPerPage: 5,
+      h,
+      onSelectWord: (word) => {
+        navigateToWord(word, { fromHistory: true });
+      },
+      onSlideChange: (newIndex) => {
+        currentSlideIndex = newIndex;
+        renderPopupContent(lastState);
+      },
+    });
+    headerBar.appendChild(sliderWrapper);
 
     // 2. Header Actions: Source Menu Button (Icon with vertical popover) + Close Button
     const headerActions = h('div', { className: 'vocab-popup-header-actions' });
@@ -942,14 +887,10 @@ export function createPopupManager({
     let isMenuOpen = false;
     const popoverMenu = h('div', { className: 'vocab-source-menu-popover', style: { display: 'none' } });
 
-    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, 'Nguồn từ điển');
+    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
     popoverMenu.appendChild(menuTitle);
 
-    const sourceOptions = [
-      { id: 'auto', name: '⚡ Tự động (Auto)', hint: 'Vocab.com → Cambridge' },
-      { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Nghĩa giải thích & từ gia đình' },
-      { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Phát âm UK/US chuẩn & IPA' },
-    ];
+    const sourceOptions = UI_COPY.DICTIONARY_SOURCE_OPTIONS;
 
     sourceOptions.forEach((s) => {
       const isActive = activeDictSource === s.id;
@@ -959,7 +900,7 @@ export function createPopupManager({
           type: 'button',
           className: `vocab-source-menu-item ${isActive ? 'active' : ''}`,
           'data-source': s.id,
-          title: `Chọn nguồn: ${s.name}`,
+          title: `Select source: ${s.name}`,
           onClick: async (e) => {
             e?.stopPropagation?.();
             popoverMenu.style.display = 'none';
@@ -990,8 +931,8 @@ export function createPopupManager({
     const sourceBtn = h('button', {
       type: 'button',
       className: 'vocab-source-menu-btn',
-      title: 'Chọn nguồn từ điển',
-      ariaLabel: 'Chọn nguồn từ điển',
+      title: UI_COPY.SELECT_SOURCE_TITLE,
+      ariaLabel: UI_COPY.SELECT_SOURCE_TITLE,
       innerHTML: dictionarySVG,
       onClick: (e) => {
         e?.stopPropagation?.();
@@ -1007,8 +948,8 @@ export function createPopupManager({
     const closeBtn = h('button', {
       type: 'button',
       className: 'vocab-popup-close-btn',
-      title: 'Đóng popup',
-      ariaLabel: 'Close popup',
+      title: UI_COPY.CLOSE_POPUP,
+      ariaLabel: UI_COPY.CLOSE_POPUP,
       innerHTML: closeSVG,
       onClick: (e) => {
         e?.stopPropagation?.();
@@ -1165,8 +1106,8 @@ export function createPopupManager({
               'button',
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
-                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
-                ariaLabel: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                title: isInflected ? UI_COPY.INFLECTED_FORM_TOOLTIP(famWord) : UI_COPY.LOOKUP_FAMILY_TOOLTIP(famWord),
+                ariaLabel: isInflected ? UI_COPY.INFLECTED_FORM_TOOLTIP(famWord) : UI_COPY.LOOKUP_FAMILY_TOOLTIP(famWord),
                 disabled: isInflected,
                 onClick: (e) => {
                   e?.stopPropagation?.();

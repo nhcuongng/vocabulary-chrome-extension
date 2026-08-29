@@ -17,6 +17,7 @@ import {
   speakWord,
   stopCurrentAudio,
 } from '../domain/audioPlaybackUtils.js';
+import { createHistorySliderElement } from '../content/historySliderRenderer.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -27,14 +28,6 @@ function renderStatus(targetElement, enabled) {
     ? 'Auto-popup is enabled: select text on pages to look up immediately.'
     : 'Auto-popup is disabled: you can enable it anytime.';
 }
-
-const prevSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="15 18 9 12 15 6"></polyline>
-</svg>`;
-
-const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="9 18 15 12 9 6"></polyline>
-</svg>`;
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -238,66 +231,25 @@ async function bootstrapPopupRuntime({
       return;
     }
 
-    const totalPages = Math.max(1, Math.ceil(allWords.length / ITEMS_PER_PAGE));
-    if (currentSlideIndex >= totalPages) {
-      currentSlideIndex = Math.max(0, totalPages - 1);
-    }
-
-    const startIndex = currentSlideIndex * ITEMS_PER_PAGE;
-    const visibleWords = allWords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-    const prevBtn = documentObj.createElement('button');
-    prevBtn.type = 'button';
-    prevBtn.className = 'vocab-slide-nav-btn';
-    prevBtn.title = 'Previous slide';
-    prevBtn.disabled = currentSlideIndex <= 0;
-    prevBtn.innerHTML = prevSlideSVG;
-    prevBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (currentSlideIndex > 0) {
-        currentSlideIndex--;
-        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
-      }
-    });
-
-    const slideDiv = documentObj.createElement('div');
-    slideDiv.className = 'vocab-history-slide';
-
     const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
-
-    visibleWords.forEach((word) => {
-      const chip = documentObj.createElement('button');
-      chip.type = 'button';
-      chip.className = `vocab-history-chip ${word.toLowerCase() === currentWord ? 'active' : ''}`;
-      chip.textContent = word;
-      chip.title = `Search ${word}`;
-      chip.setAttribute('aria-label', `Search ${word}`);
-      chip.addEventListener('click', (e) => {
-        e.stopPropagation();
+    const sliderElement = createHistorySliderElement({
+      documentObj,
+      allWords,
+      currentWord,
+      currentSlideIndex,
+      itemsPerPage: ITEMS_PER_PAGE,
+      onSelectWord: (word) => {
         if (searchInput) searchInput.value = word;
         performSearch(word);
         renderHistorySlider(word);
-      });
-      slideDiv.appendChild(chip);
-    });
-
-    const nextBtn = documentObj.createElement('button');
-    nextBtn.type = 'button';
-    nextBtn.className = 'vocab-slide-nav-btn';
-    nextBtn.title = 'Next slide';
-    nextBtn.disabled = currentSlideIndex >= totalPages - 1;
-    nextBtn.innerHTML = nextSlideSVG;
-    nextBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (currentSlideIndex < totalPages - 1) {
-        currentSlideIndex++;
+      },
+      onSlideChange: (newIndex) => {
+        currentSlideIndex = newIndex;
         renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
-      }
+      },
     });
 
-    historySliderContainer.appendChild(prevBtn);
-    historySliderContainer.appendChild(slideDiv);
-    historySliderContainer.appendChild(nextBtn);
+    historySliderContainer.appendChild(sliderElement);
   };
 
   function renderState(state, container) {

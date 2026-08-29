@@ -6,6 +6,7 @@ import {
   speakWord,
   stopCurrentAudio,
 } from '../domain/audioPlaybackUtils.js';
+import { UI_COPY } from './historySliderRenderer.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -433,7 +434,7 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       } else if (item.type === 'headword') {
         const activeSource = viewModel?.source || item.source || 'auto';
         const pillsBar = h('div', { className: 'vocab-source-pills-bar' });
-        const label = h('span', { className: 'vocab-source-pill-label' }, 'Nguồn:');
+        const label = h('span', { className: 'vocab-source-pill-label' }, UI_COPY.SOURCE_LABEL);
         pillsBar.appendChild(label);
 
         [
@@ -447,7 +448,7 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
             {
               type: 'button',
               className: `vocab-source-pill ${isActive ? 'active' : ''}`,
-              title: `Chuyển nguồn tra từ sang ${opt.label}`,
+              title: `Switch dictionary source to ${opt.label}`,
               'data-source': opt.id,
               onClick: (e) => {
                 e?.stopPropagation?.();
@@ -572,8 +573,8 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
               'button',
               {
                 className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
-                title: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
-                ariaLabel: isInflected ? `${famWord} (dạng chia từ)` : `Tra cứu từ ${famWord}`,
+                title: isInflected ? UI_COPY.INFLECTED_FORM_TOOLTIP(famWord) : UI_COPY.LOOKUP_FAMILY_TOOLTIP(famWord),
+                ariaLabel: isInflected ? UI_COPY.INFLECTED_FORM_TOOLTIP(famWord) : UI_COPY.LOOKUP_FAMILY_TOOLTIP(famWord),
                 disabled: isInflected,
                 onClick: (e) => {
                   e.stopPropagation();
