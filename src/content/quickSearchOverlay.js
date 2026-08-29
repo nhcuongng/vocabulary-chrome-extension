@@ -332,13 +332,16 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
 
   async function performSearch(word, resultsArea, source) {
     currentHeadword = word;
-    if (historyAdapter?.addSearchWord) {
-      historyAdapter.addSearchWord(word).catch(() => {});
-    }
     renderState({ status: 'loading' }, resultsArea);
 
     try {
       const response = await lookupExecutor({ headword: word, source });
+      if (response && response.status === 'success') {
+        const canonicalWord = response.data?.parsedPayload?.headword || word;
+        if (historyAdapter?.addSearchWord) {
+          await historyAdapter.addSearchWord(canonicalWord).catch(() => {});
+        }
+      }
       renderState(response, resultsArea);
     } catch (error) {
       renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, resultsArea);

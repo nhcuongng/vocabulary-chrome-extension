@@ -513,10 +513,13 @@ async function bootstrapPopupRuntime({
       renderState({ status: 'loading' }, searchResultsContainer);
     }
 
-    historyStore.addSearchWord(word).catch(() => {});
-
     try {
       const response = await lookupExecutor(word);
+      if (response && response.status === 'success') {
+        const canonicalWord = response.data?.parsedPayload?.headword || word;
+        await historyStore.addSearchWord(canonicalWord).catch(() => {});
+        renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
+      }
       if (searchResultsContainer) {
         renderState(response, searchResultsContainer);
       }
