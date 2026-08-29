@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2026-08-30
+
+### 🚀 Added & Improved
+- **Header Settings Gear Icon (⚙️)**:
+  - Transferred configuration controls (`Auto-popup`, `Dark mode`, help tooltips, and status indicator) from the bottom footer into a sleek gear icon popover located beside the dictionary source button in `popup.html`.
+  - Cleaned up the footer area completely, giving all viewport real estate to dictionary lookup results and word definitions.
+- **Shared History Slider Component (`src/content/historySliderRenderer.js`)**:
+  - Unified history slider rendering across Popup Action (`popup.html`) and In-page Popup (`popupManager.js`).
+  - Standardized all UI copy, tooltips, and source menu descriptions into a single centralized English dictionary catalog (`UI_COPY`).
+- **Responsive History Chips with Smart Ellipsis (`...`)**:
+  - History chips in both popup modes now scale responsively with `flex: 1 1 0px` and `min-width: 0; width: 0`.
+  - Long words automatically truncate with ellipsis without distorting container layout. Full words remain accessible via `title` and `aria-label` attributes.
+- **Strict Popup Dimensions & Natural Height**:
+  - Fixed popup width strictly at `380px` (`min-width: 380px; max-width: 380px`) with `overflow-x: hidden`.
+  - Removed artificial `min-height: 250px`, enabling natural dynamic height expansion from compact idle state (~120px) to full search results (~380px).
+- **Custom Thin Scrollbar & Padding Optimization**:
+  - Redesigned `.results-container` scroll layout with 5px slim custom scrollbar matching light/dark theme colors.
+  - Eliminated awkward padding offsets and scroll clipping.
+- **Enhanced Token Validation & Audio Handling**:
+  - Accepts hyphenated compound words (`well-known`, `state-of-the-art`) while rejecting invalid trailing digits/underscores (`word_123`).
+  - Improved dark mode contrast ratio to WCAG AA standards and improved trigger icon accessibility (`aria-label`, keyboard dismissal).
+
+---
+
 ## [0.2.0] - 2026-08-30
 
 ### 🚀 Added
