@@ -1,6 +1,6 @@
 # Báo cáo Audit Hiển thị 100 Từ Vựng Thông Dụng (Đa Nguồn)
 
-- **Ngày thực hiện:** 2026-08-29T07:32:15.493Z
+- **Ngày thực hiện:** 2026-08-29T16:16:30.849Z
 - **Tập dữ liệu:** 100 từ tiếng Anh thông dụng (50 động từ, 25 danh từ, 25 tính từ/trạng từ)
 - **Nguồn kiểm thử:** Vocabulary.com & Cambridge Dictionary
 

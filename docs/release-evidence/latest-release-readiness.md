@@ -1,6 +1,6 @@
 # Release readiness evidence
 
-- Generated at: 2026-08-29T16:07:06.386Z
+- Generated at: 2026-08-29T16:16:37.286Z
 - Release ready: true
 
 ## Quality gate steps
@@ -20,3 +20,4 @@
 
 ## Linked checklist
 - docs/transparency-release-checklist.md
+
