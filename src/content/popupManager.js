@@ -253,23 +253,44 @@ export function createPopupManager({
         font-weight: 600;
       }
 
-      .vocab-popup-source-select {
+      .vocab-source-pills-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 8px;
+        margin-top: 2px;
+      }
+      .vocab-source-pill-label {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-right: 2px;
+        user-select: none;
+      }
+      .vocab-source-pill {
         background: #f3f4f6;
-        color: #374151;
+        color: #6b7280;
         border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        padding: 2px 4px;
+        border-radius: 12px;
+        padding: 2px 8px;
         font-size: 11px;
         font-weight: 500;
         cursor: pointer;
         outline: none;
-        margin: 0 4px;
-        flex-shrink: 0;
-        transition: border-color 0.15s, background-color 0.15s;
+        transition: all 0.15s ease;
+        line-height: 1.3;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
       }
-      .vocab-popup-source-select:hover {
+      .vocab-source-pill:hover {
         background-color: #e5e7eb;
-        border-color: #d1d5db;
+        color: #374151;
+      }
+      .vocab-source-pill.active {
+        background-color: #e0e7ff;
+        color: #3730a3;
+        border-color: #c7d2fe;
+        font-weight: 600;
       }
 
       /* Search History Inline Bar */
@@ -535,13 +556,22 @@ export function createPopupManager({
         color: #93c5fd;
         border-color: #3b82f6;
       }
-      .vocab-popup.dark-mode .vocab-popup-source-select {
+      .vocab-popup.dark-mode .vocab-source-pill {
         background: #374151;
-        color: #f3f4f6;
+        color: #9ca3af;
         border-color: #4b5563;
       }
-      .vocab-popup.dark-mode .vocab-popup-source-select:hover {
+      .vocab-popup.dark-mode .vocab-source-pill:hover {
         background-color: #4b5563;
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-source-pill.active {
+        background: #1e3a8a;
+        color: #bfdbfe;
+        border-color: #3b82f6;
+      }
+      .vocab-popup.dark-mode .vocab-source-pill-label {
+        color: #6b7280;
       }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
@@ -783,39 +813,7 @@ export function createPopupManager({
       headerBar.appendChild(emptySlide);
     }
 
-    // 2. Source Selector in Header
-    const activeDictSource =
-      settingsAdapter?.getSnapshot?.()?.dictionarySource ||
-      viewModel?.source ||
-      'auto';
-
-    const sourceSelect = h(
-      'select',
-      {
-        className: 'vocab-popup-source-select',
-        title: 'Nguồn từ điển (Tự động, Vocabulary.com, Cambridge)',
-        ariaLabel: 'Dictionary source selector',
-        onChange: async (e) => {
-          e?.stopPropagation?.();
-          const nextSource = e.target.value;
-          if (settingsAdapter?.update) {
-            await settingsAdapter.update({ dictionarySource: nextSource });
-          }
-          if (typeof onSourceChange === 'function') {
-            onSourceChange(nextSource);
-          }
-          if (currentWord) {
-            navigateToWord(currentWord, { source: nextSource });
-          }
-        },
-      },
-      h('option', { value: 'auto', selected: activeDictSource === 'auto' ? '' : null }, '⚡ Auto'),
-      h('option', { value: 'vocabulary', selected: activeDictSource === 'vocabulary' ? '' : null }, 'Vocab'),
-      h('option', { value: 'cambridge', selected: activeDictSource === 'cambridge' ? '' : null }, 'Cambridge')
-    );
-    headerBar.appendChild(sourceSelect);
-
-    // 3. Close button
+    // 2. Close button
     const closeBtn = h('button', {
       className: 'vocab-popup-close-btn',
       title: 'Đóng popup',
@@ -847,6 +845,50 @@ export function createPopupManager({
           popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
         }
       } else if (item.type === 'headword') {
+        // Source Selector Pills directly above headword
+        const activeDictSource =
+          settingsAdapter?.getSnapshot?.()?.dictionarySource ||
+          viewModel?.source ||
+          'auto';
+
+        const sourcePillsBar = h('div', { className: 'vocab-source-pills-bar' });
+        const sourceLabel = h('span', { className: 'vocab-source-pill-label' }, 'Nguồn:');
+        sourcePillsBar.appendChild(sourceLabel);
+
+        const sourceOptions = [
+          { id: 'auto', label: '⚡ Auto' },
+          { id: 'vocabulary', label: 'Vocabulary.com' },
+          { id: 'cambridge', label: 'Cambridge' },
+        ];
+
+        sourceOptions.forEach((opt) => {
+          const isActive = activeDictSource === opt.id;
+          const pill = h(
+            'button',
+            {
+              className: `vocab-source-pill ${isActive ? 'active' : ''}`,
+              title: `Chuyển nguồn tra từ sang ${opt.label}`,
+              'data-source': opt.id,
+              onClick: async (e) => {
+                e?.stopPropagation?.();
+                if (isActive) return;
+                if (settingsAdapter?.update) {
+                  await settingsAdapter.update({ dictionarySource: opt.id });
+                }
+                if (typeof onSourceChange === 'function') {
+                  onSourceChange(opt.id);
+                }
+                if (currentWord) {
+                  navigateToWord(currentWord, { source: opt.id });
+                }
+              },
+            },
+            opt.label
+          );
+          sourcePillsBar.appendChild(pill);
+        });
+
+        popupContainer.appendChild(sourcePillsBar);
         const cap =
           typeof item.value === 'string' && item.value.length > 0
             ? item.value.charAt(0).toUpperCase() + item.value.slice(1)

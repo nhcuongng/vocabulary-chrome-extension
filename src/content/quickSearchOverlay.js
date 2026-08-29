@@ -164,7 +164,45 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .vocab-family-chip { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; font-weight: 500; transition: background 0.15s, color 0.15s; }
       .vocab-family-chip:hover { background: #dcfce7; color: #14532d; border-color: #86efac; }
       .vocab-family-chip.disabled-inflection { cursor: not-allowed; opacity: 0.65; background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
-      .vocab-family-chip.disabled-inflection:hover { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+      .vocab-source-pills-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 8px;
+        margin-top: 2px;
+      }
+      .vocab-source-pill-label {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-right: 2px;
+        user-select: none;
+      }
+      .vocab-source-pill {
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.15s ease;
+        line-height: 1.3;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .vocab-source-pill:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+      .vocab-source-pill.active {
+        background-color: #e0e7ff;
+        color: #3730a3;
+        border-color: #c7d2fe;
+        font-weight: 600;
+      }
 
       /* Dark mode */
       .container.dark-mode { background: #1f2937; color: #f3f4f6; border: 1px solid #374151; }
@@ -180,6 +218,10 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .container.dark-mode .vocab-family-chip { background: #064e3b; color: #a7f3d0; border-color: #047857; }
       .container.dark-mode .vocab-family-chip.disabled-inflection { background: #374151; color: #9ca3af; border-color: #4b5563; }
       .container.dark-mode .vocab-family-chip.disabled-inflection:hover { background: #374151; color: #9ca3af; border-color: #4b5563; }
+      .container.dark-mode .vocab-source-pill { background: #374151; color: #9ca3af; border-color: #4b5563; }
+      .container.dark-mode .vocab-source-pill:hover { background: #4b5563; color: #f3f4f6; }
+      .container.dark-mode .vocab-source-pill.active { background: #1e3a8a; color: #bfdbfe; border-color: #3b82f6; }
+      .container.dark-mode .vocab-source-pill-label { color: #6b7280; }
       .container.dark-mode .skeleton { background: #374151; background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%); }
     `;
 
@@ -288,7 +330,7 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
     overlayElement._updateSuggestions = updateSuggestions;
   }
 
-  async function performSearch(word, resultsArea) {
+  async function performSearch(word, resultsArea, source) {
     currentHeadword = word;
     if (historyAdapter?.addSearchWord) {
       historyAdapter.addSearchWord(word).catch(() => {});
@@ -296,7 +338,7 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
     renderState({ status: 'loading' }, resultsArea);
 
     try {
-      const response = await lookupExecutor({ headword: word });
+      const response = await lookupExecutor({ headword: word, source });
       renderState(response, resultsArea);
     } catch (error) {
       renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, resultsArea);
@@ -360,6 +402,36 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
         const cls = item.value === 'def-short' ? 'skeleton skeleton-def short' : `skeleton skeleton-${item.value}`;
         container.appendChild(h('div', { className: cls }));
       } else if (item.type === 'headword') {
+        const activeSource = viewModel?.source || item.source || 'auto';
+        const pillsBar = h('div', { className: 'vocab-source-pills-bar' });
+        const label = h('span', { className: 'vocab-source-pill-label' }, 'Nguồn:');
+        pillsBar.appendChild(label);
+
+        [
+          { id: 'auto', label: '⚡ Auto' },
+          { id: 'vocabulary', label: 'Vocabulary.com' },
+          { id: 'cambridge', label: 'Cambridge' },
+        ].forEach((opt) => {
+          const isActive = activeSource === opt.id;
+          const pill = h(
+            'button',
+            {
+              type: 'button',
+              className: `vocab-source-pill ${isActive ? 'active' : ''}`,
+              title: `Chuyển nguồn tra từ sang ${opt.label}`,
+              'data-source': opt.id,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                if (isActive) return;
+                performSearch(currentHeadword, container, opt.id);
+              },
+            },
+            opt.label
+          );
+          pillsBar.appendChild(pill);
+        });
+        container.appendChild(pillsBar);
+
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
         const source = viewModel?.source || item.source || 'vocabulary';
         const defaultUrl = source === 'cambridge'

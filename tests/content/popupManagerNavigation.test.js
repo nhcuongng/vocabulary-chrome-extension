@@ -272,7 +272,7 @@ test('popupManager: history slide displays 5 words per page and paginates with p
   assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
 });
 
-test('popupManager: header bar contains dictionary source selector and triggers lookup on change', () => {
+test('popupManager: source pills bar renders directly above headword and clicking pill triggers lookup on change', () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   const lookedUpCalls = [];
@@ -310,11 +310,15 @@ test('popupManager: header bar contains dictionary source selector and triggers 
   }
   collect(container);
 
-  const sourceSelects = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-source-select'));
-  assert.equal(sourceSelects.length, 1);
+  const sourcePills = all.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-source-pill'));
+  assert.equal(sourcePills.length, 3);
 
-  // Change source to cambridge
-  sourceSelects[0].dispatchEvent('change', { target: { value: 'cambridge' } });
+  // Find Cambridge pill
+  const cambridgePill = sourcePills.find((el) => el.getAttribute('data-source') === 'cambridge');
+  assert.ok(cambridgePill);
+
+  // Click Cambridge pill
+  cambridgePill.dispatchEvent('click');
 
   assert.deepEqual(sourceChanges, ['cambridge']);
   assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);
