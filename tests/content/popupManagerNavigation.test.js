@@ -272,7 +272,7 @@ test('popupManager: history slide displays 5 words per page and paginates with p
   assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
 });
 
-test('popupManager: source pills bar renders directly above headword and clicking pill triggers lookup on change', () => {
+test('popupManager: header bar contains source menu icon button and clicking opens vertical popover to switch source', () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   const lookedUpCalls = [];
@@ -310,15 +310,19 @@ test('popupManager: source pills bar renders directly above headword and clickin
   }
   collect(container);
 
-  const sourcePills = all.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-source-pill'));
-  assert.equal(sourcePills.length, 3);
+  // 1. Verify source menu button exists next to close button
+  const sourceBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-btn'));
+  assert.ok(sourceBtn);
 
-  // Find Cambridge pill
-  const cambridgePill = sourcePills.find((el) => el.getAttribute('data-source') === 'cambridge');
-  assert.ok(cambridgePill);
+  // 2. Verify vertical popover menu items exist
+  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
+  assert.equal(menuItems.length, 3);
 
-  // Click Cambridge pill
-  cambridgePill.dispatchEvent('click');
+  // 3. Find Cambridge menu option and click it
+  const cambridgeOption = menuItems.find((el) => el.getAttribute('data-source') === 'cambridge');
+  assert.ok(cambridgeOption);
+
+  cambridgeOption.dispatchEvent('click');
 
   assert.deepEqual(sourceChanges, ['cambridge']);
   assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);

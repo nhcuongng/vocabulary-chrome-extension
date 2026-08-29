@@ -280,40 +280,6 @@ async function bootstrapPopupRuntime({
         const cls = item.value === 'def-short' ? 'skeleton skeleton-def short' : `skeleton skeleton-${item.value}`;
         container.appendChild(h('div', { className: cls }));
       } else if (item.type === 'headword') {
-        const activeSource = autoPopupController.getDictionarySource() || viewModel?.source || 'auto';
-        const pillsBar = h('div', { className: 'vocab-source-pills-bar' });
-        const label = h('span', { className: 'vocab-source-pill-label' }, 'Nguồn:');
-        pillsBar.appendChild(label);
-
-        [
-          { id: 'auto', label: '⚡ Auto' },
-          { id: 'vocabulary', label: 'Vocabulary.com' },
-          { id: 'cambridge', label: 'Cambridge' },
-        ].forEach((opt) => {
-          const isActive = activeSource === opt.id;
-          const pill = h(
-            'button',
-            {
-              type: 'button',
-              className: `vocab-source-pill ${isActive ? 'active' : ''}`,
-              title: `Chuyển nguồn tra từ sang ${opt.label}`,
-              'data-source': opt.id,
-              onClick: async (e) => {
-                e.stopPropagation();
-                if (isActive) return;
-                await autoPopupController.setDictionarySource(opt.id);
-                const word = searchInput ? searchInput.value.trim().toLowerCase() : (viewModel?.headword || '');
-                if (word) {
-                  performSearch(word);
-                }
-              },
-            },
-            opt.label
-          );
-          pillsBar.appendChild(pill);
-        });
-        container.appendChild(pillsBar);
-
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
         const source = viewModel?.source || item.source || 'vocabulary';
         const defaultUrl = source === 'cambridge'

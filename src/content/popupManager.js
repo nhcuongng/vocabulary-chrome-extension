@@ -27,6 +27,11 @@ const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height=
   <polyline points="9 18 15 12 9 6"></polyline>
 </svg>`;
 
+const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+</svg>`;
+
 export function createPopupManager({
   documentObj,
   windowObj,
@@ -253,44 +258,114 @@ export function createPopupManager({
         font-weight: 600;
       }
 
-      .vocab-source-pills-bar {
+      .vocab-popup-header-actions {
         display: flex;
         align-items: center;
-        gap: 5px;
-        margin-bottom: 8px;
-        margin-top: 2px;
+        gap: 2px;
+        flex-shrink: 0;
+        position: relative;
       }
-      .vocab-source-pill-label {
-        font-size: 11px;
-        color: #9ca3af;
-        margin-right: 2px;
-        user-select: none;
+
+      .vocab-source-menu-wrapper {
+        position: relative;
       }
-      .vocab-source-pill {
-        background: #f3f4f6;
-        color: #6b7280;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: 500;
+
+      .vocab-source-menu-btn {
+        background: none;
+        border: none;
         cursor: pointer;
-        outline: none;
-        transition: all 0.15s ease;
-        line-height: 1.3;
-        display: inline-flex;
+        padding: 4px;
+        color: #9ca3af;
+        display: flex;
         align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+      }
+      .vocab-source-menu-btn:hover {
+        background-color: #f3f4f6;
+        color: #1677C9;
+      }
+
+      .vocab-source-menu-popover {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 1000;
+        min-width: 230px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0,0,0,0.06);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
         gap: 3px;
       }
-      .vocab-source-pill:hover {
-        background-color: #e5e7eb;
+
+      .vocab-source-menu-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #9ca3af;
+        padding: 4px 8px 2px 8px;
+        user-select: none;
+      }
+
+      .vocab-source-menu-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        box-sizing: border-box;
+        transition: background-color 0.15s ease;
+      }
+      .vocab-source-menu-item:hover {
+        background-color: #f3f4f6;
+      }
+      .vocab-source-menu-item.active {
+        background-color: #e0e7ff;
+      }
+      .vocab-source-menu-item .source-item-text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        flex: 1;
+        min-width: 0;
+      }
+      .vocab-source-menu-item .source-item-name {
+        font-size: 12px;
+        font-weight: 600;
         color: #374151;
       }
-      .vocab-source-pill.active {
-        background-color: #e0e7ff;
+      .vocab-source-menu-item.active .source-item-name {
         color: #3730a3;
-        border-color: #c7d2fe;
-        font-weight: 600;
+      }
+      .vocab-source-menu-item .source-item-hint {
+        font-size: 10px;
+        color: #6b7280;
+      }
+      .vocab-source-menu-item.active .source-item-hint {
+        color: #4f46e5;
+      }
+      .vocab-source-menu-item .source-item-check {
+        font-size: 13px;
+        font-weight: 700;
+        color: #4f46e5;
+        opacity: 0;
+        margin-left: 8px;
+        flex-shrink: 0;
+      }
+      .vocab-source-menu-item.active .source-item-check {
+        opacity: 1;
       }
 
       /* Search History Inline Bar */
@@ -556,22 +631,38 @@ export function createPopupManager({
         color: #93c5fd;
         border-color: #3b82f6;
       }
-      .vocab-popup.dark-mode .vocab-source-pill {
-        background: #374151;
-        color: #9ca3af;
-        border-color: #4b5563;
+      .vocab-popup.dark-mode .vocab-source-menu-btn:hover {
+        background-color: #374151;
+        color: #60a5fa;
       }
-      .vocab-popup.dark-mode .vocab-source-pill:hover {
-        background-color: #4b5563;
-        color: #f3f4f6;
+      .vocab-popup.dark-mode .vocab-source-menu-popover {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
       }
-      .vocab-popup.dark-mode .vocab-source-pill.active {
-        background: #1e3a8a;
-        color: #bfdbfe;
-        border-color: #3b82f6;
-      }
-      .vocab-popup.dark-mode .vocab-source-pill-label {
+      .vocab-popup.dark-mode .vocab-source-menu-title {
         color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item:hover {
+        background-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active {
+        background-color: #1e3a8a;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item .source-item-name {
+        color: #e5e7eb;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-name {
+        color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item .source-item-hint {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-hint {
+        color: #bfdbfe;
+      }
+      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-check {
+        color: #60a5fa;
       }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
@@ -813,8 +904,82 @@ export function createPopupManager({
       headerBar.appendChild(emptySlide);
     }
 
-    // 2. Close button
+    // 2. Header Actions: Source Menu Button (Icon with vertical popover) + Close Button
+    const headerActions = h('div', { className: 'vocab-popup-header-actions' });
+    const sourceWrapper = h('div', { className: 'vocab-source-menu-wrapper' });
+
+    const activeDictSource =
+      settingsAdapter?.getSnapshot?.()?.dictionarySource ||
+      viewModel?.source ||
+      'auto';
+
+    let isMenuOpen = false;
+    const popoverMenu = h('div', { className: 'vocab-source-menu-popover', style: { display: 'none' } });
+
+    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, 'Nguồn từ điển');
+    popoverMenu.appendChild(menuTitle);
+
+    const sourceOptions = [
+      { id: 'auto', name: '⚡ Tự động (Auto)', hint: 'Vocab.com → Cambridge' },
+      { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Nghĩa giải thích & từ gia đình' },
+      { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Phát âm UK/US chuẩn & IPA' },
+    ];
+
+    sourceOptions.forEach((s) => {
+      const isActive = activeDictSource === s.id;
+      const itemBtn = h(
+        'button',
+        {
+          type: 'button',
+          className: `vocab-source-menu-item ${isActive ? 'active' : ''}`,
+          'data-source': s.id,
+          title: `Chọn nguồn: ${s.name}`,
+          onClick: async (e) => {
+            e?.stopPropagation?.();
+            popoverMenu.style.display = 'none';
+            isMenuOpen = false;
+            if (isActive) return;
+            if (settingsAdapter?.update) {
+              await settingsAdapter.update({ dictionarySource: s.id });
+            }
+            if (typeof onSourceChange === 'function') {
+              onSourceChange(s.id);
+            }
+            if (currentWord) {
+              navigateToWord(currentWord, { source: s.id });
+            }
+          },
+        },
+        h(
+          'div',
+          { className: 'source-item-text' },
+          h('span', { className: 'source-item-name' }, s.name),
+          h('span', { className: 'source-item-hint' }, s.hint)
+        ),
+        h('span', { className: 'source-item-check' }, '✓')
+      );
+      popoverMenu.appendChild(itemBtn);
+    });
+
+    const sourceBtn = h('button', {
+      type: 'button',
+      className: 'vocab-source-menu-btn',
+      title: 'Chọn nguồn từ điển',
+      ariaLabel: 'Chọn nguồn từ điển',
+      innerHTML: dictionarySVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        isMenuOpen = !isMenuOpen;
+        popoverMenu.style.display = isMenuOpen ? 'flex' : 'none';
+      },
+    });
+
+    sourceWrapper.appendChild(sourceBtn);
+    sourceWrapper.appendChild(popoverMenu);
+    headerActions.appendChild(sourceWrapper);
+
     const closeBtn = h('button', {
+      type: 'button',
       className: 'vocab-popup-close-btn',
       title: 'Đóng popup',
       ariaLabel: 'Close popup',
@@ -828,8 +993,9 @@ export function createPopupManager({
         }
       },
     });
-    headerBar.appendChild(closeBtn);
+    headerActions.appendChild(closeBtn);
 
+    headerBar.appendChild(headerActions);
     popupContainer.appendChild(headerBar);
 
     // 2. Render Main Body Content
@@ -845,50 +1011,6 @@ export function createPopupManager({
           popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
         }
       } else if (item.type === 'headword') {
-        // Source Selector Pills directly above headword
-        const activeDictSource =
-          settingsAdapter?.getSnapshot?.()?.dictionarySource ||
-          viewModel?.source ||
-          'auto';
-
-        const sourcePillsBar = h('div', { className: 'vocab-source-pills-bar' });
-        const sourceLabel = h('span', { className: 'vocab-source-pill-label' }, 'Nguồn:');
-        sourcePillsBar.appendChild(sourceLabel);
-
-        const sourceOptions = [
-          { id: 'auto', label: '⚡ Auto' },
-          { id: 'vocabulary', label: 'Vocabulary.com' },
-          { id: 'cambridge', label: 'Cambridge' },
-        ];
-
-        sourceOptions.forEach((opt) => {
-          const isActive = activeDictSource === opt.id;
-          const pill = h(
-            'button',
-            {
-              className: `vocab-source-pill ${isActive ? 'active' : ''}`,
-              title: `Chuyển nguồn tra từ sang ${opt.label}`,
-              'data-source': opt.id,
-              onClick: async (e) => {
-                e?.stopPropagation?.();
-                if (isActive) return;
-                if (settingsAdapter?.update) {
-                  await settingsAdapter.update({ dictionarySource: opt.id });
-                }
-                if (typeof onSourceChange === 'function') {
-                  onSourceChange(opt.id);
-                }
-                if (currentWord) {
-                  navigateToWord(currentWord, { source: opt.id });
-                }
-              },
-            },
-            opt.label
-          );
-          sourcePillsBar.appendChild(pill);
-        });
-
-        popupContainer.appendChild(sourcePillsBar);
         const cap =
           typeof item.value === 'string' && item.value.length > 0
             ? item.value.charAt(0).toUpperCase() + item.value.slice(1)
