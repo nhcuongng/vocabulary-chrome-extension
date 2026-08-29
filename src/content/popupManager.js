@@ -149,6 +149,27 @@ export function createPopupManager({
         max-height: 340px;
         min-height: 120px;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #e5e7eb transparent;
+        box-sizing: border-box;
+      }
+
+      .vocab-popup::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .vocab-popup::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .vocab-popup::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 4px;
+      }
+
+      .vocab-popup::-webkit-scrollbar-thumb:hover {
+        background-color: #9ca3af;
       }
 
       .vocab-popup-theme {

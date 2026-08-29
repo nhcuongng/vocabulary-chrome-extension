@@ -488,12 +488,36 @@
       }
 
       .results-container {
-        margin-top: 10px;
+        margin-top: 6px;
         border-top: 1px solid var(--border-color);
         padding-top: 10px;
+        padding-bottom: 6px;
+        padding-right: 6px;
+        margin-right: -6px;
         max-height: 380px;
         overflow-y: auto;
+        overflow-x: hidden;
         display: none;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+        box-sizing: border-box;
+      }
+
+      .results-container::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .results-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .results-container::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 4px;
+      }
+
+      .results-container::-webkit-scrollbar-thumb:hover {
+        background-color: var(--hint-color);
       }
 
       .results-container.active {
