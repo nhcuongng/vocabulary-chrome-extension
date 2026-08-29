@@ -21,17 +21,35 @@
         --border-color: #374151;
       }
 
+      html {
+        width: 380px;
+        min-width: 380px;
+        max-width: 380px;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         width: 380px;
         min-width: 380px;
         max-width: 380px;
+        overflow-x: hidden;
         box-sizing: border-box;
         background: var(--bg-color);
         color: var(--text-color);
       }
 
       main {
+        width: 380px;
+        max-width: 380px;
+        min-width: 0;
+        overflow-x: hidden;
+        box-sizing: border-box;
         padding: 14px;
         display: grid;
         gap: 10px;
@@ -109,6 +127,10 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .search-input-wrapper {
@@ -304,12 +326,17 @@
       }
 
       /* History Slider Bar */
+      #vocab-history-slider-wrapper,
       .vocab-history-slider-wrapper {
         display: flex;
         align-items: center;
         gap: 3px;
         margin-top: 4px;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        box-sizing: border-box;
       }
 
       .vocab-slide-nav-btn {
@@ -341,9 +368,11 @@
         align-items: center;
         gap: 4px;
         overflow: hidden;
-        flex: 1;
+        flex: 1 1 0px;
         min-width: 0;
-        width: 100%;
+        width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .vocab-history-chip {
@@ -359,8 +388,10 @@
         border: 1px solid transparent;
         outline: none;
         transition: background-color 0.15s, color 0.15s;
-        flex: 1 1 0;
+        flex: 1 1 0px;
         min-width: 0;
+        width: 0;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;

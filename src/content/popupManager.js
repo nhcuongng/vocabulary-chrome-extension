@@ -197,8 +197,11 @@ export function createPopupManager({
         display: flex;
         align-items: center;
         gap: 2px;
-        flex: 1;
+        flex: 1 1 0px;
         min-width: 0;
+        width: 0;
+        max-width: 100%;
+        overflow: hidden;
       }
 
       .vocab-slide-nav-btn {
@@ -228,9 +231,10 @@ export function createPopupManager({
         align-items: center;
         gap: 4px;
         overflow: hidden;
-        flex: 1;
+        flex: 1 1 0px;
         min-width: 0;
-        width: 100%;
+        width: 0;
+        max-width: 100%;
       }
 
       .vocab-history-chip {
@@ -245,8 +249,10 @@ export function createPopupManager({
         cursor: pointer;
         border: 1px solid transparent;
         transition: background-color 0.15s, color 0.15s;
-        flex: 1 1 0;
+        flex: 1 1 0px;
         min-width: 0;
+        width: 0;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
