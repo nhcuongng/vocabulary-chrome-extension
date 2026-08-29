@@ -230,23 +230,28 @@ export function createPopupManager({
         overflow: hidden;
         flex: 1;
         min-width: 0;
+        width: 100%;
       }
 
       .vocab-history-chip {
+        font-family: inherit;
         background: #f3f4f6;
         color: #374151;
         font-size: 11px;
         font-weight: 500;
-        padding: 2px 7px;
+        padding: 3px 4px;
         border-radius: 12px;
         white-space: nowrap;
         cursor: pointer;
         border: 1px solid transparent;
         transition: background-color 0.15s, color 0.15s;
-        flex-shrink: 0;
-        max-width: 90px;
+        flex: 1 1 0;
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: block;
+        text-align: center;
+        box-sizing: border-box;
       }
       .vocab-history-chip:hover {
         background: #e0e7ff;
