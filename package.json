@@ -9,6 +9,7 @@
     "build": "npm run bundle:content && node scripts/build-extension.mjs",
     "bundle:content": "node scripts/bundle-content-script.mjs",
     "audit:permissions": "node scripts/audit-permissions.mjs",
+    "audit:100-words": "node scripts/audit-100-words-multi-source.mjs",
     "quality:gate": "node scripts/release-quality-gate.mjs"
   },
   "devDependencies": {

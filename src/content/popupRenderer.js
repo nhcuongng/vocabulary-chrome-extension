@@ -36,17 +36,17 @@ export function renderSuccessContent(viewModel) {
     },
   ];
 
+  items.push({
+    type: 'definition',
+    value: definitions,
+  });
+
   if (wordFamily.length > 0) {
     items.push({
       type: 'word-family',
       value: wordFamily,
     });
   }
-
-  items.push({
-    type: 'definition',
-    value: definitions,
-  });
 
   items.push(...renderComplianceFooterContent(source));
 
