@@ -25,6 +25,10 @@ export const PERMISSION_DISCLOSURE_ITEMS = [
     permission: 'host:https://dictionary.cambridge.org/*',
     rationale: 'Gửi yêu cầu tra cứu từ và nhận nội dung định nghĩa từ Cambridge Dictionary.',
   },
+  {
+    permission: 'host:https://api.dictionaryapi.dev/*',
+    rationale: 'Tra cứu định nghĩa và phát âm chuẩn tiếng Anh từ Free Dictionary API.',
+  },
 ];
 
 function normalizePermissionName(permission) {

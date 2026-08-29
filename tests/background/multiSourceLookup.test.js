@@ -126,3 +126,39 @@ test('service worker handler: người dùng chọn trực tiếp Cambridge Dict
   assert.equal(lookups.length, 1);
   assert.equal(lookups[0].source, 'cambridge');
 });
+
+test('service worker handler: fallback sang Free Dictionary API khi Cambridge HTML gặp lỗi hoặc bị Cloudflare chặn', async () => {
+  const handleMessage = createServiceWorkerLookupHandler({
+    lookupExecutor: async () => ({
+      status: 'error',
+      error: { type: 'network', statusCode: 403 },
+    }),
+    freeDictionaryApiExecutor: async ({ headword }) => ({
+      status: 'success',
+      data: {
+        headword,
+        source: 'cambridge',
+        parsedPayload: {
+          headword,
+          definitions: ['Fallback definition from Free Dictionary API'],
+          source: 'cambridge',
+        },
+      },
+    }),
+  });
+
+  const message = {
+    type: 'LOOKUP_REQUEST',
+    payload: {
+      token: 'test',
+      source: 'cambridge',
+    },
+  };
+
+  const result = await handleMessage(message);
+
+  assert.equal(result.status, 'success');
+  assert.equal(result.data.parsedPayload.source, 'cambridge');
+  assert.equal(result.data.parsedPayload.definitions[0], 'Fallback definition from Free Dictionary API');
+});
+
