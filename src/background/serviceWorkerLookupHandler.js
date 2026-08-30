@@ -18,24 +18,34 @@ import { DICTIONARY_SOURCE } from '../shared/userSettings.js';
 const defaultLookupCache = createInMemoryLookupCache();
 const defaultRateLimiter = createSlidingWindowRateLimiter();
 
-export async function defaultFreeDictionaryApiExecutor({ headword, fetchImpl = globalThis.fetch } = {}) {
+export async function defaultFreeDictionaryApiExecutor({ 
+  headword, 
+  fetchImpl = globalThis.fetch,
+  requestedSource = DICTIONARY_SOURCE.FREEDICTIONARY 
+} = {}) {
   if (typeof fetchImpl !== 'function' || !headword) {
     return null;
   }
 
   try {
-    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(headword)}`;
+    const url = `https://freedictionaryapi.com/api/v1/entries/en/${encodeURIComponent(headword)}`;
     const res = await fetchImpl(url, {
       method: 'GET',
       headers: { Accept: 'application/json' },
     });
+    
+    // For fallback cases we might pretend to be CAMBRIDGE, otherwise use requested source
+    const effectiveSource = requestedSource;
+    const lookupUrl = effectiveSource === DICTIONARY_SOURCE.CAMBRIDGE
+      ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(headword)}`
+      : url;
 
     if (res.status === 404) {
       return createLookupNotFoundResponse({
         token: headword,
         headword,
-        source: DICTIONARY_SOURCE.CAMBRIDGE,
-        lookupUrl: `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(headword)}`,
+        source: effectiveSource,
+        lookupUrl,
       });
     }
 
@@ -49,14 +59,14 @@ export async function defaultFreeDictionaryApiExecutor({ headword, fetchImpl = g
       return null;
     }
 
-    const lookupUrl = `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(headword)}`;
     return createLookupSuccessResponse({
       headword,
-      source: DICTIONARY_SOURCE.CAMBRIDGE,
+      source: effectiveSource,
       lookupUrl,
       parsedPayload: {
         ...parsedPayload,
         lookupUrl,
+        source: effectiveSource,
       },
     });
   } catch {
@@ -158,7 +168,23 @@ export function createServiceWorkerLookupHandler({
       return lookupFromSingleSource(DICTIONARY_SOURCE.CAMBRIDGE, headword);
     }
 
-    // 3. Auto source: Priority Vocabulary.com -> Cambridge Dictionary
+    // 3. Direct source: freedictionary only
+    if (sourcePreference === DICTIONARY_SOURCE.FREEDICTIONARY) {
+      if (typeof freeDictionaryApiExecutor === 'function') {
+        const result = await freeDictionaryApiExecutor({ 
+          headword,
+          requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY
+        });
+        if (result) return result;
+      }
+      return createLookupErrorResponse('network', {
+        message: 'Free Dictionary API is not available',
+        headword,
+        source: DICTIONARY_SOURCE.FREEDICTIONARY,
+      });
+    }
+
+    // 4. Auto source: Priority Vocabulary.com -> Cambridge Dictionary
     const vocabResult = await lookupFromSingleSource(DICTIONARY_SOURCE.VOCABULARY, headword);
     if (vocabResult?.status === 'success') {
       return vocabResult;

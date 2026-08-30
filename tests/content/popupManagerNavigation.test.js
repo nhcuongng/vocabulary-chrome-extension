@@ -316,7 +316,7 @@ test('popupManager: header bar contains source menu icon button and clicking ope
 
   // 2. Verify vertical popover menu items exist
   const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
-  assert.equal(menuItems.length, 3);
+  assert.equal(menuItems.length, 4);
 
   // 3. Find Cambridge menu option and click it
   const cambridgeOption = menuItems.find((el) => el.getAttribute('data-source') === 'cambridge');

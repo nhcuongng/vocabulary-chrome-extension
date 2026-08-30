@@ -20,7 +20,8 @@ export const UI_COPY = {
   DICTIONARY_SOURCE_OPTIONS: [
     { id: 'auto', name: '⚡ Auto', hint: 'Vocab.com → Cambridge' },
     { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Explanations & word family' },
-    { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Native UK/US audio & IPA' },
+    { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Native UK/US audio & IPA', badge: '🧪' },
+    { id: 'freedictionary', name: '🆓 Free Dictionary API', hint: 'Free dictionary with audio' },
   ],
 };
 

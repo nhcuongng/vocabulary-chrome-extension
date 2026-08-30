@@ -41,12 +41,14 @@
         box-sizing: border-box;
         background: var(--bg-color);
         color: var(--text-color);
+        transition: background-color 0.2s ease, color 0.2s ease;
       }
 
       main {
         width: 380px;
         max-width: 380px;
         min-width: 0;
+        min-height: 200px;
         box-sizing: border-box;
         padding: 14px;
         display: grid;
@@ -150,7 +152,7 @@
         outline: none;
         background: var(--bg-color);
         color: var(--text-color);
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s, box-shadow 0.2s;
         box-sizing: border-box;
       }
 
@@ -354,6 +356,14 @@
         font-size: 12px;
         font-weight: 600;
         color: var(--text-color);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .source-badge-experimental {
+        font-size: 10px;
+        cursor: help;
       }
 
       .vocab-source-menu-item.active .source-item-name {
@@ -404,6 +414,7 @@
         width: 100%;
         max-width: 100%;
         min-width: 0;
+        min-height: 22px;
         overflow: hidden;
         box-sizing: border-box;
       }
@@ -553,6 +564,11 @@
         border-color: #4b5563;
       }
 
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
       .results-container {
         margin-top: 6px;
         border-top: 1px solid var(--border-color);
@@ -561,12 +577,17 @@
         padding-right: 6px;
         margin-right: -6px;
         max-height: 380px;
+        min-height: 120px;
         overflow-y: auto;
         overflow-x: hidden;
         display: none;
         scrollbar-width: thin;
         scrollbar-color: var(--border-color) transparent;
         box-sizing: border-box;
+      }
+
+      .results-container > * {
+        animation: fadeIn 0.15s ease-in;
       }
 
       .results-container::-webkit-scrollbar {
@@ -915,8 +936,18 @@
                 </button>
                 <button type="button" class="vocab-source-menu-item" data-source="cambridge">
                   <div class="source-item-text">
-                    <span class="source-item-name">🏛 Cambridge Dictionary</span>
+                    <span class="source-item-name">
+                      🏛 Cambridge Dictionary
+                      <span class="source-badge-experimental" title="Experimental Feature">🧪</span>
+                    </span>
                     <span class="source-item-hint">Native UK/US audio & IPA</span>
+                  </div>
+                  <span class="source-item-check">✓</span>
+                </button>
+                <button type="button" class="vocab-source-menu-item" data-source="freedictionary">
+                  <div class="source-item-text">
+                    <span class="source-item-name">🆓 Free Dictionary API</span>
+                    <span class="source-item-hint">Free dictionary with audio</span>
                   </div>
                   <span class="source-item-check">✓</span>
                 </button>

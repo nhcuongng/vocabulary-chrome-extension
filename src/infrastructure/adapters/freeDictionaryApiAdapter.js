@@ -14,7 +14,7 @@ function wrapInCollapse(label, content, isOpen = false) {
 }
 
 export function parseFreeDictionaryApiResponse(json, targetWord = '') {
-  if (!Array.isArray(json) || json.length === 0) {
+  if (!json || typeof json !== 'object' || !Array.isArray(json.entries) || json.entries.length === 0) {
     return {
       headword: targetWord,
       pronunciation: '',
@@ -26,76 +26,51 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
     };
   }
 
-  const entry = json[0];
-  const headword = entry.word || targetWord;
+  const headword = json.word || targetWord;
+  const entries = json.entries;
 
   // 1. Audio & Pronunciation
   let ipaUs = '';
   let ipaUk = '';
-  let audioUs = '';
-  let audioUk = '';
 
-  const phonetics = Array.isArray(entry.phonetics) ? entry.phonetics : [];
-  phonetics.forEach((p) => {
-    let audioUrl = typeof p.audio === 'string' ? p.audio.trim() : '';
-    if (audioUrl.startsWith('//')) {
-      audioUrl = `https:${audioUrl}`;
-    }
-    const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
+  entries.forEach((entry) => {
+    const pronunciations = Array.isArray(entry.pronunciations) ? entry.pronunciations : [];
+    pronunciations.forEach((p) => {
+      if (p.type !== 'ipa') return;
+      const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
+      if (!text) return;
+      
+      const tags = Array.isArray(p.tags) ? p.tags.map(t => t.toLowerCase()) : [];
+      const isUS = tags.includes('general american') || tags.includes('us');
+      const isUK = tags.includes('received pronunciation') || tags.includes('uk');
 
-    const isUS = audioUrl.includes('-us.') || audioUrl.includes('/us/') || audioUrl.endsWith('-us.mp3') || audioUrl.endsWith('-us.ogg');
-    const isUK = audioUrl.includes('-uk.') || audioUrl.includes('/uk/') || audioUrl.endsWith('-uk.mp3') || audioUrl.endsWith('-uk.ogg');
-    const isAU = audioUrl.includes('-au.') || audioUrl.includes('/au/') || audioUrl.endsWith('-au.mp3') || audioUrl.endsWith('-au.ogg');
-    const isCA = audioUrl.includes('-ca.') || audioUrl.includes('/ca/') || audioUrl.endsWith('-ca.mp3') || audioUrl.endsWith('-ca.ogg');
-
-    if (isUS) {
-      if (!audioUs) audioUs = audioUrl;
-      if (text && !ipaUs) ipaUs = text;
-    } else if (isUK) {
-      if (!audioUk) audioUk = audioUrl;
-      if (text && !ipaUk) ipaUk = text;
-    } else if (isAU || isCA) {
-      if (!audioUk) audioUk = audioUrl;
-      else if (!audioUs) audioUs = audioUrl;
-      if (text && !ipaUk) ipaUk = text;
-    } else if (audioUrl) {
-      if (!audioUs) audioUs = audioUrl;
-      else if (!audioUk) audioUk = audioUrl;
-      if (text && !ipaUs) ipaUs = text;
-    } else if (text) {
-      if (!ipaUs) ipaUs = text;
-      else if (!ipaUk) ipaUk = text;
-    }
+      if (isUS && !ipaUs) ipaUs = text;
+      if (isUK && !ipaUk) ipaUk = text;
+      
+      // Fallback
+      if (!ipaUs && !ipaUk) {
+        ipaUs = text;
+      }
+    });
   });
 
-  if (!ipaUs && typeof entry.phonetic === 'string') {
-    ipaUs = entry.phonetic.replace(/^\/|\/$/g, '').trim();
-  }
-  if (!ipaUk && ipaUs) {
-    ipaUk = ipaUs;
-  }
-  if (!ipaUs && ipaUk) {
-    ipaUs = ipaUk;
-  }
+  if (!ipaUk && ipaUs) ipaUk = ipaUs;
+  if (!ipaUs && ipaUk) ipaUs = ipaUk;
 
   const encodedHw = encodeURIComponent(headword || targetWord);
-  if (!audioUs || audioUs.includes('api.dictionaryapi.dev/media/')) {
-    audioUs = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${encodedHw}`;
-  }
-  if (!audioUk || audioUk.includes('api.dictionaryapi.dev/media/')) {
-    audioUk = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-GB&q=${encodedHw}`;
-  }
+  // FreeDictionaryAPI.com does not provide audio URLs, so we rely entirely on Google TTS fallback
+  const audioUs = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${encodedHw}`;
+  const audioUk = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-GB&q=${encodedHw}`;
 
   const pronParts = [];
   if (ipaUs) pronParts.push(`US /${ipaUs}/`);
-  if (ipaUk && (ipaUk !== ipaUs || audioUk || !ipaUs)) {
+  if (ipaUk && (ipaUk !== ipaUs || !ipaUs)) {
     pronParts.push(`UK /${ipaUk}/`);
   }
   const pronunciation = pronParts.length > 0 ? pronParts.join(' · ') : (ipaUs ? `/${ipaUs}/` : '');
 
   // 2. Extract meanings, definitions, synonyms/antonyms
   const definitions = [];
-  const meanings = Array.isArray(entry.meanings) ? entry.meanings : [];
   const wordFamily = [];
   const seenFamily = new Set();
   const currentLower = (headword || targetWord).toLowerCase();
@@ -111,9 +86,9 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
 
   // 3. Short Definition (Top concise meanings across parts of speech)
   const primaryDefs = [];
-  meanings.forEach((m) => {
-    const pos = m.partOfSpeech ? `(${m.partOfSpeech}) ` : '';
-    const firstDef = m.definitions?.[0]?.definition;
+  entries.forEach((entry) => {
+    const pos = entry.partOfSpeech ? `(${entry.partOfSpeech}) ` : '';
+    const firstDef = entry.senses?.[0]?.definition;
     if (firstDef && primaryDefs.length < 2) {
       primaryDefs.push(`${pos}${firstDef}`);
     }
@@ -126,16 +101,17 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
 
   // 4. Long Definition / Detailed Explanations
   const detailedParagraphs = [];
-  meanings.forEach((m) => {
-    const pos = m.partOfSpeech || 'General';
+  entries.forEach((entry) => {
+    const pos = entry.partOfSpeech || 'General';
     const posCap = pos.charAt(0).toUpperCase() + pos.slice(1);
-    const defItems = Array.isArray(m.definitions) ? m.definitions : [];
+    const senses = Array.isArray(entry.senses) ? entry.senses : [];
 
-    defItems.slice(0, 3).forEach((d) => {
-      if (!d.definition) return;
-      let text = `<b>${posCap}:</b> ${d.definition}`;
-      if (d.example) {
-        text += ` <span style="font-style: italic; color: var(--hint-color);">"${d.example}"</span>`;
+    senses.slice(0, 3).forEach((sense) => {
+      if (!sense.definition) return;
+      let text = `<b>${posCap}:</b> ${sense.definition}`;
+      const example = sense.examples?.[0] || sense.quotes?.[0]?.text;
+      if (example) {
+        text += ` <span style="font-style: italic; color: var(--hint-color);">"${example}"</span>`;
       }
       detailedParagraphs.push(`<p style="margin: 0 0 6px 0; line-height: 1.5;">${text}</p>`);
     });
@@ -146,26 +122,27 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
   }
 
   // 5. Part of Speech Sections (Noun, Verb, Adjective, etc.)
-  meanings.forEach((m) => {
-    const pos = m.partOfSpeech || 'Definitions';
+  entries.forEach((entry) => {
+    const pos = entry.partOfSpeech || 'Definitions';
     const posCap = pos.charAt(0).toUpperCase() + pos.slice(1);
-    const defItems = Array.isArray(m.definitions) ? m.definitions : [];
+    const senses = Array.isArray(entry.senses) ? entry.senses : [];
 
     const lis = [];
-    defItems.forEach((d) => {
-      const defText = d.definition;
+    senses.forEach((sense) => {
+      const defText = sense.definition;
       if (!defText) return;
 
       let liHtml = `<li style="margin-bottom: 10px;"><b>${defText}</b>`;
-      if (d.example) {
-        liHtml += `<div style="font-style: italic; color: var(--hint-color); margin-top: 3px; font-size: 13px;">• ${d.example}</div>`;
+      const example = sense.examples?.[0] || sense.quotes?.[0]?.text;
+      if (example) {
+        liHtml += `<div style="font-style: italic; color: var(--hint-color); margin-top: 3px; font-size: 13px;">• ${example}</div>`;
       }
       liHtml += `</li>`;
       lis.push(liHtml);
 
       // Synonyms from definition
-      if (Array.isArray(d.synonyms)) {
-        d.synonyms.forEach((syn) => {
+      if (Array.isArray(sense.synonyms)) {
+        sense.synonyms.forEach((syn) => {
           const s = String(syn).toLowerCase().trim();
           if (s && s !== currentLower && !seenFamily.has(s)) {
             seenFamily.add(s);
@@ -175,9 +152,9 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
       }
     });
 
-    // Synonyms from meaning
-    if (Array.isArray(m.synonyms)) {
-      m.synonyms.forEach((syn) => {
+    // Synonyms from entry
+    if (Array.isArray(entry.synonyms)) {
+      entry.synonyms.forEach((syn) => {
         const s = String(syn).toLowerCase().trim();
         if (s && s !== currentLower && !seenFamily.has(s)) {
           seenFamily.add(s);

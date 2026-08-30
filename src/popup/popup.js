@@ -283,6 +283,12 @@ async function bootstrapPopupRuntime({
   function renderState(state, container) {
     container.replaceChildren();
 
+    if (state.status === 'loading') {
+      container.setAttribute('aria-busy', 'true');
+    } else {
+      container.setAttribute('aria-busy', 'false');
+    }
+
     function h(tag, props, ...children) {
       const el = documentObj.createElement(tag);
       if (props) {
@@ -525,6 +531,7 @@ async function bootstrapPopupRuntime({
       if (searchResultsContainer) {
         searchResultsContainer.replaceChildren();
         searchResultsContainer.classList.remove('active');
+        searchResultsContainer.removeAttribute('aria-busy');
       }
       if (searchClearBtn) {
         searchClearBtn.style.display = 'none';
