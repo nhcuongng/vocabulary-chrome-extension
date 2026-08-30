@@ -35,10 +35,12 @@ export function createLookupFlowOrchestrator({
     const requestStartedAtMs = now();
     const loadingRenderedAtMs = now();
     const headword = request.payload.token;
+    const source = request.payload.source;
 
     setState({
       status: POPUP_STATE.LOADING,
       headword,
+      source,
       requestStartedAtMs,
       loadingRenderedAtMs,
       loadingLatencyMs: loadingRenderedAtMs - requestStartedAtMs,
@@ -46,7 +48,7 @@ export function createLookupFlowOrchestrator({
 
     let result;
     try {
-      result = await lookupExecutor({ headword });
+      result = await lookupExecutor({ headword, source });
     } catch (error) {
       result = {
         status: 'error',
@@ -86,16 +88,22 @@ export function createLookupFlowOrchestrator({
     if (result?.status === 'success') {
       setState({
         status: POPUP_STATE.SUCCESS,
+        headword: result?.data?.headword || headword,
+        source: result?.data?.source || source,
         data: result.data,
       });
     } else if (result?.status === 'not-found') {
       setState({
         status: POPUP_STATE.NOT_FOUND,
+        headword: result?.data?.headword || result?.data?.token || headword,
+        source: result?.data?.source || source,
         data: result.data,
       });
     } else {
       setState({
         status: POPUP_STATE.ERROR,
+        headword: result?.error?.headword || headword,
+        source: result?.error?.source || source,
         error: result?.error ?? {
           type: 'unknown',
           message: 'unknown lookup error',

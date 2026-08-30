@@ -447,13 +447,13 @@ export async function performDictionaryLookup({
       const finishedAtMs = now();
 
       let successPayload;
-      if (source === 'cambridge') {
+      if (source === 'cambridge' || source === 'freedictionary') {
         let jsonData = null;
         try {
           jsonData = JSON.parse(rawText);
         } catch {}
 
-        const parsedPayload = parseFreeDictionaryApiResponse(jsonData, headword);
+        const parsedPayload = parseFreeDictionaryApiResponse(jsonData, headword, source);
         if (!parsedPayload.hasCoreData) {
           return createLookupNotFoundResponse({
             token: headword,
@@ -473,6 +473,7 @@ export async function performDictionaryLookup({
           parsedPayload: {
             ...parsedPayload,
             lookupUrl,
+            source,
           },
           attempts: attempt,
           startedAtMs,

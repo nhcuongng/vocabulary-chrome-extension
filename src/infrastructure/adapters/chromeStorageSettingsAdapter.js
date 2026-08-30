@@ -12,7 +12,9 @@ function isPromiseLike(value) {
 function isSameSettings(left, right) {
   return (
     left?.schemaVersion === right?.schemaVersion &&
-    left?.autoPopupEnabled === right?.autoPopupEnabled
+    left?.autoPopupEnabled === right?.autoPopupEnabled &&
+    left?.darkMode === right?.darkMode &&
+    left?.dictionarySource === right?.dictionarySource
   );
 }
 

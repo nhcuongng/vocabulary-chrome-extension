@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.4] - 2026-08-31
+
+### 🚀 Added & Improved
+- **Anti-Layout Shift & Fixed Container Dimensions**:
+  - Enforced a fixed width of `380px` for the in-page popup container (`.vocab-popup-theme`) to eliminate Cumulative Layout Shift (CLS) when transitioning between loading skeleton and content display.
+  - Added responsive constraint `max-width: calc(100vw - 24px)` to ensure seamless responsive layout on ultra-narrow viewports / mobile screens.
+  - Added `scrollbar-gutter: stable` to prevent horizontal layout jank when definition lists trigger vertical scrolling.
+  - Synchronized popup positioning maxWidth logic with the 380px standard.
+
+## [0.2.3] - 2026-08-30
+
+### 🚀 Added & Improved
+- **Auto Mode Priority Rebalancing**:
+  - Reordered the automatic fallback chain in Auto mode: `Vocabulary.com` → `Free Dictionary API` → `Cambridge Dictionary`.
+  - Updated hint and status descriptions to clearly show `Vocab.com → FreeDict → Cambridge`.
+- **UI Source Selection Reordering**:
+  - Moved Cambridge Dictionary to the bottom across all dictionary source selectors:
+    - Popup Action (`popup.html` & `popup.js`)
+    - In-page Lookup Popup (`popupManager.js`)
+    - Shared History Slider catalog (`historySliderRenderer.js`)
+    - Quick Search Overlay (`quickSearchOverlay.js`)
+- **Multi-Source Fallback Testing**:
+  - Added test suites in `tests/background/multiSourceLookup.test.js` validating the full 3-tier fallback chain.
+
 ## [0.2.2] - 2026-08-30
 
 ### 🚀 Added & Improved

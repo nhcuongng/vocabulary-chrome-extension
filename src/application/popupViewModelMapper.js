@@ -72,9 +72,13 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
 export function mapLookupErrorToPopupViewModel(error = {}) {
   const normalizedErrorType = normalizeLookupErrorType(error?.type ?? error?.errorType);
   const copy = getErrorCopyByType(normalizedErrorType);
+  const headword = (error?.headword ?? '').trim();
+  const source = error?.source || 'auto';
 
   return {
     state: 'error',
+    headword,
+    source,
     orderedFields: ['title', 'message', 'cta'],
     type: normalizedErrorType,
     errorType: normalizedErrorType,
@@ -86,13 +90,23 @@ export function mapLookupErrorToPopupViewModel(error = {}) {
 
 export function mapLookupResultToPopupViewModel(lookupResult) {
   if (lookupResult?.status === 'success') {
-    return mapParsedPayloadToPopupViewModel(lookupResult?.data?.parsedPayload ?? lookupResult?.data ?? {});
+    const payload = lookupResult?.data?.parsedPayload ?? lookupResult?.data ?? {};
+    const effectiveSource = lookupResult?.data?.source || lookupResult?.source || payload?.source || 'auto';
+    const vm = mapParsedPayloadToPopupViewModel({
+      ...payload,
+      source: effectiveSource,
+      headword: lookupResult?.data?.headword || lookupResult?.headword || payload?.headword,
+    });
+    return vm;
   }
 
   if (lookupResult?.status === 'not-found') {
-    const token = lookupResult?.data?.token || '';
+    const token = lookupResult?.data?.token || lookupResult?.data?.headword || lookupResult?.headword || '';
+    const source = lookupResult?.data?.source || lookupResult?.source || 'auto';
     return {
       state: 'not-found',
+      headword: token,
+      source,
       orderedFields: ['title', 'message', 'searchSuggestions', 'guidance'],
       title: NOT_FOUND_COPY.title,
       message: NOT_FOUND_COPY.message,
@@ -101,5 +115,12 @@ export function mapLookupResultToPopupViewModel(lookupResult) {
     };
   }
 
-  return mapLookupErrorToPopupViewModel(lookupResult?.error ?? {});
+  const errObj = lookupResult?.error ?? {};
+  const headword = errObj.headword || lookupResult?.headword || '';
+  const source = errObj.source || lookupResult?.source || 'auto';
+  return mapLookupErrorToPopupViewModel({
+    ...errObj,
+    headword,
+    source,
+  });
 }

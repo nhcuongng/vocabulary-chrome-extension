@@ -923,7 +923,7 @@
                 <button type="button" class="vocab-source-menu-item active" data-source="auto">
                   <div class="source-item-text">
                     <span class="source-item-name">⚡ Auto</span>
-                    <span class="source-item-hint">Vocab.com → Cambridge</span>
+                    <span class="source-item-hint">Vocab.com → FreeDict → Cambridge</span>
                   </div>
                   <span class="source-item-check">✓</span>
                 </button>
@@ -934,6 +934,13 @@
                   </div>
                   <span class="source-item-check">✓</span>
                 </button>
+                <button type="button" class="vocab-source-menu-item" data-source="freedictionary">
+                  <div class="source-item-text">
+                    <span class="source-item-name">🆓 Free Dictionary API</span>
+                    <span class="source-item-hint">Free dictionary with audio</span>
+                  </div>
+                  <span class="source-item-check">✓</span>
+                </button>
                 <button type="button" class="vocab-source-menu-item" data-source="cambridge">
                   <div class="source-item-text">
                     <span class="source-item-name">
@@ -941,13 +948,6 @@
                       <span class="source-badge-experimental" title="Experimental Feature">🧪</span>
                     </span>
                     <span class="source-item-hint">Native UK/US audio & IPA</span>
-                  </div>
-                  <span class="source-item-check">✓</span>
-                </button>
-                <button type="button" class="vocab-source-menu-item" data-source="freedictionary">
-                  <div class="source-item-text">
-                    <span class="source-item-name">🆓 Free Dictionary API</span>
-                    <span class="source-item-hint">Free dictionary with audio</span>
                   </div>
                   <span class="source-item-check">✓</span>
                 </button>
@@ -994,6 +994,7 @@
           <select id="dictionary-source-select" style="display: none;">
             <option value="auto">auto</option>
             <option value="vocabulary">vocabulary</option>
+            <option value="freedictionary">freedictionary</option>
             <option value="cambridge">cambridge</option>
           </select>
         </div>

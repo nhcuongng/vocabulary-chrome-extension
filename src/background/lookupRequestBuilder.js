@@ -27,12 +27,18 @@ export function buildDictionaryLookupUrl(normalizedHeadword, source = 'vocabular
   if (source === 'cambridge') {
     return buildCambridgeLookupUrl(normalizedHeadword);
   }
+  if (source === 'freedictionary') {
+    return `https://freedictionaryapi.com/api/v1/entries/en/${encodeURIComponent(normalizedHeadword)}`;
+  }
   return buildVocabularyLookupUrl(normalizedHeadword);
 }
 
 export function buildDictionaryFetchUrl(normalizedHeadword, source = 'vocabulary') {
   if (source === 'cambridge') {
     return buildDictionaryApiEndpointUrl(normalizedHeadword);
+  }
+  if (source === 'freedictionary') {
+    return `https://freedictionaryapi.com/api/v1/entries/en/${encodeURIComponent(normalizedHeadword)}`;
   }
   return buildVocabularyLookupUrl(normalizedHeadword);
 }
