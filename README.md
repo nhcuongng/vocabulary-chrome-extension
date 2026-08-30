@@ -44,11 +44,23 @@ Designed for users who read English at a B1 to C2 level and want to expand their
 
 ## 🌟 Key Features
 
-- **Definition-First UI:** Prioritizes academic English definitions over simple machine translation.
-- **Instant Lookup:** High-quality data from **Vocabulary.com** (headword, pronunciation, and detailed definitions).
-- **Smart Normalization:** Automatically handles punctuation, casing, and extraneous characters to ensure accurate lookups.
-- **Auto-Popup Toggle:** Full control over your experience—enable it for deep reading sessions, or disable it for casual browsing.
-- **Privacy-Centric:** No personal data collection, minimal permissions (`activeTab`, `storage`), and transparent data handling.
+- **Multi-Source Dictionary Architecture**: 
+  - Choose between **Auto** (smart fallback), **Vocabulary.com** (explanations & word family), **Cambridge Dictionary** (native UK/US audio & IPA), or the **Free Dictionary API** (structured API definitions).
+  - Fast, reliable lookups with built-in caching, fallback strategies, and intelligent format mapping.
+- **Structured & Detailed Definitions**: 
+  - Prioritizes academic English. Includes concise `Short Definition` and `Long Definition` with usage examples.
+  - Categorized **Part of Speech** collapsible sections (Noun, Verb, Adjective).
+  - Displays word families (derivatives, inflected forms, and synonyms).
+- **Resilient Audio Playback**: 
+  - Dual-accent support: Native **US** and **UK** audio pronunciations.
+  - Advanced engine utilizing API audio streams, robust Google Translate TTS fallbacks, and native Web Speech API.
+- **Enhanced UI & UX**:
+  - **Quick Search Overlay**: Fast lookup modal accessible via keyboard shortcuts.
+  - **Paginated History Slider**: Scroll through recent searches gracefully with smart text truncation.
+  - **Settings Gear & Source Menu**: Tweak "Auto-popup" and "Dark Mode", or switch dictionary sources instantly from a sleek popup popover.
+  - **Dark Mode**: Fully supports persistent dark mode with optimized WCAG AA contrast.
+- **Privacy-Centric**: 
+  - No personal data collection, minimal permissions (`activeTab`, `storage`), and completely transparent data handling. All history is strictly local.
 
 ---
 
