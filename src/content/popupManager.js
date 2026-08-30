@@ -535,21 +535,29 @@ export function createPopupManager({
         margin-top: 8px;
       }
       .vocab-popup-compliance-footer {
-        margin-top: 10px;
+        position: sticky;
+        bottom: -12px;
+        background: #ffffff;
+        margin: 14px -14px -12px -14px;
+        padding: 8px 14px 7px 14px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 12px;
-        border-top: 1px solid #f3f4f6;
-        padding-top: 6px;
+        border-top: 1px solid #e5e7eb;
+        box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
+        z-index: 10;
       }
       .vocab-popup-attribution {
         margin-top: 0;
-        font-size: 11px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
       }
       .vocab-popup-permission-disclosure {
         font-size: 11px;
         margin-top: 0;
+        color: #9ca3af;
       }
 
       /* Details & Summary custom styles */
@@ -746,7 +754,15 @@ export function createPopupManager({
         color: #9ca3af;
       }
       .vocab-popup.dark-mode .vocab-popup-compliance-footer {
+        background: #1f2937;
         border-top-color: #374151;
+        box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.3);
+      }
+      .vocab-popup.dark-mode .vocab-popup-attribution {
+        color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-popup-permission-disclosure {
+        color: #6b7280;
       }
       .vocab-popup.dark-mode details.vocab-details {
         background: #111827;
@@ -892,7 +908,7 @@ export function createPopupManager({
     }
 
     // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Source Switcher, Close Button
-    const currentWord = (viewModel?.headword || state.headword || '').toLowerCase();
+    const currentWord = (viewModel?.headword || state.headword || state?.data?.headword || state?.data?.token || state?.error?.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
     const headerBar = h('div', { className: 'vocab-popup-header-bar' });
@@ -921,6 +937,7 @@ export function createPopupManager({
     const activeDictSource =
       settingsAdapter?.getSnapshot?.()?.dictionarySource ||
       viewModel?.source ||
+      state?.source ||
       'auto';
 
     let isMenuOpen = false;
@@ -1031,6 +1048,7 @@ export function createPopupManager({
           ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
           : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
         const headwordUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
+
         popupContainer.appendChild(
           h(
             'p',

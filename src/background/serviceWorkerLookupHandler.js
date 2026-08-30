@@ -86,6 +86,18 @@ export function createServiceWorkerLookupHandler({
   onGuardrailEvent,
 } = {}) {
   async function lookupFromSingleSource(source, headword) {
+    if (
+      source === DICTIONARY_SOURCE.FREEDICTIONARY &&
+      freeDictionaryApiExecutor !== defaultFreeDictionaryApiExecutor &&
+      typeof freeDictionaryApiExecutor === 'function'
+    ) {
+      const customRes = await freeDictionaryApiExecutor({
+        headword,
+        requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY,
+      });
+      if (customRes) return customRes;
+    }
+
     const parser = source === DICTIONARY_SOURCE.CAMBRIDGE ? cambridgeHtmlParser : htmlParser;
 
     const lookupResult = await lookupExecutor({
@@ -135,7 +147,10 @@ export function createServiceWorkerLookupHandler({
     // Fallback: If Cambridge source cannot be fetched (Cloudflare 403 or network error),
     // fetch from Free Dictionary API for reliable standard definitions & audio:
     if (source === DICTIONARY_SOURCE.CAMBRIDGE && typeof freeDictionaryApiExecutor === 'function') {
-      const fallbackResult = await freeDictionaryApiExecutor({ headword });
+      const fallbackResult = await freeDictionaryApiExecutor({
+        headword,
+        requestedSource: DICTIONARY_SOURCE.CAMBRIDGE,
+      });
       if (fallbackResult) {
         return fallbackResult;
       }
@@ -163,31 +178,25 @@ export function createServiceWorkerLookupHandler({
       return lookupFromSingleSource(DICTIONARY_SOURCE.VOCABULARY, headword);
     }
 
-    // 2. Direct source: cambridge only
+    // 2. Direct source: freedictionary only
+    if (sourcePreference === DICTIONARY_SOURCE.FREEDICTIONARY) {
+      return lookupFromSingleSource(DICTIONARY_SOURCE.FREEDICTIONARY, headword);
+    }
+
+    // 3. Direct source: cambridge only
     if (sourcePreference === DICTIONARY_SOURCE.CAMBRIDGE) {
       return lookupFromSingleSource(DICTIONARY_SOURCE.CAMBRIDGE, headword);
     }
 
-    // 3. Direct source: freedictionary only
-    if (sourcePreference === DICTIONARY_SOURCE.FREEDICTIONARY) {
-      if (typeof freeDictionaryApiExecutor === 'function') {
-        const result = await freeDictionaryApiExecutor({ 
-          headword,
-          requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY
-        });
-        if (result) return result;
-      }
-      return createLookupErrorResponse('network', {
-        message: 'Free Dictionary API is not available',
-        headword,
-        source: DICTIONARY_SOURCE.FREEDICTIONARY,
-      });
-    }
-
-    // 4. Auto source: Priority Vocabulary.com -> Cambridge Dictionary
+    // 4. Auto source: Priority Vocabulary.com -> Free Dictionary API -> Cambridge Dictionary
     const vocabResult = await lookupFromSingleSource(DICTIONARY_SOURCE.VOCABULARY, headword);
     if (vocabResult?.status === 'success') {
       return vocabResult;
+    }
+
+    const freeDictResult = await lookupFromSingleSource(DICTIONARY_SOURCE.FREEDICTIONARY, headword);
+    if (freeDictResult?.status === 'success') {
+      return freeDictResult;
     }
 
     const cambridgeResult = await lookupFromSingleSource(DICTIONARY_SOURCE.CAMBRIDGE, headword);
@@ -195,7 +204,7 @@ export function createServiceWorkerLookupHandler({
       return cambridgeResult;
     }
 
-    // If both failed or not found, preserve the primary (vocabResult) details if available
+    // If all failed or not found, preserve the primary (vocabResult) details if available
     if (vocabResult?.status === 'not-found') {
       return vocabResult;
     }
@@ -204,6 +213,6 @@ export function createServiceWorkerLookupHandler({
       return vocabResult;
     }
 
-    return cambridgeResult || vocabResult;
+    return cambridgeResult || freeDictResult || vocabResult;
   };
 }

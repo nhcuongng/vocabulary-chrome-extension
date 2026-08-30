@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.3] - 2026-08-30
+
+### 🚀 Added & Improved
+- **Auto Mode Priority Rebalancing**:
+  - Reordered the automatic fallback chain in Auto mode: `Vocabulary.com` → `Free Dictionary API` → `Cambridge Dictionary`.
+  - Updated hint and status descriptions to clearly show `Vocab.com → FreeDict → Cambridge`.
+- **UI Source Selection Reordering**:
+  - Moved Cambridge Dictionary to the bottom across all dictionary source selectors:
+    - Popup Action (`popup.html` & `popup.js`)
+    - In-page Lookup Popup (`popupManager.js`)
+    - Shared History Slider catalog (`historySliderRenderer.js`)
+    - Quick Search Overlay (`quickSearchOverlay.js`)
+- **Multi-Source Fallback Testing**:
+  - Added test suites in `tests/background/multiSourceLookup.test.js` validating the full 3-tier fallback chain.
+
 ## [0.2.2] - 2026-08-30
 
 ### 🚀 Added & Improved

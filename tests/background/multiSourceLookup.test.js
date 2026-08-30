@@ -48,12 +48,56 @@ test('service worker handler: auto mode ưu tiên Vocabulary.com khi tìm thấy
   assert.equal(lookups[0].source, 'vocabulary');
 });
 
-test('service worker handler: auto mode fallback sang Cambridge Dictionary khi Vocabulary.com trả not-found', async () => {
+test('service worker handler: auto mode fallback sang Free Dictionary API khi Vocabulary.com trả not-found', async () => {
   const lookups = [];
   const handleMessage = createServiceWorkerLookupHandler({
     lookupExecutor: async ({ headword, source }) => {
       lookups.push({ headword, source });
-      if (source === 'vocabulary') {
+      return {
+        status: 'not-found',
+        data: { token: headword, reason: 'empty-core-data' },
+      };
+    },
+    freeDictionaryApiExecutor: async ({ headword, requestedSource }) => {
+      lookups.push({ headword, source: requestedSource });
+      return {
+        status: 'success',
+        data: {
+          headword,
+          source: 'freedictionary',
+          parsedPayload: {
+            headword,
+            definitions: ['Definition from Free Dictionary API'],
+            source: 'freedictionary',
+          },
+        },
+      };
+    },
+  });
+
+  const message = createLookupRequest({
+    token: 'test',
+    rawText: 'test',
+    selectionRect: { x: 0, y: 0, width: 10, height: 10 },
+    sourceEvent: 'mouseup',
+    requestId: 'req-2',
+  });
+
+  const result = await handleMessage(message);
+
+  assert.equal(result.status, 'success');
+  assert.equal(result.data.parsedPayload.source, 'freedictionary');
+  assert.equal(lookups.length, 2);
+  assert.equal(lookups[0].source, 'vocabulary');
+  assert.equal(lookups[1].source, 'freedictionary');
+});
+
+test('service worker handler: auto mode fallback sang Cambridge Dictionary khi cả Vocabulary.com và Free Dictionary API đều thất bại', async () => {
+  const lookups = [];
+  const handleMessage = createServiceWorkerLookupHandler({
+    lookupExecutor: async ({ headword, source }) => {
+      lookups.push({ headword, source });
+      if (source === 'vocabulary' || source === 'freedictionary') {
         return {
           status: 'not-found',
           data: { token: headword, reason: 'empty-core-data' },
@@ -72,6 +116,7 @@ test('service worker handler: auto mode fallback sang Cambridge Dictionary khi V
         },
       };
     },
+    freeDictionaryApiExecutor: async () => null,
   });
 
   const message = createLookupRequest({
@@ -79,16 +124,17 @@ test('service worker handler: auto mode fallback sang Cambridge Dictionary khi V
     rawText: 'test',
     selectionRect: { x: 0, y: 0, width: 10, height: 10 },
     sourceEvent: 'mouseup',
-    requestId: 'req-2',
+    requestId: 'req-3',
   });
 
   const result = await handleMessage(message);
 
   assert.equal(result.status, 'success');
   assert.equal(result.data.parsedPayload.source, 'cambridge');
-  assert.equal(lookups.length, 2);
+  assert.equal(lookups.length, 3);
   assert.equal(lookups[0].source, 'vocabulary');
-  assert.equal(lookups[1].source, 'cambridge');
+  assert.equal(lookups[1].source, 'freedictionary');
+  assert.equal(lookups[2].source, 'cambridge');
 });
 
 test('service worker handler: người dùng chọn trực tiếp Cambridge Dictionary', async () => {

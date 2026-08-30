@@ -13,8 +13,43 @@ function wrapInCollapse(label, content, isOpen = false) {
   `.trim();
 }
 
-export function parseFreeDictionaryApiResponse(json, targetWord = '') {
-  if (!json || typeof json !== 'object' || !Array.isArray(json.entries) || json.entries.length === 0) {
+export function parseFreeDictionaryApiResponse(json, targetWord = '', source = 'cambridge') {
+  let headword = targetWord;
+  let entries = [];
+
+  if (Array.isArray(json) && json.length > 0) {
+    const first = json[0];
+    headword = first.word || targetWord;
+    const phonetics = [];
+    (first.phonetics || []).forEach((p) => {
+      if (p.text) {
+        const audioUrl = p.audio || '';
+        const isUS = audioUrl.includes('-us') || audioUrl.includes('en-us') || false;
+        const isUK = audioUrl.includes('-uk') || audioUrl.includes('en-gb') || false;
+        const tags = isUS ? ['us'] : isUK ? ['uk'] : [];
+        phonetics.push({ type: 'ipa', text: p.text, tags, audio: audioUrl });
+      }
+    });
+
+    (first.meanings || []).forEach((m) => {
+      const senses = (m.definitions || []).map((d) => ({
+        definition: d.definition,
+        examples: d.example ? [d.example] : [],
+        synonyms: d.synonyms || [],
+      }));
+      entries.push({
+        partOfSpeech: m.partOfSpeech,
+        pronunciations: phonetics,
+        senses,
+        synonyms: m.synonyms || [],
+      });
+    });
+  } else if (json && typeof json === 'object' && Array.isArray(json.entries)) {
+    headword = json.word || targetWord;
+    entries = json.entries;
+  }
+
+  if (entries.length === 0) {
     return {
       headword: targetWord,
       pronunciation: '',
@@ -22,34 +57,40 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
       definitions: [],
       wordFamily: [],
       hasCoreData: false,
-      source: 'cambridge',
+      source,
     };
   }
-
-  const headword = json.word || targetWord;
-  const entries = json.entries;
 
   // 1. Audio & Pronunciation
   let ipaUs = '';
   let ipaUk = '';
+  let directAudioUs = '';
+  let directAudioUk = '';
 
   entries.forEach((entry) => {
     const pronunciations = Array.isArray(entry.pronunciations) ? entry.pronunciations : [];
     pronunciations.forEach((p) => {
-      if (p.type !== 'ipa') return;
+      if (p.type !== 'ipa' && !p.text) return;
       const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
       if (!text) return;
       
-      const tags = Array.isArray(p.tags) ? p.tags.map(t => t.toLowerCase()) : [];
+      const tags = Array.isArray(p.tags) ? p.tags.map((t) => t.toLowerCase()) : [];
       const isUS = tags.includes('general american') || tags.includes('us');
       const isUK = tags.includes('received pronunciation') || tags.includes('uk');
 
-      if (isUS && !ipaUs) ipaUs = text;
-      if (isUK && !ipaUk) ipaUk = text;
+      if (isUS && !ipaUs) {
+        ipaUs = text;
+        if (p.audio) directAudioUs = p.audio;
+      }
+      if (isUK && !ipaUk) {
+        ipaUk = text;
+        if (p.audio) directAudioUk = p.audio;
+      }
       
       // Fallback
       if (!ipaUs && !ipaUk) {
         ipaUs = text;
+        if (p.audio) directAudioUs = p.audio;
       }
     });
   });
@@ -58,9 +99,8 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
   if (!ipaUs && ipaUk) ipaUs = ipaUk;
 
   const encodedHw = encodeURIComponent(headword || targetWord);
-  // FreeDictionaryAPI.com does not provide audio URLs, so we rely entirely on Google TTS fallback
-  const audioUs = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${encodedHw}`;
-  const audioUk = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-GB&q=${encodedHw}`;
+  const audioUs = directAudioUs || `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${encodedHw}`;
+  const audioUk = directAudioUk || `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-GB&q=${encodedHw}`;
 
   const pronParts = [];
   if (ipaUs) pronParts.push(`US /${ipaUs}/`);
@@ -177,6 +217,6 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '') {
     definitions,
     wordFamily: wordFamily.slice(0, 20),
     hasCoreData: Boolean(headword && definitions.length > 0),
-    source: 'cambridge',
+    source,
   };
 }

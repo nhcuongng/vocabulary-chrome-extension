@@ -203,9 +203,20 @@ async function bootstrapPopupRuntime({
         await autoPopupController.setDictionarySource(nextSource);
         const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
         if (currentWord) {
-          performSearch(currentWord);
+          performSearch(currentWord, nextSource);
         }
       });
+    });
+  }
+
+  if (dictionarySourceSelect) {
+    dictionarySourceSelect.addEventListener('change', async () => {
+      const nextSource = dictionarySourceSelect.value;
+      await autoPopupController.setDictionarySource(nextSource);
+      const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      if (currentWord) {
+        performSearch(currentWord, nextSource);
+      }
     });
   }
 
@@ -507,7 +518,7 @@ async function bootstrapPopupRuntime({
     });
   }
 
-  const lookupExecutor = async (word) => {
+  const lookupExecutor = async (word, source) => {
     const cleanWord = typeof word === 'string' ? word.trim().toLowerCase() : '';
     if (!cleanWord || !/^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
       return {
@@ -515,10 +526,10 @@ async function bootstrapPopupRuntime({
         error: { type: 'invalid-token', message: 'Invalid search token.' },
       };
     }
-    const source = autoPopupController.getDictionarySource();
+    const effectiveSource = source || autoPopupController.getDictionarySource();
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
-        { type: 'LOOKUP_REQUEST', payload: { token: cleanWord, source } },
+        { type: 'LOOKUP_REQUEST', payload: { token: cleanWord, source: effectiveSource } },
         (response) => {
           resolve(response);
         },
@@ -526,7 +537,7 @@ async function bootstrapPopupRuntime({
     });
   };
 
-  const performSearch = async (word) => {
+  const performSearch = async (word, source) => {
     if (!word) {
       if (searchResultsContainer) {
         searchResultsContainer.replaceChildren();
@@ -547,7 +558,7 @@ async function bootstrapPopupRuntime({
     }
 
     try {
-      const response = await lookupExecutor(word);
+      const response = await lookupExecutor(word, source);
       if (response && response.status === 'success') {
         const canonicalWord = response.data?.parsedPayload?.headword || word;
         await historyStore.addSearchWord(canonicalWord).catch(() => {});

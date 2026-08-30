@@ -18,10 +18,10 @@ export const UI_COPY = {
   INFLECTED_FORM_TOOLTIP: (word) => `${word} (inflected form)`,
   LOOKUP_FAMILY_TOOLTIP: (word) => `Look up ${word}`,
   DICTIONARY_SOURCE_OPTIONS: [
-    { id: 'auto', name: '⚡ Auto', hint: 'Vocab.com → Cambridge' },
+    { id: 'auto', name: '⚡ Auto', hint: 'Vocab.com → FreeDict → Cambridge' },
     { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Explanations & word family' },
-    { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Native UK/US audio & IPA', badge: '🧪' },
     { id: 'freedictionary', name: '🆓 Free Dictionary API', hint: 'Free dictionary with audio' },
+    { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Native UK/US audio & IPA', badge: '🧪' },
   ],
 };
 

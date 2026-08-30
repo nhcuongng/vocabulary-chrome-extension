@@ -42,7 +42,7 @@ export async function bootstrapContentRuntime({
   let darkMode = false;
   let dictionarySource = 'auto';
 
-  const lookupExecutor = async ({ headword }) => {
+  const lookupExecutor = async ({ headword, source }) => {
     const cleanWord = typeof headword === 'string' ? headword.trim().toLowerCase() : '';
     if (!cleanWord || !/^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
       return {
@@ -50,11 +50,12 @@ export async function bootstrapContentRuntime({
         error: { type: 'invalid-token', message: 'headword token is required' },
       };
     }
+    const effectiveSource = source || dictionarySource || 'auto';
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
         {
           type: 'LOOKUP_REQUEST',
-          payload: { token: cleanWord, source: dictionarySource },
+          payload: { token: cleanWord, source: effectiveSource },
         },
         (response) => {
           resolve(response);
