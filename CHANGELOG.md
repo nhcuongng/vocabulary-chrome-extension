@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.2] - 2026-08-30
+
+### 🚀 Added & Improved
+- **Free Dictionary API Support**:
+  - Integrated `freedictionaryapi.com` API as a new explicit dictionary source, providing a structured alternative for definitions, IPA, and forms.
+  - Built-in Google TTS fallback for Free Dictionary API since it does not natively provide audio stream URLs.
+  - Updated all UI components (action popup, in-page popup, quick search overlay) to support the new "Free Dictionary API" source selection.
+- **Cambridge Experimental Badge**:
+  - Added an experimental (🧪) badge next to the Cambridge Dictionary source selection option in all UIs to indicate its experimental web-scraping nature subject to Cloudflare blocks.
+
 ## [0.2.1] - 2026-08-30
 
 ### 🚀 Added & Improved

@@ -97,6 +97,13 @@ export function createPopupManager({
     // Style for shadow root
     const style = documentObj.createElement('style');
     style.textContent = `
+      :host {
+        all: initial;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
       @keyframes shimmer {
         0% { background-position: -200% 0; }
         100% { background-position: 200% 0; }
@@ -952,7 +959,12 @@ export function createPopupManager({
         h(
           'div',
           { className: 'source-item-text' },
-          h('span', { className: 'source-item-name' }, s.name),
+          h(
+            'span', 
+            { className: 'source-item-name', style: { display: 'flex', alignItems: 'center', gap: '4px' } }, 
+            s.name,
+            s.badge ? h('span', { className: 'source-badge-experimental', title: 'Experimental Feature', style: { fontSize: '10px', cursor: 'help' } }, s.badge) : null
+          ),
           h('span', { className: 'source-item-hint' }, s.hint)
         ),
         h('span', { className: 'source-item-check' }, '✓')

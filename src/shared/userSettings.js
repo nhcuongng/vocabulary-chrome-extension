@@ -5,6 +5,7 @@ export const DICTIONARY_SOURCE = Object.freeze({
   AUTO: 'auto',
   VOCABULARY: 'vocabulary',
   CAMBRIDGE: 'cambridge',
+  FREEDICTIONARY: 'freedictionary',
 });
 
 export const DEFAULT_USER_SETTINGS = Object.freeze({
@@ -39,7 +40,8 @@ function normalizeDictionarySource(source) {
   if (
     trimmed === DICTIONARY_SOURCE.AUTO ||
     trimmed === DICTIONARY_SOURCE.VOCABULARY ||
-    trimmed === DICTIONARY_SOURCE.CAMBRIDGE
+    trimmed === DICTIONARY_SOURCE.CAMBRIDGE ||
+    trimmed === DICTIONARY_SOURCE.FREEDICTIONARY
   ) {
     return trimmed;
   }

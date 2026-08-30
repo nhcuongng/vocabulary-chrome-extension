@@ -440,7 +440,8 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
         [
           { id: 'auto', label: '⚡ Auto' },
           { id: 'vocabulary', label: 'Vocabulary.com' },
-          { id: 'cambridge', label: 'Cambridge' },
+          { id: 'cambridge', label: 'Cambridge 🧪' },
+          { id: 'freedictionary', label: 'Free Dictionary' },
         ].forEach((opt) => {
           const isActive = activeSource === opt.id;
           const pill = h(

@@ -30,6 +30,13 @@ export function createTriggerIconManager({ documentObj, windowObj, onClick }) {
 
     const style = documentObj.createElement('style');
     style.textContent = `
+      :host {
+        all: initial;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
       .trigger-icon {
         width: 28px;
         height: 28px;

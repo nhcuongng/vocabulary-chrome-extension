@@ -72,8 +72,18 @@ function dedupe(values) {
 // Attribution with icon and hover tooltip for full text
 export function buildAttributionText(source = 'vocabulary') {
   const isCambridge = source === 'cambridge';
-  const providerName = isCambridge ? 'Cambridge Dictionary' : 'Vocabulary.com';
-  const providerUrl = isCambridge ? 'https://dictionary.cambridge.org/' : 'https://www.vocabulary.com/';
+  const isFreeDictionary = source === 'freedictionary';
+  
+  let providerName = 'Vocabulary.com';
+  let providerUrl = 'https://www.vocabulary.com/';
+  
+  if (isCambridge) {
+    providerName = 'Cambridge Dictionary';
+    providerUrl = 'https://dictionary.cambridge.org/';
+  } else if (isFreeDictionary) {
+    providerName = 'Free Dictionary API';
+    providerUrl = 'https://dictionaryapi.dev/';
+  }
 
   return `<span style="display:inline-block;vertical-align:middle;">
     <span title='Nguồn dữ liệu: ${providerName} (${providerUrl})' style="cursor:help;">
