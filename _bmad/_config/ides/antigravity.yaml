@@ -1,0 +1,7 @@
+ide: antigravity
+configured_date: 2026-08-30T17:19:38.451Z
+last_updated: 2026-08-30T17:19:38.452Z
+configuration:
+  customizations_dir: .agents
+  skills_json: .agents/skills.json
+  skills_dir: .agents/skills
