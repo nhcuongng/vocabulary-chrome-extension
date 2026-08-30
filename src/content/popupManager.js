@@ -159,6 +159,7 @@ export function createPopupManager({
         overflow-x: hidden;
         scrollbar-width: thin;
         scrollbar-color: #e5e7eb transparent;
+        scrollbar-gutter: stable;
         box-sizing: border-box;
       }
 
@@ -184,7 +185,8 @@ export function createPopupManager({
         box-shadow: 0 4px 20px rgba(0,0,0,0.18);
         border-radius: 12px;
         padding: 12px 14px;
-        max-width: 390px;
+        width: 380px;
+        max-width: calc(100vw - 24px);
         min-width: 260px;
         font-family: Inter, system-ui, -apple-system, sans-serif;
         font-size: 15px;
@@ -833,7 +835,7 @@ export function createPopupManager({
 
     popupElement.style.left = `${left}px`;
     popupElement.style.top = `${top}px`;
-    popupElement.style.maxWidth = `${Math.min(390, viewport.width - 16)}px`;
+    popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
   }
 
   function navigateToWord(word, { fromHistory = false, source } = {}) {
