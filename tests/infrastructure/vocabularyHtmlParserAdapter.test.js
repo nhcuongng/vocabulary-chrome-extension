@@ -22,8 +22,8 @@ test('parser adapter: trích xuất headword, pronunciation, định nghĩa chí
 
   assert.equal(parsed.headword, 'Hello');
   assert.equal(parsed.pronunciation, 'US /həˈloʊ/');
-  // Kiểm tra có chứa định nghĩa với label tương ứng
-  assert.ok(parsed.definitions.some(d => d.includes('Short Definition') && d.includes('A greeting used when meeting someone.')));
+  // Kiểm tra có chứa định nghĩa ngắn trực tiếp (vocab-quick-def)
+  assert.ok(parsed.definitions.some(d => d.includes('vocab-quick-def') && d.includes('A greeting used when meeting someone.')));
   assert.equal(parsed.hasCoreData, true);
 });
 
@@ -43,8 +43,7 @@ test('parser adapter: trích xuất dữ liệu từ trang https://www.vocabular
   const parsed = parseVocabularyHtml(html);
   assert.equal(parsed.headword, 'test');
   assert.equal(parsed.pronunciation, 'US /tɛst/');
-  assert.ok(parsed.definitions.some(d => d.includes('any standardized procedure for measuring sensitivity or memory or intelligence')));
-  assert.ok(parsed.definitions.some(d => d.includes('Short Definition')));
+  assert.ok(parsed.definitions.some(d => d.includes('vocab-quick-def') && d.includes('any standardized procedure for measuring sensitivity or memory or intelligence')));
   assert.ok(parsed.definitions.some(d => d.includes('Long Definition') && d.includes('Định nghĩa dài hơn')));
   assert.equal(parsed.hasCoreData, true);
 });

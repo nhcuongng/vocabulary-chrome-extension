@@ -452,23 +452,23 @@ test('popupManager: render Stress Diagram CTA và click toggle mở card sơ đ�
   }
   collect(container);
 
-  // 1. Verify CTA element exists
-  const ctaBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-cta'));
+  // 1. Verify Rhythm Pill and Card elements exist
+  const rhythmPill = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-pill'));
   const card = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-card'));
-  const notation = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-notation'));
+  const eqBars = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-eq-bars-container'));
 
-  assert.ok(ctaBtn);
+  assert.ok(rhythmPill);
   assert.ok(card);
-  assert.ok(notation);
-  assert.equal(notation.childNodes[0]?.textContent || notation.textContent, '▔ _ _');
+  assert.ok(eqBars);
+  assert.ok(rhythmPill.getAttribute('title')?.includes('Stress on 1st syllable'));
   assert.equal(card.style.display, 'none');
 
-  // 2. Click CTA to toggle open
-  ctaBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  // 2. Click Rhythm Pill to toggle open
+  rhythmPill.dispatchEvent('click', { stopPropagation: () => {} });
   assert.equal(card.style.display, 'flex');
 
-  // 3. Click CTA again to toggle close
-  ctaBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  // 3. Click Rhythm Pill again to toggle close
+  rhythmPill.dispatchEvent('click', { stopPropagation: () => {} });
   assert.equal(card.style.display, 'none');
 });
 

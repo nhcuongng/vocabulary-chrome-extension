@@ -5,6 +5,8 @@ import {
   parseStressDiagramFromIpa,
   extractCleanIpa,
   generateStressSvg,
+  generateEqualizerBarsSvg,
+  formatOrdinal,
   PITCH_LEVELS,
 } from '../../src/domain/stressDiagramUtils.js';
 
@@ -101,4 +103,18 @@ test('generateStressSvg: tạo chuỗi SVG hợp lệ chứa đường kẻ và 
   assert.ok(svg.includes('/t̬ə/'));
   assert.ok(svg.includes('/ɡræf/'));
   assert.ok(svg.includes('stroke="#1677C9"')); // High level primary color
+});
+
+test('formatOrdinal & generateEqualizerBarsSvg: sinh ordinal chính xác và SVG Equalizer mini', () => {
+  const data = parseStressDiagramFromIpa('/loʊˈkeɪ.ʃən/');
+  assert.ok(data);
+  assert.equal(data.syllablesCount, 3);
+  assert.equal(data.primaryIndex, 1);
+  assert.equal(data.stressSummary, 'Stress on 2nd syllable');
+
+  const eqSvg = generateEqualizerBarsSvg(data);
+  assert.ok(eqSvg.startsWith('<svg'));
+  assert.ok(eqSvg.includes('class="vocab-eq-svg"'));
+  assert.ok(eqSvg.includes('fill="#1677C9"')); // High level bar
+  assert.ok(eqSvg.includes('fill="#9ca3af"')); // Low level bar
 });

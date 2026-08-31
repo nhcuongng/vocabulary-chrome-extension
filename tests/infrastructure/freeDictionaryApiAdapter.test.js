@@ -45,7 +45,7 @@ test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, đ�
   assert.ok(result.audio.uk.includes('translate.google.com'));
   assert.ok(result.audio.us.includes('translate.google.com'));
   assert.equal(result.definitions.length, 4);
-  assert.ok(result.definitions.some((d) => d.includes('Short Definition')));
+  assert.ok(result.definitions.some((d) => d.includes('vocab-quick-def') && d.includes('Pleasing to the senses')));
   assert.ok(result.definitions.some((d) => d.includes('Long Definition')));
   assert.ok(result.definitions.some((d) => d.includes('Adjective')));
   assert.ok(result.definitions.some((d) => d.includes('Noun')));

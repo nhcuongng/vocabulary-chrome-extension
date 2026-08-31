@@ -136,7 +136,8 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
 
   if (primaryDefs.length > 0) {
     const shortText = primaryDefs.map((d) => `<p style="margin: 0 0 4px 0; line-height: 1.5;">${d}</p>`).join('');
-    addSection('Short Definition', shortText, true);
+    definitions.push(`<div class="vocab-quick-def">${shortText}</div>`);
+    addedSections.add(shortText.trim());
   }
 
   // 4. Long Definition / Detailed Explanations

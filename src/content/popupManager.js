@@ -14,7 +14,20 @@ import {
   UI_COPY,
 } from './historySliderRenderer.js';
 import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
-import { generateStressSvg } from '../domain/stressDiagramUtils.js';
+import {
+  generateStressSvg,
+  generateEqualizerBarsSvg,
+  PITCH_LEVELS,
+} from '../domain/stressDiagramUtils.js';
+
+const waveformSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2 10v4"></path>
+  <path d="M6 7v10"></path>
+  <path d="M10 3v18"></path>
+  <path d="M14 8v8"></path>
+  <path d="M18 5v14"></path>
+  <path d="M22 10v4"></path>
+</svg>`;
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -549,52 +562,107 @@ export function createPopupManager({
         border-radius: 4px;
       }
 
-      /* Stress Diagram & Line Notation */
+      /* Stress Diagram & Syllable Rhythm Pill */
       .vocab-stress-wrapper {
-        margin: 4px 0 8px 0;
+        margin: 2px 0 8px 0;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
       }
 
-      .vocab-stress-cta {
-        display: inline-flex;
+      .vocab-stress-pill {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+      }
+
+      .vocab-stress-pill:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+
+      .vocab-stress-pill-left {
+        display: flex;
         align-items: center;
         gap: 6px;
-        background: rgba(22, 119, 201, 0.08);
-        border: 1px solid rgba(22, 119, 201, 0.2);
-        border-radius: 6px;
-        padding: 3px 8px;
-        font-size: 11px;
-        cursor: pointer;
-        width: fit-content;
-        color: #111827;
-        user-select: none;
-        transition: background-color 0.15s, border-color 0.15s;
+        min-width: 0;
       }
 
-      .vocab-stress-cta:hover {
-        background: rgba(22, 119, 201, 0.14);
-        border-color: #1677C9;
-      }
-
-      .vocab-stress-icon {
-        font-size: 12px;
-      }
-
-      .vocab-stress-notation {
-        font-family: monospace;
-        font-size: 12px;
-        font-weight: 700;
+      .vocab-stress-wave-icon {
+        display: flex;
+        align-items: center;
         color: #1677C9;
-        letter-spacing: 2px;
+        flex-shrink: 0;
       }
 
-      .vocab-stress-toggle-icon,
-      .vocab-stress-toggle-text {
+      .vocab-syllables-chain {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-family: inherit;
+        font-size: 12px;
+      }
+
+      .vocab-syl-item {
+        color: #64748b;
+        font-weight: 500;
+      }
+
+      .vocab-syl-item.vocab-syl-high {
+        color: #1677C9;
+        font-weight: 700;
+        background: rgba(22, 119, 201, 0.12);
+        padding: 0 4px;
+        border-radius: 4px;
+      }
+
+      .vocab-syl-item.vocab-syl-mid {
+        color: #0284c7;
+        font-weight: 600;
+      }
+
+      .vocab-syl-dot {
+        color: #94a3b8;
+        font-size: 10px;
+        margin: 0 1px;
+      }
+
+      .vocab-stress-pill-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .vocab-eq-bars-container {
+        display: flex;
+        align-items: center;
+      }
+
+      .vocab-stress-summary-badge {
+        font-size: 10px;
+        font-weight: 600;
+        color: #475569;
+        background: #ffffff;
+        padding: 1px 6px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        white-space: nowrap;
+      }
+
+      .vocab-stress-toggle-icon {
         font-size: 9px;
-        color: #6b7280;
-        margin-left: 2px;
+        color: #94a3b8;
+        transition: transform 0.15s ease;
       }
 
       .vocab-stress-card {
@@ -606,7 +674,7 @@ export function createPopupManager({
         flex-direction: column;
         align-items: center;
         gap: 6px;
-        margin-top: 4px;
+        margin-top: 2px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       }
 
@@ -749,6 +817,19 @@ export function createPopupManager({
         font-size: 14px;
         line-height: 1.5;
         margin: 8px 0;
+      }
+      .vocab-quick-def {
+        font-size: 14px;
+        line-height: 1.5;
+        color: #1f2937;
+        margin: 6px 0 10px 0;
+        padding: 6px 8px 6px 10px;
+        background: #f8fafc;
+        border-left: 3px solid #1677C9;
+        border-radius: 0 6px 6px 0;
+      }
+      .vocab-quick-def p {
+        margin: 0;
       }
       .vocab-popup-title {
         font-weight: bold;
@@ -990,24 +1071,38 @@ export function createPopupManager({
         background: #374151;
         color: #9ca3af;
       }
-      .vocab-popup.dark-mode .vocab-auto-order-item.drag-over {
-        border-color: #60a5fa;
-        background: rgba(96, 165, 250, 0.15);
+      .vocab-popup.dark-mode .vocab-stress-pill {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
       }
-      .vocab-popup.dark-mode .vocab-stress-cta {
-        background: rgba(96, 165, 250, 0.12);
-        border-color: rgba(96, 165, 250, 0.3);
-        color: #f3f4f6;
+      .vocab-popup.dark-mode .vocab-stress-pill:hover {
+        background: #334155;
+        border-color: #475569;
       }
-      .vocab-popup.dark-mode .vocab-stress-cta:hover {
-        background: rgba(96, 165, 250, 0.2);
-        border-color: #60a5fa;
+      .vocab-popup.dark-mode .vocab-stress-wave-icon {
+        color: #60a5fa;
       }
-      .vocab-popup.dark-mode .vocab-stress-notation {
+      .vocab-popup.dark-mode .vocab-syl-item {
+        color: #94a3b8;
+      }
+      .vocab-popup.dark-mode .vocab-syl-item.vocab-syl-high {
         color: #93c5fd;
+        background: rgba(96, 165, 250, 0.2);
       }
-      .vocab-popup.dark-mode .vocab-stress-toggle-text {
-        color: #9ca3af;
+      .vocab-popup.dark-mode .vocab-syl-item.vocab-syl-mid {
+        color: #38bdf8;
+      }
+      .vocab-popup.dark-mode .vocab-syl-dot {
+        color: #64748b;
+      }
+      .vocab-popup.dark-mode .vocab-stress-summary-badge {
+        background: #0f172a;
+        border-color: #334155;
+        color: #94a3b8;
+      }
+      .vocab-popup.dark-mode .vocab-stress-toggle-icon {
+        color: #64748b;
       }
       .vocab-popup.dark-mode .vocab-stress-card {
         background: #1f2937;
@@ -1047,6 +1142,11 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-popup-search-suggestions,
       .vocab-popup.dark-mode .details-content {
         color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-quick-def {
+        background: #111827;
+        color: #f3f4f6;
+        border-left-color: #60a5fa;
       }
       .vocab-popup.dark-mode .vocab-popup-compliance-footer {
         background: #1f2937;
@@ -1680,7 +1780,7 @@ export function createPopupManager({
         popupContainer.appendChild(pronContainer);
       } else if (item.type === 'stress-diagram') {
         const stressData = item.value;
-        if (stressData && stressData.hasStressInfo) {
+        if (stressData && stressData.hasStressInfo && Array.isArray(stressData.syllables)) {
           const wrapper = h('div', { className: 'vocab-stress-wrapper' });
           let isDiagramOpen = false;
 
@@ -1697,14 +1797,48 @@ export function createPopupManager({
             </div>
           `;
 
+          // Build syllables chain with highlight on stressed syllables
+          const syllableNodes = [];
+          stressData.syllables.forEach((syl, i) => {
+            if (i > 0) {
+              syllableNodes.push(h('span', { className: 'vocab-syl-dot' }, '·'));
+            }
+            const isHigh = syl.level === PITCH_LEVELS.HIGH;
+            const isMid = syl.level === PITCH_LEVELS.MID;
+            const tagClass = isHigh ? 'vocab-syl-high' : isMid ? 'vocab-syl-mid' : 'vocab-syl-low';
+            syllableNodes.push(h('span', { className: `vocab-syl-item ${tagClass}` }, syl.text));
+          });
+
+          const syllablesChain = h('div', { className: 'vocab-syllables-chain' }, ...syllableNodes);
+          const waveIcon = h('span', { className: 'vocab-stress-wave-icon', innerHTML: waveformSVG });
+
+          const pillLeft = h('div', { className: 'vocab-stress-pill-left' }, waveIcon, syllablesChain);
+
+          const eqBars = h('span', {
+            className: 'vocab-eq-bars-container',
+            innerHTML: generateEqualizerBarsSvg(stressData),
+          });
           const toggleSpan = h('span', { className: 'vocab-stress-toggle-icon' }, '▼');
-          const ctaBtn = h(
+
+          const pillRight = h(
+            'div',
+            { className: 'vocab-stress-pill-right' },
+            eqBars,
+            toggleSpan
+          );
+
+          const pillTitle = stressData.stressSummary
+            ? `${stressData.stressSummary} · Click to toggle pitch contour`
+            : 'Click to toggle pitch contour';
+
+          const rhythmPill = h(
             'div',
             {
-              className: 'vocab-stress-cta',
+              className: 'vocab-stress-pill',
               role: 'button',
               tabIndex: 0,
-              title: 'Toggle stress line diagram',
+              title: pillTitle,
+              ariaLabel: pillTitle,
               onClick: (e) => {
                 e?.stopPropagation?.();
                 isDiagramOpen = !isDiagramOpen;
@@ -1713,13 +1847,11 @@ export function createPopupManager({
                 updatePopupPosition();
               },
             },
-            h('span', { className: 'vocab-stress-icon' }, '📈'),
-            h('span', {}, 'Stress:'),
-            h('span', { className: 'vocab-stress-notation' }, stressData.patternNotation),
-            toggleSpan
+            pillLeft,
+            pillRight
           );
 
-          wrapper.appendChild(ctaBtn);
+          wrapper.appendChild(rhythmPill);
           wrapper.appendChild(card);
           popupContainer.appendChild(wrapper);
         }

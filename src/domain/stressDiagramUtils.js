@@ -122,15 +122,69 @@ export function parseStressDiagramFromIpa(ipaOrPronunciation) {
 
   const patternNotation = syllables.map((s) => s.lineChar).join(' ');
   const primaryIndex = syllables.findIndex((s) => s.level === PITCH_LEVELS.HIGH);
+  const effectivePrimaryIndex = primaryIndex !== -1 ? primaryIndex : 0;
+
+  const stressSummary =
+    syllables.length <= 1
+      ? '1 syllable'
+      : `Stress on ${formatOrdinal(effectivePrimaryIndex + 1)} syllable`;
 
   return {
     rawIpa: cleanIpa,
     syllables,
     syllablesCount: syllables.length,
     patternNotation,
-    primaryIndex: primaryIndex !== -1 ? primaryIndex : 0,
+    primaryIndex: effectivePrimaryIndex,
+    stressSummary,
     hasStressInfo: true,
   };
+}
+
+export function formatOrdinal(n) {
+  const num = Math.abs(parseInt(n, 10)) || 1;
+  const mod10 = num % 10;
+  const mod100 = num % 100;
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${num}st`;
+  }
+  if (mod10 === 2 && mod100 !== 12) {
+    return `${num}nd`;
+  }
+  if (mod10 === 3 && mod100 !== 13) {
+    return `${num}rd`;
+  }
+  return `${num}th`;
+}
+
+export function generateEqualizerBarsSvg(stressData) {
+  if (!stressData || !Array.isArray(stressData.syllables) || stressData.syllables.length === 0) {
+    return '';
+  }
+  const syllables = stressData.syllables;
+  const barWidth = 4;
+  const barGap = 3;
+  const count = syllables.length;
+  const totalWidth = count * barWidth + (count - 1) * barGap;
+  const totalHeight = 16;
+
+  const bars = syllables
+    .map((syl, i) => {
+      const x = i * (barWidth + barGap);
+      let h = 5;
+      let fill = '#9ca3af';
+      if (syl.level === PITCH_LEVELS.HIGH) {
+        h = 14;
+        fill = '#1677C9';
+      } else if (syl.level === PITCH_LEVELS.MID) {
+        h = 9;
+        fill = '#0284c7';
+      }
+      const y = totalHeight - h;
+      return `<rect x="${x}" y="${y}" width="${barWidth}" height="${h}" rx="2" fill="${fill}" />`;
+    })
+    .join('');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" width="${totalWidth}" height="${totalHeight}" class="vocab-eq-svg">${bars}</svg>`;
 }
 
 /**

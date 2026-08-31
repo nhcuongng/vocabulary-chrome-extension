@@ -109,23 +109,29 @@ export function parseVocabularyHtml(html) {
 
   // Use a Set to track added content to avoid duplicates
   const addedContents = new Set();
-  function addDefinition(label, content) {
-    if (!content) return;
-    const trimmed = content.trim();
-    if (addedContents.has(trimmed)) return;
 
-    definitions.push(wrapInCollapse(label, trimmed, definitions.length === 0));
-    addedContents.add(trimmed);
+  // Extract short definition as quick-glance
+  const shortDef =
+    extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*(?:short)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i) ||
+    extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*short[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
+
+  if (shortDef) {
+    const trimmedShort = shortDef.trim();
+    if (trimmedShort && !addedContents.has(trimmedShort)) {
+      definitions.push(`<div class="vocab-quick-def">${trimmedShort}</div>`);
+      addedContents.add(trimmedShort);
+    }
   }
 
-  // div.short hoặc div.definition
-  addDefinition('Short Definition', extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*(?:short)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i));
-
-  // p.short trong word-area
-  addDefinition('Short Definition', extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*short[^"']*["'][^>]*>([\s\S]*?)<\/p>/i));
-
-  // p.long trong word-area
-  addDefinition('Long Definition', extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*long[^"']*["'][^>]*>([\s\S]*?)<\/p>/i));
+  // Extract long definition as collapsible
+  const longDef = extractByRegex(safeHtml, /<div[^>]*class=["'][^"']*word-area[^"']*["'][^>]*>[\s\S]*?<p[^>]*class=["'][^"']*long[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
+  if (longDef) {
+    const trimmedLong = longDef.trim();
+    if (trimmedLong && !addedContents.has(trimmedLong)) {
+      definitions.push(wrapInCollapse('Long Definition', trimmedLong, false));
+      addedContents.add(trimmedLong);
+    }
+  }
 
   const olMatch = safeHtml.match(/<div[^>]*class=["'][^"']*word-definitions[^"']*["'][^>]*>[\s\S]*?(<ol>[\s\S]*?<\/ol>)/i);
 
@@ -149,7 +155,11 @@ export function parseVocabularyHtml(html) {
     if (cleanedLis) {
       const label = `Definition of "<i>${headword}</i>"`;
       const content = `<ol class="custom-definition-list" style="margin: 0; padding-left: 20px;">${cleanedLis}</ol>`;
-      addDefinition(label, content);
+      const trimmedList = content.trim();
+      if (!addedContents.has(trimmedList)) {
+        definitions.push(wrapInCollapse(label, trimmedList, false));
+        addedContents.add(trimmedList);
+      }
     }
   }
 

@@ -45,12 +45,15 @@ test('cambridge parser adapter: trích xuất headword, UK & US IPA pronunciatio
   assert.equal(parsed.hasCoreData, true);
   assert.equal(parsed.source, 'cambridge');
 
-  assert.ok(parsed.definitions.length > 0);
-  const defContent = parsed.definitions[0];
-  assert.ok(defContent.includes('noun'));
-  assert.ok(defContent.includes('a way of discovering, by questions or practical activities, something'));
-  assert.ok(defContent.includes('EXAMINATION'));
-  assert.ok(defContent.includes('a history test'));
+  assert.ok(parsed.definitions.length > 1);
+  const quickDef = parsed.definitions[0];
+  assert.ok(quickDef.includes('vocab-quick-def'));
+  assert.ok(quickDef.includes('a way of discovering, by questions or practical activities, something'));
+
+  const posDef = parsed.definitions[1];
+  assert.ok(posDef.includes('noun'));
+  assert.ok(posDef.includes('EXAMINATION'));
+  assert.ok(posDef.includes('a history test'));
 
   assert.ok(Array.isArray(parsed.wordFamily));
   assert.ok(parsed.wordFamily.some((w) => w.word === 'tests'));

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2026-08-31
+
+### 🚀 Added & Improved (Popup UX & Display Hierarchy)
+- **Unpacked Quick Glance Definitions Across All 3 Sources**:
+  - **Vocabulary.com**: Short definition renders directly as an unpacked zero-click quick card (`vocab-quick-def`), removing the accordion wrapper so users can instantly read the meaning.
+  - **FreeDictionary API**: Top 1–2 primary meanings render directly as a quick card, while comprehensive definitions and parts of speech remain cleanly organized in collapsible accordions.
+  - **Cambridge Dictionary**: First core sense & part-of-speech renders directly as a quick-glance card, while detailed POS entries (Guidewords, grammatical notes, and examples) are neatly grouped in accordions.
+  - Added subtle left-accent styling (`border-left: 3px solid #1677c9`) for the quick definition block with full Dark Mode support.
+- **Redesigned Syllable Stress Block (Equalizer Rhythm Pill)**:
+  - Replaced crude ASCII symbols and emoji with a sleek **Syllable Rhythm Pill**:
+    - Modern SVG Waveform icon.
+    - Highlighted syllables chain (`lo · KEI · ʃən`) with primary stress in bold uppercase and brand accent background.
+    - Mini SVG Equalizer Rhythm Bars (` ▂ █ ▂ `) providing intuitive, at-a-glance acoustic rhythm feedback.
+    - Interactive tooltip displaying stress details (`Stress on 2nd syllable · Click to toggle pitch contour`).
+    - Click-to-expand smooth pitch contour diagram.
+- **Automated Test Coverage**:
+  - Added unit tests for `formatOrdinal`, `generateEqualizerBarsSvg`, and stress summary calculation in `tests/domain/stressDiagramUtils.test.js`.
+  - Updated parser adapter tests and popup navigation tests to validate the new quick definition and rhythm pill structures.
+
+---
+
 ## [0.5.1] - 2026-08-31
 
 ### 🔧 Fixed & Improved (UI Wording & Layout)

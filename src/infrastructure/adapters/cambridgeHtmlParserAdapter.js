@@ -123,7 +123,9 @@ export function parseCambridgeHtml(html) {
   const entryMatches = safeHtml.match(posBlockRegex) || [];
 
   if (entryMatches.length > 0) {
-    entryMatches.forEach((entryHtml) => {
+    let primaryQuickDef = '';
+
+    entryMatches.forEach((entryHtml, entryIdx) => {
       // Find Part of Speech (noun, verb, adjective, etc.)
       const posMatch = entryHtml.match(/<span[^>]*class=["'][^"']*\b(?:pos|dpos)\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
       const posText = posMatch ? stripTags(decodeBasicEntities(posMatch[1])) : '';
@@ -153,6 +155,11 @@ export function parseCambridgeHtml(html) {
         defContent = defContent.replace(/:$/, '').trim();
         if (!defContent) return;
 
+        if (!primaryQuickDef) {
+          const prefix = posText ? `(${posText}) ` : '';
+          primaryQuickDef = `${prefix}${defContent}`;
+        }
+
         // Examples
         const exMatches = block.match(/<span[^>]*class=["'][^"']*\b(?:eg|deg)\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/gi) || [];
         const examples = exMatches
@@ -177,10 +184,14 @@ export function parseCambridgeHtml(html) {
         if (!addedSections.has(key)) {
           addedSections.add(key);
           const listContent = `<ol class="custom-definition-list" style="margin: 0; padding-left: 20px;">${lis.join('')}</ol>`;
-          definitions.push(wrapInCollapse(sectionLabel, listContent, definitions.length === 0));
+          definitions.push(wrapInCollapse(sectionLabel, listContent, false));
         }
       }
     });
+
+    if (primaryQuickDef) {
+      definitions.unshift(`<div class="vocab-quick-def"><p style="margin: 0; line-height: 1.5;">${primaryQuickDef}</p></div>`);
+    }
   }
 
   // Fallback: If no structured entries found, try generic def extraction
@@ -194,9 +205,13 @@ export function parseCambridgeHtml(html) {
       .filter(Boolean);
 
     if (lis.length > 0) {
+      const firstDef = stripTags(decodeBasicEntities(genericDefs[0])).replace(/:$/, '').trim();
+      if (firstDef) {
+        definitions.push(`<div class="vocab-quick-def"><p style="margin: 0; line-height: 1.5;">${firstDef}</p></div>`);
+      }
       const label = `Definition of "${headword || 'word'}"`;
       const listContent = `<ol class="custom-definition-list" style="margin: 0; padding-left: 20px;">${lis.join('')}</ol>`;
-      definitions.push(wrapInCollapse(label, listContent, true));
+      definitions.push(wrapInCollapse(label, listContent, false));
     }
   }
 
