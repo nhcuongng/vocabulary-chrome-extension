@@ -152,13 +152,13 @@ test('popupZeroStateRenderer: renders Onboarding card when history is empty', ()
   assert.ok(card.className.includes('vocab-onboarding-card'));
 
   const [titleEl, descEl, stepsList] = card.childNodes;
-  assert.equal(titleEl.textContent, '👋 English Vocabulary Lookup');
+  assert.equal(titleEl.textContent, '👋 Your personal vocabulary assistant');
   assert.equal(descEl.textContent, 'Get started in 3 easy steps:');
   assert.equal(stepsList.childNodes.length, 3);
 
   // Check step items
   assert.ok(stepsList.childNodes[0].textContent.includes('Select any English word'));
-  assert.ok(stepsList.childNodes[1].textContent.includes('View instant definitions'));
+  assert.ok(stepsList.childNodes[1].textContent.includes('Search any word in the box above'));
   assert.ok(stepsList.childNodes[2].textContent.includes('Listen to native pronunciation'));
 
   // Micro-tip is present

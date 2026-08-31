@@ -4,8 +4,8 @@
 
 export const DEFAULT_MICRO_TIPS = [
   '💡 Tip: Select any English word on web pages to look up instantly!',
-  '🔊 Tip: Click the speaker icon to listen to native UK/US audio pronunciation.',
-  '✨ Tip: Click the history chips above to quickly review previously looked-up words.',
+  '🔊 Tip: Click the speaker icon to hear UK/US pronunciation.',
+  '✨ Tip: Click the history chips at the top to quickly review previously looked-up words.',
   '⚙️ Tip: You can adjust dictionary source priority in the settings menu.',
 ];
 
@@ -57,8 +57,8 @@ export function createZeroStateElement({
       const shuffleBtn = documentObj.createElement('button');
       shuffleBtn.type = 'button';
       shuffleBtn.className = 'vocab-zero-state-shuffle-btn';
-      shuffleBtn.setAttribute('title', 'Shuffle another word from history');
-      shuffleBtn.setAttribute('aria-label', 'Shuffle another word from history');
+      shuffleBtn.setAttribute('title', 'Show another word from your history');
+      shuffleBtn.setAttribute('aria-label', 'Show another word from your history');
       shuffleBtn.textContent = '🔀';
 
       shuffleBtn.addEventListener('click', (e) => {
@@ -80,7 +80,7 @@ export function createZeroStateElement({
     // CTA hint
     const hintEl = documentObj.createElement('div');
     hintEl.className = 'vocab-zero-state-cta-hint';
-    hintEl.textContent = 'Click to view full definition & pronunciation ➔';
+    hintEl.textContent = 'Click to recall this word ➔';
     card.appendChild(hintEl);
 
     // Handle click / keydown on card
@@ -105,7 +105,7 @@ export function createZeroStateElement({
 
     const titleEl = documentObj.createElement('div');
     titleEl.className = 'vocab-onboarding-title';
-    titleEl.textContent = '👋 English Vocabulary Lookup';
+    titleEl.textContent = '👋 Your personal vocabulary assistant';
     onboardingCard.appendChild(titleEl);
 
     const descEl = documentObj.createElement('div');
@@ -118,8 +118,8 @@ export function createZeroStateElement({
 
     const stepItems = [
       { icon: '🖱️', text: 'Select any English word while reading articles or documents.' },
-      { icon: '⚡', text: 'View instant definitions and examples right next to your selection.' },
-      { icon: '🔊', text: 'Listen to native pronunciation with syllable stress diagrams.' },
+      { icon: '⚡', text: 'Search any word in the box above for instant definitions and examples.' },
+      { icon: '🔊', text: 'Listen to native pronunciation and see syllable stress patterns.' },
     ];
 
     stepItems.forEach((item) => {
