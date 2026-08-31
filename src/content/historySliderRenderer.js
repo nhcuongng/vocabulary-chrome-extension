@@ -108,9 +108,10 @@ export function createHistorySliderElement({
     for (const child of children) {
       if (child == null) continue;
       if (typeof child === 'string' || typeof child === 'number') {
-        el.textContent = String(child);
         if (typeof documentObj.createTextNode === 'function') {
           el.appendChild(documentObj.createTextNode(String(child)));
+        } else {
+          el.textContent = String(child);
         }
       } else if (typeof child === 'object') {
         el.appendChild(child);

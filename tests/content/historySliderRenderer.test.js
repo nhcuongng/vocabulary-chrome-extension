@@ -20,7 +20,15 @@ function createMockDocument() {
       childNodes: children,
       className: '',
       innerHTML: '',
-      textContent: '',
+      get textContent() {
+        return children.map((c) => (c.textContent != null ? c.textContent : '')).join('');
+      },
+      set textContent(val) {
+        children.length = 0;
+        if (val !== '') {
+          children.push({ textContent: String(val) });
+        }
+      },
       addEventListener: (type, handler) => {
         const list = listeners.get(type) || [];
         list.push(handler);
@@ -139,4 +147,20 @@ test('historySliderRenderer: slideContainer handles wheel event for horizontal s
   assert.equal(prevented, true);
   assert.deepEqual(scrolledBy, { left: 50, behavior: 'auto' });
 });
+
+test('historySliderRenderer: does not duplicate text content in chips', () => {
+  const documentObj = createMockDocument();
+  const words = ['location', 'shell', 'church'];
+
+  const slider = createHistorySliderElement({
+    documentObj,
+    allWords: words,
+  });
+
+  const [, slideContainer] = slider.childNodes;
+  assert.equal(slideContainer.childNodes[0].textContent, 'location');
+  assert.equal(slideContainer.childNodes[1].textContent, 'shell');
+  assert.equal(slideContainer.childNodes[2].textContent, 'church');
+});
+
 
