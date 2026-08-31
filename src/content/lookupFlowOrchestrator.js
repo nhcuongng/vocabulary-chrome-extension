@@ -36,11 +36,13 @@ export function createLookupFlowOrchestrator({
     const loadingRenderedAtMs = now();
     const headword = request.payload.token;
     const source = request.payload.source;
+    const selectionRect = request.payload.selectionRect || null;
 
     setState({
       status: POPUP_STATE.LOADING,
       headword,
       source,
+      selectionRect,
       requestStartedAtMs,
       loadingRenderedAtMs,
       loadingLatencyMs: loadingRenderedAtMs - requestStartedAtMs,
@@ -90,6 +92,7 @@ export function createLookupFlowOrchestrator({
         status: POPUP_STATE.SUCCESS,
         headword: result?.data?.headword || headword,
         source: result?.data?.source || source,
+        selectionRect,
         data: result.data,
       });
     } else if (result?.status === 'not-found') {
@@ -97,6 +100,7 @@ export function createLookupFlowOrchestrator({
         status: POPUP_STATE.NOT_FOUND,
         headword: result?.data?.headword || result?.data?.token || headword,
         source: result?.data?.source || source,
+        selectionRect,
         data: result.data,
       });
     } else {
@@ -104,6 +108,7 @@ export function createLookupFlowOrchestrator({
         status: POPUP_STATE.ERROR,
         headword: result?.error?.headword || headword,
         source: result?.error?.source || source,
+        selectionRect,
         error: result?.error ?? {
           type: 'unknown',
           message: 'unknown lookup error',

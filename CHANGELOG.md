@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] - 2026-08-31
+
+### 🚀 Added & Improved
+- **Ecosystem Bridge Target Positioning**:
+  - Enhanced `vocabulary-lookup` cross-extension bridge to support multiple target positioning inputs:
+    - DOM Element target via `detail.targetElement` or `detail.target` with automatic `getBoundingClientRect()`.
+    - Explicit bounding rectangle via `detail.rect` (`{ left, top, bottom, right, width, height }`).
+    - Mouse click coordinates via `detail.clientX` / `detail.clientY` or `detail.x` / `detail.y`.
+    - Automatic centered fallback if no coordinate or target is supplied (100% backward compatible).
+  - Maintained selection / target positioning context throughout the Orchestrator lookup lifecycle.
+- **Draggable Popup Modal**:
+  - Transformed the popup header bar (`.vocab-popup-header-bar`) into an interactive drag handle with smooth `grab` / `grabbing` cursor transitions.
+  - Added interaction isolation so clicks on history slider chips, navigation arrows, dictionary source selectors, or the close button do not trigger drag actions.
+  - Implemented viewport boundary clamping (accounting for scroll offsets) to prevent the popup from escaping visible screen boundaries.
+  - Preserved custom user-dragged modal positions across content rerenders, scroll, and resize events, resetting cleanly upon dismissal.
+- **Automated Test Coverage**:
+  - Added dedicated test suites for Ecosystem Bridge target positioning variants and popup modal dragging behaviors.
+
 ## [0.3.0] - 2026-08-31
 
 ### 🚀 Added & Improved

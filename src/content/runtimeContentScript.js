@@ -155,7 +155,8 @@ export async function bootstrapContentRuntime({
 
         triggerIconManager.removeIcon();
         const selection = readSelectionSnapshot(windowObj);
-        popupManager.showPopup(state, selection.rect, { darkMode });
+        const targetRect = state.selectionRect || selection?.rect || null;
+        popupManager.showPopup(state, targetRect, { darkMode });
       } else if (state.status === 'idle') {
         popupManager.removePopup();
       }
@@ -215,7 +216,42 @@ export async function bootstrapContentRuntime({
     triggerIconManager.removeIcon();
     pendingTriggerRequest = null;
 
-    let targetRect = detail.rect || null;
+    let targetRect = null;
+    if (detail.rect && typeof detail.rect === 'object') {
+      targetRect = {
+        left: Number(detail.rect.left) || 0,
+        top: Number(detail.rect.top) || 0,
+        right: Number(detail.rect.right) || 0,
+        bottom: Number(detail.rect.bottom) || 0,
+        width: Number(detail.rect.width) || 0,
+        height: Number(detail.rect.height) || 0,
+      };
+    } else if (detail.targetElement?.getBoundingClientRect && typeof detail.targetElement.getBoundingClientRect === 'function') {
+      const b = detail.targetElement.getBoundingClientRect();
+      targetRect = { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height };
+    } else if (detail.target?.getBoundingClientRect && typeof detail.target.getBoundingClientRect === 'function') {
+      const b = detail.target.getBoundingClientRect();
+      targetRect = { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height };
+    } else if (typeof detail.clientX === 'number' && typeof detail.clientY === 'number') {
+      targetRect = {
+        left: detail.clientX,
+        top: detail.clientY,
+        right: detail.clientX,
+        bottom: detail.clientY,
+        width: 0,
+        height: 0,
+      };
+    } else if (typeof detail.x === 'number' && typeof detail.y === 'number') {
+      targetRect = {
+        left: detail.x,
+        top: detail.y,
+        right: detail.x,
+        bottom: detail.y,
+        width: 0,
+        height: 0,
+      };
+    }
+
     if (!targetRect && windowObj?.innerWidth) {
       const midX = windowObj.innerWidth / 2;
       const midY = (windowObj.innerHeight || 600) / 3;

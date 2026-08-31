@@ -59,9 +59,11 @@ export function createPopupManager({
   let currentSlideIndex = 0;
   let isHistorySearching = false;
   let historySearchQuery = '';
+  let customPosition = null;
+  let cleanupActiveDrag = null;
 
   const handleScrollResize = () => {
-    if (popupElement && absoluteSelectionRect) {
+    if (popupElement && (absoluteSelectionRect || customPosition)) {
       updatePopupPosition();
     }
   };
@@ -80,6 +82,8 @@ export function createPopupManager({
       windowObj.removeEventListener('scroll', throttledHandleScrollResize, true);
       windowObj.removeEventListener('resize', throttledHandleScrollResize, true);
       isListening = false;
+      cleanupActiveDrag?.();
+      cleanupActiveDrag = null;
       popupElement.parentNode.removeChild(popupElement);
       popupElement = null;
       popupCtrl = null;
@@ -88,6 +92,7 @@ export function createPopupManager({
       isHistorySearching = false;
       historySearchQuery = '';
       isAutoOrderOpen = false;
+      customPosition = null;
     }
   }
 
@@ -215,6 +220,11 @@ export function createPopupManager({
         margin-bottom: 10px;
         padding-bottom: 6px;
         border-bottom: 1px solid #f3f4f6;
+        cursor: grab;
+        user-select: none;
+      }
+      .vocab-popup-header-bar.dragging {
+        cursor: grabbing;
       }
 
       .vocab-history-search-toggle-btn {
@@ -1080,16 +1090,33 @@ export function createPopupManager({
   }
 
   function updatePopupPosition() {
-    if (!popupElement || !absoluteSelectionRect) return;
+    if (!popupElement) return;
 
-    const popupWidth = popupElement.offsetWidth;
-    const popupHeight = popupElement.offsetHeight;
+    const popupWidth = popupElement.offsetWidth || 380;
+    const popupHeight = popupElement.offsetHeight || 200;
     const viewport = {
-      width: windowObj.innerWidth,
-      height: windowObj.innerHeight,
-      scrollX: windowObj.scrollX,
-      scrollY: windowObj.scrollY,
+      width: windowObj.innerWidth || 1024,
+      height: windowObj.innerHeight || 768,
+      scrollX: windowObj.scrollX || 0,
+      scrollY: windowObj.scrollY || 0,
     };
+
+    if (customPosition) {
+      const minLeft = viewport.scrollX + 8;
+      const maxLeft = Math.max(minLeft, viewport.scrollX + viewport.width - popupWidth - 8);
+      const minTop = viewport.scrollY + 8;
+      const maxTop = Math.max(minTop, viewport.scrollY + viewport.height - popupHeight - 8);
+
+      const clampedLeft = Math.min(Math.max(customPosition.left, minLeft), maxLeft);
+      const clampedTop = Math.min(Math.max(customPosition.top, minTop), maxTop);
+
+      popupElement.style.left = `${clampedLeft}px`;
+      popupElement.style.top = `${clampedTop}px`;
+      popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
+      return;
+    }
+
+    if (!absoluteSelectionRect) return;
 
     let left = absoluteSelectionRect.left;
     let top = absoluteSelectionRect.bottom + 8;
@@ -1113,6 +1140,88 @@ export function createPopupManager({
     popupElement.style.left = `${left}px`;
     popupElement.style.top = `${top}px`;
     popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
+  }
+
+  function initHeaderBarDragging(headerBarEl) {
+    if (!headerBarEl) return;
+
+    const handleDragStart = (e) => {
+      if (e.button !== 0) return;
+
+      if (e.target && typeof e.target.closest === 'function') {
+        const interactive = e.target.closest(
+          'button, input, select, textarea, .vocab-history-chip, .vocab-source-menu-popover, .vocab-auto-order-item, .vocab-auto-order-section, [role="button"]'
+        );
+        if (interactive) return;
+      }
+
+      let isDragging = true;
+      const dragStartX = e.clientX ?? 0;
+      const dragStartY = e.clientY ?? 0;
+      const elemInitialLeft = popupElement.offsetLeft;
+      const elemInitialTop = popupElement.offsetTop;
+
+      headerBarEl.classList.add('dragging');
+      e.preventDefault?.();
+      e.stopPropagation?.();
+
+      const handlePointerMove = (moveEvt) => {
+        if (!isDragging || !popupElement) return;
+        moveEvt.preventDefault?.();
+        moveEvt.stopPropagation?.();
+
+        const currentClientX = moveEvt.clientX ?? 0;
+        const currentClientY = moveEvt.clientY ?? 0;
+        const deltaX = currentClientX - dragStartX;
+        const deltaY = currentClientY - dragStartY;
+
+        const viewport = {
+          width: windowObj.innerWidth || 1024,
+          height: windowObj.innerHeight || 768,
+          scrollX: windowObj.scrollX || 0,
+          scrollY: windowObj.scrollY || 0,
+        };
+
+        const popupWidth = popupElement.offsetWidth || 380;
+        const popupHeight = popupElement.offsetHeight || 200;
+
+        const rawLeft = elemInitialLeft + deltaX;
+        const rawTop = elemInitialTop + deltaY;
+
+        const minLeft = viewport.scrollX + 8;
+        const maxLeft = Math.max(minLeft, viewport.scrollX + viewport.width - popupWidth - 8);
+        const minTop = viewport.scrollY + 8;
+        const maxTop = Math.max(minTop, viewport.scrollY + viewport.height - popupHeight - 8);
+
+        const clampedLeft = Math.min(Math.max(rawLeft, minLeft), maxLeft);
+        const clampedTop = Math.min(Math.max(rawTop, minTop), maxTop);
+
+        customPosition = { left: clampedLeft, top: clampedTop };
+        popupElement.style.left = `${clampedLeft}px`;
+        popupElement.style.top = `${clampedTop}px`;
+      };
+
+      const handlePointerUp = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        headerBarEl.classList.remove('dragging');
+        windowObj.removeEventListener('pointermove', handlePointerMove, true);
+        windowObj.removeEventListener('pointerup', handlePointerUp, true);
+        windowObj.removeEventListener('mousemove', handlePointerMove, true);
+        windowObj.removeEventListener('mouseup', handlePointerUp, true);
+        cleanupActiveDrag = null;
+      };
+
+      cleanupActiveDrag = handlePointerUp;
+
+      windowObj.addEventListener('pointermove', handlePointerMove, true);
+      windowObj.addEventListener('pointerup', handlePointerUp, true);
+      windowObj.addEventListener('mousemove', handlePointerMove, true);
+      windowObj.addEventListener('mouseup', handlePointerUp, true);
+    };
+
+    headerBarEl.addEventListener('pointerdown', handleDragStart);
+    headerBarEl.addEventListener('mousedown', handleDragStart);
   }
 
   function navigateToWord(word, { fromHistory = false, source } = {}) {
@@ -1190,7 +1299,8 @@ export function createPopupManager({
     const currentWord = (viewModel?.headword || state.headword || state?.data?.headword || state?.data?.token || state?.error?.headword || '').toLowerCase();
     const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
 
-    const headerBar = h('div', { className: 'vocab-popup-header-bar' });
+    const headerBar = h('div', { className: 'vocab-popup-header-bar', title: 'Drag to move popup' });
+    initHeaderBarDragging(headerBar);
 
     const sliderWrapper = createHistorySliderElement({
       documentObj,
@@ -1692,14 +1802,23 @@ export function createPopupManager({
   }
 
   function showPopup(state, selectionRect, { darkMode = false } = {}) {
-    if (selectionRect) {
+    if (selectionRect && typeof selectionRect === 'object') {
+      const scrollX = windowObj?.scrollX || 0;
+      const scrollY = windowObj?.scrollY || 0;
+      const left = Number(selectionRect.left) || 0;
+      const top = Number(selectionRect.top) || 0;
+      const width = Number(selectionRect.width) || 0;
+      const height = Number(selectionRect.height) || 0;
+      const right = typeof selectionRect.right === 'number' ? selectionRect.right : left + width;
+      const bottom = typeof selectionRect.bottom === 'number' ? selectionRect.bottom : top + height;
+
       absoluteSelectionRect = {
-        left: selectionRect.left + windowObj.scrollX,
-        top: selectionRect.top + windowObj.scrollY,
-        bottom: selectionRect.bottom + windowObj.scrollY,
-        right: selectionRect.right + windowObj.scrollX,
-        width: selectionRect.width,
-        height: selectionRect.height,
+        left: left + scrollX,
+        top: top + scrollY,
+        bottom: bottom + scrollY,
+        right: right + scrollX,
+        width,
+        height,
       };
     }
 

@@ -95,6 +95,7 @@ function createMockDocument() {
 function createMockWindow() {
   const listeners = new Map();
   return {
+    listeners,
     scrollX: 0,
     scrollY: 0,
     innerWidth: 1024,
@@ -470,5 +471,140 @@ test('popupManager: render Stress Diagram CTA và click toggle mở card sơ đ�
   ctaBtn.dispatchEvent('click', { stopPropagation: () => {} });
   assert.equal(card.style.display, 'none');
 });
+
+test('popupManager: header bar drag updates popup position within viewport constraints', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'draggable',
+    data: {
+      parsedPayload: {
+        headword: 'draggable',
+        pronunciation: '/ˈdræɡ.ə.bəl/',
+        definitions: ['Able to be dragged across a screen.'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  popupEl.offsetLeft = 100;
+  popupEl.offsetTop = 128;
+  popupEl.offsetWidth = 380;
+  popupEl.offsetHeight = 200;
+
+  const container = popupEl._vocabContainer;
+  const headerBar = container.childNodes.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-header-bar'));
+  assert.ok(headerBar, 'Header bar should be rendered');
+
+  // 1. Simulate pointerdown / mousedown on header bar
+  headerBar.dispatchEvent('mousedown', {
+    button: 0,
+    clientX: 150,
+    clientY: 130,
+    target: headerBar,
+    preventDefault: () => {},
+    stopPropagation: () => {},
+  });
+
+  assert.ok(headerBar.classList.contains('dragging'));
+
+  // 2. Simulate pointermove / mousemove on window (dragging delta +80px X, +50px Y)
+  const windowMouseMoveListeners = windowObj.listeners?.get('mousemove') || [];
+  for (const fn of windowMouseMoveListeners) {
+    fn({
+      clientX: 230,
+      clientY: 180,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+  }
+
+  assert.equal(popupEl.style.left, '180px');
+  assert.equal(popupEl.style.top, '178px');
+
+  // 3. Simulate mouseup to finish drag
+  const windowMouseUpListeners = windowObj.listeners?.get('mouseup') || [];
+  for (const fn of windowMouseUpListeners) {
+    fn({
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+  }
+
+  assert.equal(headerBar.classList.contains('dragging'), false);
+
+  // 4. Test that scroll/resize preserves the custom position
+  const scrollListeners = windowObj.listeners?.get('scroll') || [];
+  for (const fn of scrollListeners) fn({});
+
+  assert.equal(popupEl.style.left, '180px');
+  assert.equal(popupEl.style.top, '178px');
+
+  // 5. Test removePopup resets custom position
+  popupManager.removePopup();
+  assert.equal(documentObj.body.childNodes.length, 0);
+});
+
+test('popupManager: clicking interactive header buttons does not trigger drag', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'interactive',
+    data: {
+      parsedPayload: {
+        headword: 'interactive',
+        pronunciation: '/ˌɪn.təˈræk.tɪv/',
+        definitions: ['Involving communication between people.'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  popupEl.offsetLeft = 100;
+  popupEl.offsetTop = 128;
+  popupEl.offsetWidth = 380;
+  popupEl.offsetHeight = 200;
+
+  const container = popupEl._vocabContainer;
+  const headerBar = container.childNodes.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-header-bar'));
+
+  // Target is a button element inside header bar
+  const fakeButton = {
+    tagName: 'BUTTON',
+    closest: (sel) => (sel.includes('button') ? fakeButton : null),
+  };
+
+  headerBar.dispatchEvent('mousedown', {
+    button: 0,
+    clientX: 150,
+    clientY: 130,
+    target: fakeButton,
+    preventDefault: () => {},
+    stopPropagation: () => {},
+  });
+
+  assert.equal(headerBar.classList.contains('dragging'), false);
+
+  popupManager.removePopup();
+});
+
 
 

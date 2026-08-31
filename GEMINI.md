@@ -12,7 +12,8 @@
   - Không chạy các lệnh phá hủy hệ thống bên ngoài workspace (`rm -rf /`, sửa file hệ thống ngoài project).
   - Luôn đảm bảo chạy test (`npm test`) sau mỗi lần thay đổi mã nguồn để bảo toàn tính ổn định.
   - **Tuyệt đối KHÔNG tự động chạy lệnh `git commit` hoặc `git push`** trừ khi người dùng yêu cầu rõ ràng. Tất cả các thay đổi thông thường sẽ được giữ ở working directory để người dùng chủ động review.
-  - **Quy trình Nâng Version & Release**: Khi người dùng yêu cầu "nâng version" hoặc tương tự, tự động thực hiện trọn gói: (1) Cập nhật version trong `package.json` và `manifest.json`, (2) Ghi changelog vào `CHANGELOG.md`, (3) Kiểm tra `npm test` & build `npm run build`, (4) Tạo commit và đóng tag `vX.Y.Z`.
+  - **Quy tắc Planning**: Luôn in kế hoạch triển khai (plan) chi tiết ra màn hình trước khi bắt đầu thực thi code/thay đổi.
+  - **Quy trình Nâng Version & Release**: Khi người dùng yêu cầu "nâng version" hoặc tương tự, tự động thực hiện trọn gói: (1) In kế hoạch thực hiện ra màn hình, (2) Cập nhật version trong `package.json` và `manifest.json`, (3) Ghi changelog vào `CHANGELOG.md`, (4) Kiểm tra `npm test` & build `npm run build`, (5) Tạo commit và đóng tag `vX.Y.Z`.
 
 ---
 
