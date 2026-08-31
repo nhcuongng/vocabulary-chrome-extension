@@ -6,12 +6,46 @@ export const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" 
   <polyline points="9 18 15 12 9 6"></polyline>
 </svg>`;
 
+export const SOURCE_SHORT_NAMES = Object.freeze({
+  vocabulary: 'Vocab.com',
+  freedictionary: 'FreeDict',
+  cambridge: 'Cambridge',
+});
+
+export const SOURCE_META = Object.freeze({
+  vocabulary: {
+    id: 'vocabulary',
+    name: '📘 Vocabulary.com',
+    shortName: 'Vocab.com',
+    hint: 'Explanations & word family',
+  },
+  freedictionary: {
+    id: 'freedictionary',
+    name: '🆓 Free Dictionary API',
+    shortName: 'FreeDict',
+    hint: 'Free dictionary with audio',
+  },
+  cambridge: {
+    id: 'cambridge',
+    name: '🏛 Cambridge Dictionary',
+    shortName: 'Cambridge',
+    hint: 'Native UK/US audio & IPA',
+    badge: '🧪',
+  },
+});
+
+export function buildAutoSourceHint(order = []) {
+  const list = Array.isArray(order) && order.length > 0 ? order : ['vocabulary', 'freedictionary', 'cambridge'];
+  return list.map((id) => SOURCE_SHORT_NAMES[id] || id).join(' → ');
+}
+
 export const UI_COPY = {
   PREV_SLIDE: 'Previous slide',
   NEXT_SLIDE: 'Next slide',
   LOOKUP_WORD: (word) => `Look up "${word}"`,
   SEARCH_WORD: (word) => `Search ${word}`,
   SOURCE_MENU_TITLE: 'Dictionary Source',
+  AUTO_ORDER_TITLE: 'Auto Priority (Drag to reorder):',
   SELECT_SOURCE_TITLE: 'Select dictionary source',
   CLOSE_POPUP: 'Close popup',
   SOURCE_LABEL: 'Source:',

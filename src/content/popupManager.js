@@ -9,8 +9,11 @@ import {
 } from '../domain/audioPlaybackUtils.js';
 import {
   createHistorySliderElement,
+  buildAutoSourceHint,
+  SOURCE_META,
   UI_COPY,
 } from './historySliderRenderer.js';
+import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -410,6 +413,85 @@ export function createPopupManager({
         opacity: 1;
       }
 
+      .vocab-auto-order-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 4px 0 6px 0;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.03);
+        border: 1px dashed #e5e7eb;
+        border-radius: 8px;
+      }
+
+      .vocab-auto-order-header {
+        font-size: 10px;
+        font-weight: 600;
+        color: #6b7280;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .vocab-auto-order-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .vocab-auto-order-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: grab;
+        user-select: none;
+        transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+      }
+
+      .vocab-auto-order-item:active {
+        cursor: grabbing;
+      }
+
+      .vocab-auto-order-item.dragging {
+        opacity: 0.4;
+        border-style: dashed;
+      }
+
+      .vocab-auto-order-item.drag-over {
+        border-color: #1677C9;
+        background: rgba(22, 119, 201, 0.08);
+      }
+
+      .vocab-drag-handle {
+        color: #9ca3af;
+        font-size: 11px;
+        cursor: grab;
+        flex-shrink: 0;
+        letter-spacing: -1px;
+      }
+
+      .vocab-auto-order-item-title {
+        flex: 1;
+        font-weight: 500;
+        font-size: 11px;
+        color: #374151;
+      }
+
+      .vocab-auto-order-item-rank {
+        font-size: 9px;
+        color: #6b7280;
+        font-weight: 600;
+        background: #f3f4f6;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+
       /* Search History Inline Bar */
       .vocab-history-search-bar {
         display: flex;
@@ -725,6 +807,25 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-check {
         color: #60a5fa;
       }
+      .vocab-popup.dark-mode .vocab-auto-order-section {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-auto-order-item {
+        background: #1f2937;
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-auto-order-item-title {
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-auto-order-item-rank {
+        background: #374151;
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-auto-order-item.drag-over {
+        border-color: #60a5fa;
+        background: rgba(96, 165, 250, 0.15);
+      }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
         border-color: #4b5563;
@@ -942,15 +1043,140 @@ export function createPopupManager({
       state?.source ||
       'auto';
 
+    const autoSourceOrder =
+      settingsAdapter?.getSnapshot?.()?.autoSourceOrder ||
+      [...DEFAULT_AUTO_SOURCE_ORDER];
+
     let isMenuOpen = false;
+    let draggedSourceId = null;
     const popoverMenu = h('div', { className: 'vocab-source-menu-popover', style: { display: 'none' } });
 
     const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
     popoverMenu.appendChild(menuTitle);
 
-    const sourceOptions = UI_COPY.DICTIONARY_SOURCE_OPTIONS;
+    // 1. Auto Option Button
+    const isAutoActive = activeDictSource === 'auto';
+    const autoHintText = buildAutoSourceHint(autoSourceOrder);
+    const autoItemBtn = h(
+      'button',
+      {
+        type: 'button',
+        className: `vocab-source-menu-item ${isAutoActive ? 'active' : ''}`,
+        'data-source': 'auto',
+        title: 'Select source: ⚡ Auto',
+        onClick: async (e) => {
+          e?.stopPropagation?.();
+          popoverMenu.style.display = 'none';
+          isMenuOpen = false;
+          if (isAutoActive) return;
+          if (settingsAdapter?.update) {
+            await settingsAdapter.update({ dictionarySource: 'auto' });
+          }
+          if (typeof onSourceChange === 'function') {
+            onSourceChange('auto');
+          }
+          if (currentWord) {
+            navigateToWord(currentWord, { source: 'auto' });
+          }
+        },
+      },
+      h(
+        'div',
+        { className: 'source-item-text' },
+        h('span', { className: 'source-item-name' }, '⚡ Auto'),
+        h('span', { className: 'source-item-hint' }, autoHintText)
+      ),
+      h('span', { className: 'source-item-check' }, '✓')
+    );
+    popoverMenu.appendChild(autoItemBtn);
 
-    sourceOptions.forEach((s) => {
+    // 2. Auto Priority Draggable Section
+    const autoOrderSection = h('div', { className: 'vocab-auto-order-section' });
+    const autoOrderHeader = h('div', { className: 'vocab-auto-order-header' }, UI_COPY.AUTO_ORDER_TITLE);
+    const autoOrderList = h('div', { className: 'vocab-auto-order-list' });
+
+    autoSourceOrder.forEach((srcId, index) => {
+      const meta = SOURCE_META[srcId] || { id: srcId, name: srcId };
+      const orderItem = h(
+        'div',
+        {
+          className: 'vocab-auto-order-item',
+          draggable: 'true',
+          'data-source-id': srcId,
+          title: 'Drag to reorder priority',
+          onDragStart: (e) => {
+            e?.stopPropagation?.();
+            draggedSourceId = srcId;
+            orderItem.classList.add('dragging');
+            if (e.dataTransfer) {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', srcId);
+            }
+          },
+          onDragOver: (e) => {
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
+            if (e.dataTransfer) {
+              e.dataTransfer.dropEffect = 'move';
+            }
+            orderItem.classList.add('drag-over');
+          },
+          onDragLeave: (e) => {
+            e?.stopPropagation?.();
+            orderItem.classList.remove('drag-over');
+          },
+          onDrop: async (e) => {
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
+            orderItem.classList.remove('drag-over');
+            const fromId = draggedSourceId || e.dataTransfer?.getData('text/plain');
+            const toId = srcId;
+
+            if (!fromId || fromId === toId) return;
+
+            const nextOrder = [...autoSourceOrder];
+            const fromIndex = nextOrder.indexOf(fromId);
+            const toIndex = nextOrder.indexOf(toId);
+
+            if (fromIndex !== -1 && toIndex !== -1) {
+              const [movedItem] = nextOrder.splice(fromIndex, 1);
+              nextOrder.splice(toIndex, 0, movedItem);
+
+              if (settingsAdapter?.update) {
+                await settingsAdapter.update({ autoSourceOrder: nextOrder });
+              }
+
+              renderPopupContent(lastState);
+
+              if (activeDictSource === 'auto' && currentWord) {
+                navigateToWord(currentWord, { source: 'auto' });
+              }
+            }
+          },
+          onDragEnd: (e) => {
+            e?.stopPropagation?.();
+            orderItem.classList.remove('dragging');
+            draggedSourceId = null;
+          },
+        },
+        h('span', { className: 'vocab-drag-handle' }, '⋮⋮'),
+        h('span', { className: 'vocab-auto-order-item-title' }, meta.name),
+        h('span', { className: 'vocab-auto-order-item-rank' }, `#${index + 1}`)
+      );
+      autoOrderList.appendChild(orderItem);
+    });
+
+    autoOrderSection.appendChild(autoOrderHeader);
+    autoOrderSection.appendChild(autoOrderList);
+    popoverMenu.appendChild(autoOrderSection);
+
+    // 3. Single Sources
+    const singleSourcesTitle = h('div', { className: 'vocab-source-menu-title', style: { marginTop: '4px' } }, 'Single Source');
+    popoverMenu.appendChild(singleSourcesTitle);
+
+    const singleSources = [SOURCE_META.vocabulary, SOURCE_META.freedictionary, SOURCE_META.cambridge];
+
+    singleSources.forEach((s) => {
       const isActive = activeDictSource === s.id;
       const itemBtn = h(
         'button',

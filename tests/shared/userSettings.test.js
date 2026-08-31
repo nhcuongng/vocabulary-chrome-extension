@@ -44,5 +44,17 @@ test('mergeUserSettings: merge patch nhưng vẫn chuẩn hóa theo schema hiệ
   assert.equal(merged.schemaVersion, USER_SETTINGS_SCHEMA_VERSION);
   assert.equal(merged.autoPopupEnabled, false);
   assert.equal(merged.dictionarySource, 'cambridge');
+  assert.deepEqual(merged.autoSourceOrder, ['vocabulary', 'freedictionary', 'cambridge']);
+});
+
+test('normalizeUserSettings: chuẩn hóa autoSourceOrder đúng thứ tự và bổ sung các nguồn còn thiếu', () => {
+  const custom1 = normalizeUserSettings({ autoSourceOrder: ['cambridge', 'vocabulary'] });
+  assert.deepEqual(custom1.autoSourceOrder, ['cambridge', 'vocabulary', 'freedictionary']);
+
+  const custom2 = normalizeUserSettings({ autoSourceOrder: ['freedictionary', 'unknown', 'cambridge'] });
+  assert.deepEqual(custom2.autoSourceOrder, ['freedictionary', 'cambridge', 'vocabulary']);
+
+  const custom3 = normalizeUserSettings({ autoSourceOrder: null });
+  assert.deepEqual(custom3.autoSourceOrder, ['vocabulary', 'freedictionary', 'cambridge']);
 });
 

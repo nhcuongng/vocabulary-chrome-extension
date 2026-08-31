@@ -13,7 +13,7 @@ import {
 import { safeParseVocabularyHtml } from '../infrastructure/adapters/safeVocabularyHtmlParserAdapter.js';
 import { safeParseCambridgeHtml } from '../infrastructure/adapters/safeCambridgeHtmlParserAdapter.js';
 import { parseFreeDictionaryApiResponse } from '../infrastructure/adapters/freeDictionaryApiAdapter.js';
-import { DICTIONARY_SOURCE } from '../shared/userSettings.js';
+import { DICTIONARY_SOURCE, normalizeAutoSourceOrder, DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 
 const defaultLookupCache = createInMemoryLookupCache();
 const defaultRateLimiter = createSlidingWindowRateLimiter();
@@ -82,6 +82,7 @@ export function createServiceWorkerLookupHandler({
   rateLimiter = defaultRateLimiter,
   cacheStore = defaultLookupCache,
   cacheTtlMs = DEFAULT_CACHE_TTL_MS,
+  settingsStore = null,
   rateLimitPolicy,
   onGuardrailEvent,
 } = {}) {
@@ -188,31 +189,32 @@ export function createServiceWorkerLookupHandler({
       return lookupFromSingleSource(DICTIONARY_SOURCE.CAMBRIDGE, headword);
     }
 
-    // 4. Auto source: Priority Vocabulary.com -> Free Dictionary API -> Cambridge Dictionary
-    const vocabResult = await lookupFromSingleSource(DICTIONARY_SOURCE.VOCABULARY, headword);
-    if (vocabResult?.status === 'success') {
-      return vocabResult;
+    // 4. Auto source: Duyệt theo danh sách autoSourceOrder (mặc định hoặc người dùng tùy biến)
+    let customOrder = message?.payload?.autoSourceOrder;
+    if (!customOrder && settingsStore && typeof settingsStore.load === 'function') {
+      try {
+        const loadedSettings = await settingsStore.load();
+        customOrder = loadedSettings?.autoSourceOrder;
+      } catch {}
     }
 
-    const freeDictResult = await lookupFromSingleSource(DICTIONARY_SOURCE.FREEDICTIONARY, headword);
-    if (freeDictResult?.status === 'success') {
-      return freeDictResult;
+    const effectiveOrder = normalizeAutoSourceOrder(customOrder);
+    let firstFailResult = null;
+
+    for (const source of effectiveOrder) {
+      const result = await lookupFromSingleSource(source, headword);
+      if (result?.status === 'success') {
+        return result;
+      }
+      if (!firstFailResult && (result?.status === 'not-found' || result?.status === 'error')) {
+        firstFailResult = result;
+      }
     }
 
-    const cambridgeResult = await lookupFromSingleSource(DICTIONARY_SOURCE.CAMBRIDGE, headword);
-    if (cambridgeResult?.status === 'success') {
-      return cambridgeResult;
-    }
-
-    // If all failed or not found, preserve the primary (vocabResult) details if available
-    if (vocabResult?.status === 'not-found') {
-      return vocabResult;
-    }
-
-    if (vocabResult?.status === 'error') {
-      return vocabResult;
-    }
-
-    return cambridgeResult || freeDictResult || vocabResult;
+    return firstFailResult || createLookupNotFoundResponse({
+      token: headword,
+      headword,
+      source: DICTIONARY_SOURCE.AUTO,
+    });
   };
 }

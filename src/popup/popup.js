@@ -17,7 +17,12 @@ import {
   speakWord,
   stopCurrentAudio,
 } from '../domain/audioPlaybackUtils.js';
-import { createHistorySliderElement } from '../content/historySliderRenderer.js';
+import {
+  createHistorySliderElement,
+  buildAutoSourceHint,
+  SOURCE_META,
+} from '../content/historySliderRenderer.js';
+import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -51,6 +56,8 @@ async function bootstrapPopupRuntime({
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
   const sourceMenuBtn = documentObj.getElementById('vocab-source-menu-btn');
   const sourceMenuPopover = documentObj.getElementById('vocab-source-menu-popover');
+  const autoSourceHint = documentObj.getElementById('vocab-auto-source-hint');
+  const autoOrderList = documentObj.getElementById('vocab-auto-order-list');
   const settingsMenuBtn = documentObj.getElementById('vocab-settings-menu-btn');
   const settingsMenuPopover = documentObj.getElementById('vocab-settings-menu-popover');
 
@@ -83,10 +90,12 @@ async function bootstrapPopupRuntime({
   let autoPopupEnabled = true;
   let darkMode = false;
   let dictionarySource = 'auto';
+  let autoSourceOrder = [...DEFAULT_AUTO_SOURCE_ORDER];
   let currentSlideIndex = 0;
   const ITEMS_PER_PAGE = 5;
   let isSourceMenuOpen = false;
   let isSettingsMenuOpen = false;
+  let draggedSourceId = null;
 
   const updateBodyTheme = (isDark) => {
     if (isDark) {
@@ -110,15 +119,114 @@ async function bootstrapPopupRuntime({
     });
   };
 
+  const renderAutoOrderUI = (order = []) => {
+    const safeOrder = Array.isArray(order) && order.length > 0 ? order : [...DEFAULT_AUTO_SOURCE_ORDER];
+    if (autoSourceHint) {
+      autoSourceHint.textContent = buildAutoSourceHint(safeOrder);
+    }
+    if (!autoOrderList) return;
+
+    autoOrderList.replaceChildren();
+
+    safeOrder.forEach((srcId, index) => {
+      const meta = SOURCE_META[srcId] || { id: srcId, name: srcId };
+      const itemEl = documentObj.createElement('div');
+      itemEl.className = 'vocab-auto-order-item';
+      itemEl.draggable = true;
+      itemEl.setAttribute('data-source-id', srcId);
+      itemEl.setAttribute('title', 'Drag to reorder priority');
+
+      const handleEl = documentObj.createElement('span');
+      handleEl.className = 'vocab-drag-handle';
+      handleEl.textContent = '⋮⋮';
+
+      const titleEl = documentObj.createElement('span');
+      titleEl.className = 'vocab-auto-order-item-title';
+      titleEl.textContent = meta.name;
+
+      const rankEl = documentObj.createElement('span');
+      rankEl.className = 'vocab-auto-order-item-rank';
+      rankEl.textContent = `#${index + 1}`;
+
+      itemEl.appendChild(handleEl);
+      itemEl.appendChild(titleEl);
+      itemEl.appendChild(rankEl);
+
+      itemEl.addEventListener('dragstart', (e) => {
+        e.stopPropagation();
+        draggedSourceId = srcId;
+        itemEl.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', srcId);
+        }
+      });
+
+      itemEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'move';
+        }
+        itemEl.classList.add('drag-over');
+      });
+
+      itemEl.addEventListener('dragleave', (e) => {
+        e.stopPropagation();
+        itemEl.classList.remove('drag-over');
+      });
+
+      itemEl.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        itemEl.classList.remove('drag-over');
+        const fromId = draggedSourceId || e.dataTransfer?.getData('text/plain');
+        const toId = srcId;
+
+        if (!fromId || fromId === toId) return;
+
+        const currentOrderList = [...autoSourceOrder];
+        const fromIndex = currentOrderList.indexOf(fromId);
+        const toIndex = currentOrderList.indexOf(toId);
+
+        if (fromIndex !== -1 && toIndex !== -1) {
+          const [movedItem] = currentOrderList.splice(fromIndex, 1);
+          currentOrderList.splice(toIndex, 0, movedItem);
+
+          autoSourceOrder = currentOrderList;
+          await autoPopupController.setAutoSourceOrder(currentOrderList);
+          renderAutoOrderUI(currentOrderList);
+
+          if (autoPopupController.getDictionarySource() === 'auto') {
+            const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            if (currentWord) {
+              performSearch(currentWord, 'auto');
+            }
+          }
+        }
+      });
+
+      itemEl.addEventListener('dragend', (e) => {
+        e.stopPropagation();
+        itemEl.classList.remove('dragging');
+        draggedSourceId = null;
+      });
+
+      autoOrderList.appendChild(itemEl);
+    });
+  };
+
   const autoPopupController = {
     async start() {
       const settings = await settingsStore.load();
       autoPopupEnabled = Boolean(settings?.autoPopupEnabled);
       darkMode = Boolean(settings?.darkMode);
       dictionarySource = settings?.dictionarySource || 'auto';
+      autoSourceOrder = settings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
       updateSourceMenuUI(dictionarySource);
+      renderAutoOrderUI(autoSourceOrder);
     },
     stop() {},
     isAutoPopupEnabled() {
@@ -129,6 +237,9 @@ async function bootstrapPopupRuntime({
     },
     getDictionarySource() {
       return dictionarySource;
+    },
+    getAutoSourceOrder() {
+      return autoSourceOrder;
     },
     async setAutoPopupEnabled(enabled) {
       autoPopupEnabled = Boolean(enabled);
@@ -144,15 +255,22 @@ async function bootstrapPopupRuntime({
       updateSourceMenuUI(dictionarySource);
       await settingsStore.update({ dictionarySource });
     },
+    async setAutoSourceOrder(order) {
+      autoSourceOrder = order || [...DEFAULT_AUTO_SOURCE_ORDER];
+      renderAutoOrderUI(autoSourceOrder);
+      await settingsStore.update({ autoSourceOrder });
+    },
     subscribe(listener) {
       return settingsStore.subscribe((nextSettings) => {
         autoPopupEnabled = Boolean(nextSettings?.autoPopupEnabled);
         darkMode = Boolean(nextSettings?.darkMode);
         dictionarySource = nextSettings?.dictionarySource || 'auto';
+        autoSourceOrder = nextSettings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
         updateSourceMenuUI(dictionarySource);
-        listener({ autoPopupEnabled, darkMode, dictionarySource });
+        renderAutoOrderUI(autoSourceOrder);
+        listener({ autoPopupEnabled, darkMode, dictionarySource, autoSourceOrder });
       });
     },
   };
@@ -527,9 +645,17 @@ async function bootstrapPopupRuntime({
       };
     }
     const effectiveSource = source || autoPopupController.getDictionarySource();
+    const autoSourceOrder = autoPopupController.getAutoSourceOrder?.() || [...DEFAULT_AUTO_SOURCE_ORDER];
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
-        { type: 'LOOKUP_REQUEST', payload: { token: cleanWord, source: effectiveSource } },
+        {
+          type: 'LOOKUP_REQUEST',
+          payload: {
+            token: cleanWord,
+            source: effectiveSource,
+            autoSourceOrder,
+          },
+        },
         (response) => {
           resolve(response);
         },

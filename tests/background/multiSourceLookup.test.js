@@ -208,3 +208,57 @@ test('service worker handler: fallback sang Free Dictionary API khi Cambridge HT
   assert.equal(result.data.parsedPayload.definitions[0], 'Fallback definition from Free Dictionary API');
 });
 
+test('service worker handler: auto mode ưu tiên theo custom autoSourceOrder', async () => {
+  const lookups = [];
+  const handleMessage = createServiceWorkerLookupHandler({
+    lookupExecutor: async ({ headword, source }) => {
+      lookups.push({ headword, source });
+      if (source === 'cambridge') {
+        return {
+          status: 'success',
+          data: {
+            headword,
+            source: 'cambridge',
+            parsedPayload: {
+              headword,
+              definitions: ['Cambridge first definition'],
+              source: 'cambridge',
+            },
+          },
+        };
+      }
+      return {
+        status: 'success',
+        data: {
+          headword,
+          source,
+          parsedPayload: {
+            headword,
+            definitions: [`Definition from ${source}`],
+            source,
+          },
+        },
+      };
+    },
+  });
+
+  const message = createLookupRequest({
+    token: 'custom',
+    rawText: 'custom',
+    selectionRect: { x: 0, y: 0, width: 10, height: 10 },
+    sourceEvent: 'mouseup',
+    requestId: 'req-custom',
+    autoSourceOrder: ['cambridge', 'vocabulary', 'freedictionary'],
+  });
+
+  // Gắn autoSourceOrder vào payload
+  message.payload.autoSourceOrder = ['cambridge', 'vocabulary', 'freedictionary'];
+
+  const result = await handleMessage(message);
+
+  assert.equal(result.status, 'success');
+  assert.equal(result.data.parsedPayload.source, 'cambridge');
+  assert.equal(lookups.length, 1);
+  assert.equal(lookups[0].source, 'cambridge');
+});
+

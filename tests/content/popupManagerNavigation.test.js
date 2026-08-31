@@ -327,3 +327,82 @@ test('popupManager: header bar contains source menu icon button and clicking ope
   assert.deepEqual(sourceChanges, ['cambridge']);
   assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);
 });
+
+test('popupManager: popover hiển thị danh sách auto priority draggable và hỗ trợ kéo thả reorder', async () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  const lookedUpCalls = [];
+  const savedSettings = [];
+
+  const settingsAdapter = {
+    getSnapshot: () => ({ dictionarySource: 'auto', autoSourceOrder: ['vocabulary', 'freedictionary', 'cambridge'] }),
+    update: async (patch) => {
+      savedSettings.push(patch);
+      return patch;
+    },
+  };
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    settingsAdapter,
+    onLookupWord: (word, opts) => lookedUpCalls.push({ word, opts }),
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'test',
+    data: {
+      parsedPayload: {
+        headword: 'test',
+        definitions: ['Def 1'],
+        source: 'auto',
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  // 1. Verify auto-order-item elements exist (3 sources)
+  const orderItems = all.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-auto-order-item'));
+  assert.equal(orderItems.length, 3);
+  assert.equal(orderItems[0].getAttribute('data-source-id'), 'vocabulary');
+  assert.equal(orderItems[1].getAttribute('data-source-id'), 'freedictionary');
+  assert.equal(orderItems[2].getAttribute('data-source-id'), 'cambridge');
+
+  // 2. Simulate dragstart on Cambridge (item 2)
+  const dragStartEvent = {
+    stopPropagation: () => {},
+    dataTransfer: {
+      setData: () => {},
+      effectAllowed: '',
+    },
+  };
+  orderItems[2].dispatchEvent('dragstart', dragStartEvent);
+
+  // 3. Simulate drop on Vocabulary (item 0)
+  const dropEvent = {
+    preventDefault: () => {},
+    stopPropagation: () => {},
+    dataTransfer: {
+      getData: () => 'cambridge',
+    },
+  };
+  await orderItems[0].dispatchEvent('drop', dropEvent);
+
+  // 4. Verify settings update called with reordered autoSourceOrder
+  assert.equal(savedSettings.length, 1);
+  assert.deepEqual(savedSettings[0].autoSourceOrder, ['cambridge', 'vocabulary', 'freedictionary']);
+});
+

@@ -41,6 +41,7 @@ export async function bootstrapContentRuntime({
   let isUserInitiated = false;
   let darkMode = false;
   let dictionarySource = 'auto';
+  let autoSourceOrder = ['vocabulary', 'freedictionary', 'cambridge'];
 
   const lookupExecutor = async ({ headword, source }) => {
     const cleanWord = typeof headword === 'string' ? headword.trim().toLowerCase() : '';
@@ -51,11 +52,16 @@ export async function bootstrapContentRuntime({
       };
     }
     const effectiveSource = source || dictionarySource || 'auto';
+    const effectiveAutoSourceOrder = autoPopupController.getAutoSourceOrder?.() || autoSourceOrder;
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
         {
           type: 'LOOKUP_REQUEST',
-          payload: { token: cleanWord, source: effectiveSource },
+          payload: {
+            token: cleanWord,
+            source: effectiveSource,
+            autoSourceOrder: effectiveAutoSourceOrder,
+          },
         },
         (response) => {
           resolve(response);

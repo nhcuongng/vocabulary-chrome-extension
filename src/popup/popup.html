@@ -404,6 +404,95 @@
         opacity: 1;
       }
 
+      .vocab-auto-order-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 4px 0 6px 0;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.03);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+      }
+
+      body.dark-mode .vocab-auto-order-section {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: #374151;
+      }
+
+      .vocab-auto-order-header {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--hint-color);
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .vocab-auto-order-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .vocab-auto-order-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: grab;
+        user-select: none;
+        transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+      }
+
+      .vocab-auto-order-item:active {
+        cursor: grabbing;
+      }
+
+      .vocab-auto-order-item.dragging {
+        opacity: 0.4;
+        border-style: dashed;
+      }
+
+      .vocab-auto-order-item.drag-over {
+        border-color: #1677C9;
+        background: rgba(22, 119, 201, 0.08);
+      }
+
+      body.dark-mode .vocab-auto-order-item.drag-over {
+        border-color: #60a5fa;
+        background: rgba(96, 165, 250, 0.15);
+      }
+
+      .vocab-drag-handle {
+        color: var(--hint-color);
+        font-size: 11px;
+        cursor: grab;
+        flex-shrink: 0;
+        letter-spacing: -1px;
+      }
+
+      .vocab-auto-order-item-title {
+        flex: 1;
+        font-weight: 500;
+        font-size: 11px;
+        color: var(--text-color);
+      }
+
+      .vocab-auto-order-item-rank {
+        font-size: 9px;
+        color: var(--hint-color);
+        font-weight: 600;
+        background: var(--border-color);
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+
       /* History Slider Bar */
       #vocab-history-slider-wrapper,
       .vocab-history-slider-wrapper {
@@ -923,10 +1012,15 @@
                 <button type="button" class="vocab-source-menu-item active" data-source="auto">
                   <div class="source-item-text">
                     <span class="source-item-name">⚡ Auto</span>
-                    <span class="source-item-hint">Vocab.com → FreeDict → Cambridge</span>
+                    <span class="source-item-hint" id="vocab-auto-source-hint">Vocab.com → FreeDict → Cambridge</span>
                   </div>
                   <span class="source-item-check">✓</span>
                 </button>
+                <div class="vocab-auto-order-section" id="vocab-auto-order-section">
+                  <div class="vocab-auto-order-header">Auto Priority (Drag to reorder):</div>
+                  <div class="vocab-auto-order-list" id="vocab-auto-order-list"></div>
+                </div>
+                <div class="vocab-source-menu-title" style="margin-top: 4px;">Single Source</div>
                 <button type="button" class="vocab-source-menu-item" data-source="vocabulary">
                   <div class="source-item-text">
                     <span class="source-item-name">📘 Vocabulary.com</span>
