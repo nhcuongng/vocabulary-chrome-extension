@@ -606,5 +606,77 @@ test('popupManager: clicking interactive header buttons does not trigger drag', 
   popupManager.removePopup();
 });
 
+test('popupManager: render Headword mini history stepper [ ‹ 2/3 › ] và navigate chính xác', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const lookedUpWords = [];
+  const mockHistory = {
+    getRecentSearchWords: () => ['paradox', 'empirical', 'hypothesis'],
+  };
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter: mockHistory,
+    onLookupWord: (word, opts) => {
+      lookedUpWords.push({ word, opts });
+    },
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'empirical',
+    data: {
+      parsedPayload: {
+        headword: 'empirical',
+        pronunciation: '/ɪmˈpɪr.ɪ.kəl/',
+        definitions: ['Based on observation or experiment.'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  // 1. Verify Stepper and Counter exist
+  const stepper = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-stepper'));
+  const counter = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stepper-counter'));
+  const prevBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('prev-btn'));
+  const nextBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('next-btn'));
+
+  assert.ok(stepper);
+  assert.ok(counter);
+  assert.equal(counter.childNodes[0]?.textContent || counter.textContent, '2/3');
+  assert.equal(prevBtn.getAttribute('disabled'), undefined);
+  assert.equal(nextBtn.getAttribute('disabled'), undefined);
+  assert.ok(prevBtn.getAttribute('title')?.includes('paradox'));
+  assert.ok(nextBtn.getAttribute('title')?.includes('hypothesis'));
+
+  // 2. Click Prev (previous in list: paradox)
+  prevBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(lookedUpWords.length, 1);
+  assert.equal(lookedUpWords[0].word, 'paradox');
+  assert.equal(lookedUpWords[0].opts?.fromHistory, true);
+
+  // 3. Click Next (next in list: hypothesis)
+  nextBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(lookedUpWords.length, 2);
+  assert.equal(lookedUpWords[1].word, 'hypothesis');
+  assert.equal(lookedUpWords[1].opts?.fromHistory, true);
+
+  popupManager.removePopup();
+});
+
 
 

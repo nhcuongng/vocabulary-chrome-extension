@@ -155,25 +155,32 @@ export function createPopupManager({
       }
 
       .skeleton-headword {
-        height: 28px;
-        width: 60%;
-        margin-bottom: 12px;
+        height: 30px;
+        width: 55%;
+        margin-bottom: 6px;
       }
 
       .skeleton-pron {
-        height: 18px;
-        width: 40%;
-        margin-bottom: 16px;
+        height: 20px;
+        width: 45%;
+        margin-bottom: 8px;
+      }
+
+      .skeleton-stress {
+        height: 28px;
+        width: 100%;
+        margin-bottom: 10px;
+        border-radius: 8px;
       }
 
       .skeleton-def {
-        height: 14px;
+        height: 16px;
         width: 100%;
         margin-bottom: 8px;
       }
 
       .skeleton-def.short {
-        width: 70%;
+        width: 75%;
       }
 
       .custom-definition-list .definition {
@@ -183,8 +190,8 @@ export function createPopupManager({
       }
 
       .vocab-popup {
-        max-height: 340px;
-        min-height: 120px;
+        max-height: 360px;
+        min-height: 200px;
         overflow-y: auto;
         overflow-x: hidden;
         scrollbar-width: thin;
@@ -222,6 +229,28 @@ export function createPopupManager({
         font-size: 15px;
         color: #222;
         transition: opacity 0.15s;
+      }
+
+      @keyframes vocabFadeSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .vocab-popup-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-content-fade-in {
+        animation: vocabFadeSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
       /* Header Bar & Slide Navigation */
@@ -579,6 +608,9 @@ export function createPopupManager({
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 4px 10px;
+        min-height: 28px;
+        box-sizing: border-box;
+        margin: 0 0 10px 0;
         font-size: 12px;
         cursor: pointer;
         user-select: none;
@@ -785,6 +817,14 @@ export function createPopupManager({
       }
 
       /* Content Elements */
+      .vocab-popup-headword-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 32px;
+        margin: 0 0 6px 0;
+      }
       .vocab-popup-theme .head-word:hover {
         text-decoration: underline;
       }
@@ -794,12 +834,62 @@ export function createPopupManager({
       .vocab-popup-headword {
         font-size: 26px;
         font-weight: 700;
-        margin: 0 0 6px;
+        margin: 0;
         color: #1677C9;
+        line-height: 1.15;
+      }
+
+      /* Headword History Stepper */
+      .vocab-history-stepper {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 2px 4px;
+        user-select: none;
+        flex-shrink: 0;
+      }
+
+      .vocab-stepper-btn {
+        background: transparent;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 0;
+        line-height: 1;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .vocab-stepper-btn:hover:not(:disabled) {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+
+      .vocab-stepper-btn:disabled {
+        opacity: 0.25;
+        cursor: not-allowed;
+      }
+
+      .vocab-stepper-counter {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        padding: 0 3px;
       }
       .vocab-popup-pronunciation {
         color: #4B5563;
         font-size: 13px;
+        min-height: 22px;
         margin-bottom: 8px;
         display: flex;
         align-items: center;
@@ -824,6 +914,8 @@ export function createPopupManager({
         color: #1f2937;
         margin: 6px 0 10px 0;
         padding: 6px 8px 6px 10px;
+        min-height: 44px;
+        box-sizing: border-box;
         background: #f8fafc;
         border-left: 3px solid #1677C9;
         border-radius: 0 6px 6px 0;
@@ -1113,6 +1205,20 @@ export function createPopupManager({
         border-top-color: #374151;
         color: #9ca3af;
       }
+      .vocab-popup.dark-mode .vocab-history-stepper {
+        background: #1e293b;
+        border-color: #334155;
+      }
+      .vocab-popup.dark-mode .vocab-stepper-btn {
+        color: #94a3b8;
+      }
+      .vocab-popup.dark-mode .vocab-stepper-btn:hover:not(:disabled) {
+        background: #334155;
+        color: #f1f5f9;
+      }
+      .vocab-popup.dark-mode .vocab-stepper-counter {
+        color: #94a3b8;
+      }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
         border-color: #4b5563;
@@ -1364,6 +1470,7 @@ export function createPopupManager({
       content = [
         { type: 'skeleton', value: 'headword' },
         { type: 'skeleton', value: 'pron' },
+        { type: 'skeleton', value: 'stress' },
         { type: 'skeleton', value: 'def' },
         { type: 'skeleton', value: 'def-short' },
       ];
@@ -1672,16 +1779,21 @@ export function createPopupManager({
     popupContainer.appendChild(headerBar);
 
     // 2. Render Main Body Content
+    const bodyContainer = h('div', { className: 'vocab-popup-body vocab-content-fade-in' });
+    let footerEl = null;
+
     content.forEach((item) => {
       if (item.type === 'skeleton') {
         if (item.value === 'headword') {
-          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-headword' }));
+          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-headword' }));
         } else if (item.value === 'pron') {
-          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-pron' }));
+          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-pron' }));
+        } else if (item.value === 'stress') {
+          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-stress' }));
         } else if (item.value === 'def') {
-          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def' }));
+          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-def' }));
         } else if (item.value === 'def-short') {
-          popupContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
+          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
         }
       } else if (item.type === 'headword') {
         const cap =
@@ -1694,13 +1806,75 @@ export function createPopupManager({
           : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
         const headwordUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
 
-        popupContainer.appendChild(
-          h(
-            'p',
-            { className: 'vocab-popup-headword' },
-            h('a', { href: headwordUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
-          )
+        const headwordRow = h('div', { className: 'vocab-popup-headword-row' });
+        const headwordP = h(
+          'p',
+          { className: 'vocab-popup-headword' },
+          h('a', { href: headwordUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
         );
+        headwordRow.appendChild(headwordP);
+
+        // Render mini history stepper [ ‹ 2/8 › ] if history has items
+        if (allHistoryWords.length > 1) {
+          const rawIdx = allHistoryWords.indexOf(currentWord);
+          const currentIdx = rawIdx !== -1 ? rawIdx : 0;
+          const totalCount = allHistoryWords.length;
+
+          // Sequential navigation according to display counter (1/N -> N/N):
+          // Left button (‹): Previous in list (currentIdx - 1), moves towards 1/N
+          // Right button (›): Next in list (currentIdx + 1), moves towards N/N
+          const prevWord = currentIdx > 0 ? allHistoryWords[currentIdx - 1] : null;
+          const nextWord = currentIdx < totalCount - 1 ? allHistoryWords[currentIdx + 1] : null;
+
+          const prevBtn = h(
+            'button',
+            {
+              type: 'button',
+              className: 'vocab-stepper-btn prev-btn',
+              title: prevWord ? `Previous: "${prevWord}"` : 'No previous word',
+              ariaLabel: prevWord ? `Previous word: ${prevWord}` : 'No previous word',
+              disabled: !prevWord,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                if (prevWord) {
+                  navigateToWord(prevWord, { fromHistory: true });
+                }
+              },
+            },
+            '‹'
+          );
+
+          const counterSpan = h('span', { className: 'vocab-stepper-counter' }, `${currentIdx + 1}/${totalCount}`);
+
+          const nextBtn = h(
+            'button',
+            {
+              type: 'button',
+              className: 'vocab-stepper-btn next-btn',
+              title: nextWord ? `Next: "${nextWord}"` : 'No next word',
+              ariaLabel: nextWord ? `Next word: ${nextWord}` : 'No next word',
+              disabled: !nextWord,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                if (nextWord) {
+                  navigateToWord(nextWord, { fromHistory: true });
+                }
+              },
+            },
+            '›'
+          );
+
+          const stepper = h(
+            'div',
+            { className: 'vocab-history-stepper', role: 'navigation', ariaLabel: 'History word navigation' },
+            prevBtn,
+            counterSpan,
+            nextBtn
+          );
+          headwordRow.appendChild(stepper);
+        }
+
+        bodyContainer.appendChild(headwordRow);
       } else if (item.type === 'pronunciation') {
         const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
         const textValue = typeof item.value === 'string' ? item.value.trim() : '';
@@ -1718,16 +1892,24 @@ export function createPopupManager({
             usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
 
-          pronContainer.appendChild(h('span', {}, usText));
+          pronContainer.appendChild(
+            h('span', { className: 'vocab-pron-item' }, `${usText} `)
+          );
           pronContainer.appendChild(
             h('button', {
-              title: 'US pronunciation',
-              ariaLabel: 'US pronunciation',
+              type: 'button',
               className: 'vocab-popup-audio-btn',
+              title: 'Play US Pronunciation',
+              ariaLabel: 'Play US Pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
-                e.stopPropagation();
-                playAudioWithFallback(audioObj.us, word, 'en-US');
+                e?.stopPropagation?.();
+                playAudioWithFallback({
+                  audioUrl: audioObj.us,
+                  word,
+                  accent: 'us',
+                  windowObj,
+                });
               },
             })
           );
@@ -1743,41 +1925,55 @@ export function createPopupManager({
             ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }
 
-          pronContainer.appendChild(h('span', {}, ukText));
+          pronContainer.appendChild(
+            h('span', { className: 'vocab-pron-item' }, `${ukText} `)
+          );
           pronContainer.appendChild(
             h('button', {
-              title: 'UK pronunciation',
-              ariaLabel: 'UK pronunciation',
+              type: 'button',
               className: 'vocab-popup-audio-btn',
+              title: 'Play UK Pronunciation',
+              ariaLabel: 'Play UK Pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
-                e.stopPropagation();
-                playAudioWithFallback(audioObj.uk, word, 'en-GB');
+                e?.stopPropagation?.();
+                playAudioWithFallback({
+                  audioUrl: audioObj.uk,
+                  word,
+                  accent: 'uk',
+                  windowObj,
+                });
               },
             })
           );
           hasRendered = true;
         }
 
-        if (!hasRendered) {
+        if (!hasRendered && (textValue || audioObj.us || audioObj.uk)) {
           if (textValue) {
-            pronContainer.appendChild(h('span', {}, textValue));
+            pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${textValue} `));
           }
           pronContainer.appendChild(
             h('button', {
-              title: 'Listen pronunciation',
-              ariaLabel: 'Listen pronunciation',
+              type: 'button',
               className: 'vocab-popup-audio-btn',
+              title: 'Play Pronunciation',
+              ariaLabel: 'Play Pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
-                e.stopPropagation();
-                playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
+                e?.stopPropagation?.();
+                playAudioWithFallback({
+                  audioUrl: audioObj.us || audioObj.uk,
+                  word,
+                  accent: 'us',
+                  windowObj,
+                });
               },
             })
           );
         }
 
-        popupContainer.appendChild(pronContainer);
+        bodyContainer.appendChild(pronContainer);
       } else if (item.type === 'stress-diagram') {
         const stressData = item.value;
         if (stressData && stressData.hasStressInfo && Array.isArray(stressData.syllables)) {
@@ -1844,6 +2040,7 @@ export function createPopupManager({
                 isDiagramOpen = !isDiagramOpen;
                 card.style.display = isDiagramOpen ? 'flex' : 'none';
                 toggleSpan.textContent = isDiagramOpen ? '▲' : '▼';
+                toggleSpan.style.color = isDiagramOpen ? '#1677C9' : '';
                 updatePopupPosition();
               },
             },
@@ -1853,7 +2050,7 @@ export function createPopupManager({
 
           wrapper.appendChild(rhythmPill);
           wrapper.appendChild(card);
-          popupContainer.appendChild(wrapper);
+          bodyContainer.appendChild(wrapper);
         }
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
@@ -1866,7 +2063,7 @@ export function createPopupManager({
                 updatePopupPosition();
               });
             });
-            popupContainer.appendChild(defContainer);
+            bodyContainer.appendChild(defContainer);
           }
         });
       } else if (item.type === 'word-family') {
@@ -1908,33 +2105,36 @@ export function createPopupManager({
           details.appendChild(summary);
           details.appendChild(contentDiv);
           details.addEventListener('toggle', () => updatePopupPosition());
-          popupContainer.appendChild(details);
+          bodyContainer.appendChild(details);
         }
       } else if (item.type === 'title') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
+        bodyContainer.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
       } else if (item.type === 'message') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-message' }, item.value));
+        bodyContainer.appendChild(h('div', { className: 'vocab-popup-message' }, item.value));
       } else if (item.type === 'searchSuggestions') {
         if (item.value) {
-          popupContainer.appendChild(h('div', { className: 'vocab-popup-search-suggestions', innerHTML: item.value }));
+          bodyContainer.appendChild(h('div', { className: 'vocab-popup-search-suggestions', innerHTML: item.value }));
         }
       } else if (item.type === 'guidance-list') {
         const ul = h('ul', { className: 'vocab-popup-guidance-list' });
         item.value.forEach((g) => ul.appendChild(h('li', {}, g)));
-        popupContainer.appendChild(ul);
+        bodyContainer.appendChild(ul);
       } else if (item.type === 'cta') {
-        popupContainer.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
+        bodyContainer.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
       } else if (item.type === 'compliance-footer') {
-        popupContainer.appendChild(
-          h(
-            'div',
-            { className: 'vocab-popup-compliance-footer' },
-            h('div', { className: 'vocab-popup-attribution', innerHTML: item.value.attribution }),
-            h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value.disclosure })
-          )
+        footerEl = h(
+          'div',
+          { className: 'vocab-popup-compliance-footer' },
+          h('div', { className: 'vocab-popup-attribution', innerHTML: item.value.attribution }),
+          h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value.disclosure })
         );
       }
     });
+
+    popupContainer.appendChild(bodyContainer);
+    if (footerEl) {
+      popupContainer.appendChild(footerEl);
+    }
 
     updatePopupPosition();
   }

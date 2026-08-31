@@ -99,8 +99,11 @@ export async function bootstrapContentRuntime({
     });
   };
 
+  let isHistoryBrowsing = false;
+
   const handlePopupLookupWord = (word, { fromHistory = false, source } = {}) => {
     isUserInitiated = true;
+    isHistoryBrowsing = Boolean(fromHistory);
     if (source) {
       dictionarySource = source;
     }
@@ -124,6 +127,7 @@ export async function bootstrapContentRuntime({
     onClick: () => {
       if (pendingTriggerRequest) {
         isUserInitiated = true;
+        isHistoryBrowsing = false;
         triggerIconManager.removeIcon();
         const currentState = orchestrator.getState();
         if (currentState.status !== 'idle') {
@@ -144,7 +148,7 @@ export async function bootstrapContentRuntime({
       const autoPopupEnabled = autoPopupController.isAutoPopupEnabled();
       if (state.status === 'success') {
         const foundWord = state.data?.parsedPayload?.headword || state.headword;
-        if (foundWord) {
+        if (foundWord && !isHistoryBrowsing) {
           historyStore.addSearchWord(foundWord).catch(() => {});
         }
       }
