@@ -13,6 +13,7 @@
   - Luôn đảm bảo chạy test (`npm test`) sau mỗi lần thay đổi mã nguồn để bảo toàn tính ổn định.
   - **Tuyệt đối KHÔNG tự động chạy lệnh `git commit` hoặc `git push`** trừ khi người dùng yêu cầu rõ ràng. Tất cả các thay đổi thông thường sẽ được giữ ở working directory để người dùng chủ động review.
   - **Quy tắc Lập Kế Hoạch & Phê Duyệt (Plan Preview & User Approval Gate)**: Luôn in kế hoạch triển khai (plan) chi tiết ra màn hình trước khi làm gì. **DỪNG LẠI và CHỜ người dùng preview và đồng ý**. Tuyệt đối không tự ý viết code/sửa file trong cùng lượt khi chưa được người dùng phê duyệt kế hoạch.
+  - **Chủ động gợi ý Commit (Post-Task Commit Suggestion)**: Sau khi hoàn thành một bug fix hoặc một feature/task nhỏ và test đã pass, chủ động hỏi người dùng xem có muốn commit hay không, kèm đề xuất commit message.
   - **Quy trình Nâng Version & Release**: Khi người dùng yêu cầu "nâng version" hoặc tương tự, thực hiện: (1) In kế hoạch ra màn hình và chờ phê duyệt, (2) Cập nhật version trong `package.json` và `manifest.json`, (3) Ghi changelog vào `CHANGELOG.md`, (4) Kiểm tra `npm test` & build `npm run build`, (5) Tạo commit và đóng tag `vX.Y.Z`.
 
 ---
