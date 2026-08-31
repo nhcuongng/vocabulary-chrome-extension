@@ -88,3 +88,96 @@ test('service worker handler: parser failure trả parse error thay vì throw', 
   assert.equal(result.error.type, 'parse');
   assert.equal(result.error.message, 'parse failed');
 });
+
+test('service worker handler: làm giàu (enrich) phát âm và audio từ FreeDictionary API khi tra cứu thành công', async () => {
+  const handleMessage = createServiceWorkerLookupHandler({
+    lookupExecutor: async ({ headword }) => ({
+      status: 'success',
+      data: {
+        headword,
+        lookupUrl: `https://www.vocabulary.com/dictionary/${headword}`,
+        html: '<article><h1 class="dynamictext">photograph</h1><div class="short">A picture</div></article>',
+      },
+    }),
+    htmlParser: ({ html }) => ({
+      status: 'success',
+      data: {
+        parsedPayload: {
+          headword: 'photograph',
+          pronunciation: 'US /ˈfoʊtəɡræf/',
+          audio: { us: 'https://vocab.com/audio-us.mp3', uk: '' },
+          definitions: ['<div class="vocab-quick-def">A picture</div>'],
+          wordFamily: [],
+          hasCoreData: true,
+          source: 'vocabulary',
+        },
+      },
+    }),
+    freeDictionaryPronunciationFetcher: async ({ headword }) => ({
+      headword,
+      pronunciation: 'US /ˈfoʊtəɡræf/ · UK /ˈfəʊtəɡrɑːf/',
+      audio: {
+        us: 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-us.mp3',
+        uk: 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-uk.mp3',
+      },
+      hasPronunciation: true,
+    }),
+  });
+
+  const result = await handleMessage(
+    createLookupRequest({
+      token: 'photograph',
+      rawText: 'photograph',
+      selectionRect: { x: 0, y: 0, width: 1, height: 1 },
+      sourceEvent: 'mouseup',
+      requestId: 'lookup-4',
+    }),
+  );
+
+  assert.equal(result.status, 'success');
+  assert.equal(result.data.parsedPayload.pronunciation, 'US /ˈfoʊtəɡræf/ · UK /ˈfəʊtəɡrɑːf/');
+  assert.equal(result.data.parsedPayload.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-us.mp3');
+  assert.equal(result.data.parsedPayload.audio.uk, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-uk.mp3');
+});
+
+test('service worker handler: giữ nguyên phát âm gốc khi FreeDictionary API fetcher lỗi hoặc rỗng', async () => {
+  const handleMessage = createServiceWorkerLookupHandler({
+    lookupExecutor: async ({ headword }) => ({
+      status: 'success',
+      data: {
+        headword,
+        lookupUrl: `https://www.vocabulary.com/dictionary/${headword}`,
+        html: '<article><h1 class="dynamictext">fallback</h1><div class="short">A fallback</div></article>',
+      },
+    }),
+    htmlParser: ({ html }) => ({
+      status: 'success',
+      data: {
+        parsedPayload: {
+          headword: 'fallback',
+          pronunciation: 'US /ˈfɔːl.bæk/',
+          audio: { us: 'https://vocab.com/audio-us.mp3', uk: '' },
+          definitions: ['<div class="vocab-quick-def">A fallback</div>'],
+          wordFamily: [],
+          hasCoreData: true,
+          source: 'vocabulary',
+        },
+      },
+    }),
+    freeDictionaryPronunciationFetcher: async () => null,
+  });
+
+  const result = await handleMessage(
+    createLookupRequest({
+      token: 'fallback',
+      rawText: 'fallback',
+      selectionRect: { x: 0, y: 0, width: 1, height: 1 },
+      sourceEvent: 'mouseup',
+      requestId: 'lookup-5',
+    }),
+  );
+
+  assert.equal(result.status, 'success');
+  assert.equal(result.data.parsedPayload.pronunciation, 'US /ˈfɔːl.bæk/');
+  assert.equal(result.data.parsedPayload.audio.us, 'https://vocab.com/audio-us.mp3');
+});

@@ -12,11 +12,42 @@ import {
 } from './lookupService.js';
 import { safeParseVocabularyHtml } from '../infrastructure/adapters/safeVocabularyHtmlParserAdapter.js';
 import { safeParseCambridgeHtml } from '../infrastructure/adapters/safeCambridgeHtmlParserAdapter.js';
-import { parseFreeDictionaryApiResponse } from '../infrastructure/adapters/freeDictionaryApiAdapter.js';
+import {
+  parseFreeDictionaryApiResponse,
+  extractFreeDictionaryPronunciation,
+} from '../infrastructure/adapters/freeDictionaryApiAdapter.js';
 import { DICTIONARY_SOURCE, normalizeAutoSourceOrder, DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 
 const defaultLookupCache = createInMemoryLookupCache();
 const defaultRateLimiter = createSlidingWindowRateLimiter();
+
+export async function defaultFreeDictionaryPronunciationFetcher({
+  headword,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  if (typeof fetchImpl !== 'function' || !headword) {
+    return null;
+  }
+
+  try {
+    const url = `https://freedictionaryapi.com/api/v1/entries/en/${encodeURIComponent(headword)}`;
+    const res = await fetchImpl(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const data = await res.json();
+    const pronData = extractFreeDictionaryPronunciation(data, headword);
+    if (pronData && pronData.hasPronunciation) {
+      return pronData;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export async function defaultFreeDictionaryApiExecutor({ 
   headword, 
@@ -79,6 +110,7 @@ export function createServiceWorkerLookupHandler({
   htmlParser = safeParseVocabularyHtml,
   cambridgeHtmlParser = safeParseCambridgeHtml,
   freeDictionaryApiExecutor = defaultFreeDictionaryApiExecutor,
+  freeDictionaryPronunciationFetcher = defaultFreeDictionaryPronunciationFetcher,
   rateLimiter = defaultRateLimiter,
   cacheStore = defaultLookupCache,
   cacheTtlMs = DEFAULT_CACHE_TTL_MS,
@@ -86,6 +118,32 @@ export function createServiceWorkerLookupHandler({
   rateLimitPolicy,
   onGuardrailEvent,
 } = {}) {
+  async function enrichWithFreeDictionaryPronunciation(result, headword) {
+    if (
+      result?.status === 'success' &&
+      result?.data?.parsedPayload &&
+      typeof freeDictionaryPronunciationFetcher === 'function'
+    ) {
+      try {
+        const pronData = await freeDictionaryPronunciationFetcher({ headword });
+        if (pronData && pronData.hasPronunciation) {
+          if (pronData.pronunciation) {
+            result.data.parsedPayload.pronunciation = pronData.pronunciation;
+          }
+          if (pronData.audio) {
+            result.data.parsedPayload.audio = {
+              us: pronData.audio.us || result.data.parsedPayload.audio?.us || '',
+              uk: pronData.audio.uk || result.data.parsedPayload.audio?.uk || '',
+            };
+          }
+        }
+      } catch {
+        // Fallback silently to existing pronunciation
+      }
+    }
+    return result;
+  }
+
   async function lookupFromSingleSource(source, headword) {
     if (
       source === DICTIONARY_SOURCE.FREEDICTIONARY &&
@@ -113,18 +171,19 @@ export function createServiceWorkerLookupHandler({
 
     if (lookupResult?.status === 'success') {
       if (lookupResult?.data?.parsedPayload) {
-        return lookupResult;
+        return enrichWithFreeDictionaryPronunciation(lookupResult, headword);
       }
 
       const html = lookupResult?.data?.html;
       if (typeof html === 'string') {
         const parsedResult = parser({ html });
         if (parsedResult?.status === 'success') {
-          return createLookupSuccessResponse({
+          const successRes = createLookupSuccessResponse({
             ...lookupResult.data,
             ...parsedResult.data,
             source: parsedResult?.data?.parsedPayload?.source || source,
           });
+          return enrichWithFreeDictionaryPronunciation(successRes, headword);
         }
         if (parsedResult?.status === 'not-found') {
           return createLookupNotFoundResponse({
@@ -142,7 +201,7 @@ export function createServiceWorkerLookupHandler({
           lookupUrl: lookupResult?.data?.lookupUrl,
         });
       }
-      return lookupResult;
+      return enrichWithFreeDictionaryPronunciation(lookupResult, headword);
     }
 
     // Fallback: If Cambridge source cannot be fetched (Cloudflare 403 or network error),

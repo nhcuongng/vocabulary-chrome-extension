@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseFreeDictionaryApiResponse } from '../../src/infrastructure/adapters/freeDictionaryApiAdapter.js';
+import {
+  parseFreeDictionaryApiResponse,
+  extractFreeDictionaryPronunciation,
+} from '../../src/infrastructure/adapters/freeDictionaryApiAdapter.js';
 
 test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, định nghĩa theo POS và word family', () => {
   const sampleJson = {
@@ -52,6 +55,40 @@ test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, đ�
   assert.ok(result.hasCoreData);
   assert.equal(result.source, 'cambridge');
   assert.ok(result.wordFamily.some((f) => f.word === 'lovely' || f.word === 'pretty'));
+});
+
+test('extractFreeDictionaryPronunciation: trích xuất US & UK IPA và audio direct URLs từ standard dictionary API response', () => {
+  const standardApiJson = [
+    {
+      word: 'photograph',
+      phonetic: '/ˈfəʊtəɡrɑːf/',
+      phonetics: [
+        {
+          text: '/ˈfəʊtəɡrɑːf/',
+          audio: 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-uk.mp3',
+        },
+        {
+          text: '/ˈfoʊtəɡræf/',
+          audio: 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-us.mp3',
+        },
+      ],
+      meanings: [
+        {
+          partOfSpeech: 'noun',
+          definitions: [{ definition: 'A picture made using a camera.' }],
+        },
+      ],
+    },
+  ];
+
+  const pron = extractFreeDictionaryPronunciation(standardApiJson, 'photograph');
+
+  assert.equal(pron.headword, 'photograph');
+  assert.equal(pron.hasPronunciation, true);
+  assert.equal(pron.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-us.mp3');
+  assert.equal(pron.audio.uk, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-uk.mp3');
+  assert.ok(pron.pronunciation.includes('US /ˈfoʊtəɡræf/'));
+  assert.ok(pron.pronunciation.includes('UK /ˈfəʊtəɡrɑːf/'));
 });
 
 test('freeDictionaryApiAdapter: xử lý an toàn khi json rỗng hoặc không hợp lệ', () => {

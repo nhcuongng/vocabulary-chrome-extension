@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.0] - 2026-08-31
+
+### 🚀 Added & Improved (Pronunciation & Stress Sourcing)
+- **FreeDictionary API Pronunciation & Stress Sourcing**:
+  - Automatically enriches all dictionary lookup results with standardized phonetic IPA (US and UK) and direct MP3 audio URLs from `https://freedictionaryapi.com`.
+  - Built-in graceful fallbacks to primary dictionary phonetics and Google TTS ensuring uninterrupted lookup if the API is unreachable.
+- **Unified Pronunciation & Stress UI Across All Popups**:
+  - Synchronized toolbar popup (`popup.html` / `popup.js`) and in-page selection popup (`popupManager.js`) to share an identical pronunciation interface:
+    - Dedicated US / UK IPA tags and speaker buttons with interactive audio playback.
+    - Interactive **Syllable Rhythm Pill** featuring SVG Waveform icon, highlighted stressed syllables (`vocab-syl-high`), Equalizer Rhythm Bars (`generateEqualizerBarsSvg`), and click-to-expand **Pitch Contour SVG Line Diagram**.
+- **Automated Test Coverage**:
+  - Added unit test suites for FreeDictionary phonetics parser in `tests/infrastructure/freeDictionaryApiAdapter.test.js`.
+  - Added service worker lookup handler tests for pronunciation enrichment and fallback in `tests/background/serviceWorkerLookupHandler.test.js`.
+
+---
+
 ## [0.6.0] - 2026-08-31
 
 ### 🚀 Added & Improved (Popup UX & Display Hierarchy)

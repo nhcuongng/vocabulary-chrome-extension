@@ -13,87 +13,79 @@ function wrapInCollapse(label, content, isOpen = false) {
   `.trim();
 }
 
-export function parseFreeDictionaryApiResponse(json, targetWord = '', source = 'cambridge') {
+export function extractFreeDictionaryPronunciation(json, targetWord = '') {
   let headword = targetWord;
-  let entries = [];
-
-  if (Array.isArray(json) && json.length > 0) {
-    const first = json[0];
-    headword = first.word || targetWord;
-    const phonetics = [];
-    (first.phonetics || []).forEach((p) => {
-      if (p.text) {
-        const audioUrl = p.audio || '';
-        const isUS = audioUrl.includes('-us') || audioUrl.includes('en-us') || false;
-        const isUK = audioUrl.includes('-uk') || audioUrl.includes('en-gb') || false;
-        const tags = isUS ? ['us'] : isUK ? ['uk'] : [];
-        phonetics.push({ type: 'ipa', text: p.text, tags, audio: audioUrl });
-      }
-    });
-
-    (first.meanings || []).forEach((m) => {
-      const senses = (m.definitions || []).map((d) => ({
-        definition: d.definition,
-        examples: d.example ? [d.example] : [],
-        synonyms: d.synonyms || [],
-      }));
-      entries.push({
-        partOfSpeech: m.partOfSpeech,
-        pronunciations: phonetics,
-        senses,
-        synonyms: m.synonyms || [],
-      });
-    });
-  } else if (json && typeof json === 'object' && Array.isArray(json.entries)) {
-    headword = json.word || targetWord;
-    entries = json.entries;
-  }
-
-  if (entries.length === 0) {
-    return {
-      headword: targetWord,
-      pronunciation: '',
-      audio: { us: '', uk: '' },
-      definitions: [],
-      wordFamily: [],
-      hasCoreData: false,
-      source,
-    };
-  }
-
-  // 1. Audio & Pronunciation
   let ipaUs = '';
   let ipaUk = '';
   let directAudioUs = '';
   let directAudioUk = '';
 
-  entries.forEach((entry) => {
-    const pronunciations = Array.isArray(entry.pronunciations) ? entry.pronunciations : [];
-    pronunciations.forEach((p) => {
-      if (p.type !== 'ipa' && !p.text) return;
-      const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
-      if (!text) return;
-      
-      const tags = Array.isArray(p.tags) ? p.tags.map((t) => t.toLowerCase()) : [];
-      const isUS = tags.includes('general american') || tags.includes('us');
-      const isUK = tags.includes('received pronunciation') || tags.includes('uk');
+  const rawPhonetics = [];
 
-      if (isUS && !ipaUs) {
-        ipaUs = text;
-        if (p.audio) directAudioUs = p.audio;
+  if (Array.isArray(json) && json.length > 0) {
+    headword = json[0].word || targetWord;
+    const topPhonetic = json[0].phonetic || '';
+
+    for (const item of json) {
+      if (Array.isArray(item.phonetics)) {
+        rawPhonetics.push(...item.phonetics);
       }
-      if (isUK && !ipaUk) {
-        ipaUk = text;
-        if (p.audio) directAudioUk = p.audio;
-      }
-      
-      // Fallback
-      if (!ipaUs && !ipaUk) {
-        ipaUs = text;
-        if (p.audio) directAudioUs = p.audio;
+    }
+
+    rawPhonetics.forEach((p) => {
+      const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
+      const audioUrl = typeof p.audio === 'string' ? p.audio.trim() : '';
+      const audioLower = audioUrl.toLowerCase();
+      const isUS = audioLower.includes('-us') || audioLower.includes('en-us') || audioLower.includes('/us/');
+      const isUK = audioLower.includes('-uk') || audioLower.includes('en-gb') || audioLower.includes('/uk/') || audioLower.includes('-gb');
+
+      if (isUS) {
+        if (text && !ipaUs) ipaUs = text;
+        if (audioUrl && !directAudioUs) directAudioUs = audioUrl;
+      } else if (isUK) {
+        if (text && !ipaUk) ipaUk = text;
+        if (audioUrl && !directAudioUk) directAudioUk = audioUrl;
+      } else {
+        if (text && !ipaUs && !ipaUk) {
+          ipaUs = text;
+        }
+        if (audioUrl && !directAudioUs && !directAudioUk) {
+          directAudioUs = audioUrl;
+        }
       }
     });
-  });
+
+    if (!ipaUs && !ipaUk && topPhonetic) {
+      const cleanTop = topPhonetic.replace(/^\/|\/$/g, '').trim();
+      ipaUs = cleanTop;
+    }
+  } else if (json && typeof json === 'object' && Array.isArray(json.entries)) {
+    headword = json.word || targetWord;
+    json.entries.forEach((entry) => {
+      const pronunciations = Array.isArray(entry.pronunciations) ? entry.pronunciations : [];
+      pronunciations.forEach((p) => {
+        if (p.type !== 'ipa' && !p.text) return;
+        const text = typeof p.text === 'string' ? p.text.replace(/^\/|\/$/g, '').trim() : '';
+        if (!text) return;
+        const tags = Array.isArray(p.tags) ? p.tags.map((t) => t.toLowerCase()) : [];
+        const isUS = tags.includes('general american') || tags.includes('us');
+        const isUK = tags.includes('received pronunciation') || tags.includes('uk');
+
+        if (isUS && !ipaUs) {
+          ipaUs = text;
+          if (p.audio) directAudioUs = p.audio;
+        }
+        if (isUK && !ipaUk) {
+          ipaUk = text;
+          if (p.audio) directAudioUk = p.audio;
+        }
+        if (!ipaUs && !ipaUk) {
+          ipaUs = text;
+          if (p.audio) directAudioUs = p.audio;
+        }
+      });
+    });
+  }
 
   if (!ipaUk && ipaUs) ipaUk = ipaUs;
   if (!ipaUs && ipaUk) ipaUs = ipaUk;
@@ -108,6 +100,58 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
     pronParts.push(`UK /${ipaUk}/`);
   }
   const pronunciation = pronParts.length > 0 ? pronParts.join(' · ') : (ipaUs ? `/${ipaUs}/` : '');
+  const hasPronunciation = Boolean(ipaUs || ipaUk || directAudioUs || directAudioUk);
+
+  return {
+    headword,
+    ipaUs,
+    ipaUk,
+    pronunciation,
+    audio: { us: audioUs, uk: audioUk },
+    hasPronunciation,
+  };
+}
+
+export function parseFreeDictionaryApiResponse(json, targetWord = '', source = 'cambridge') {
+  let headword = targetWord;
+  let entries = [];
+
+  const pronData = extractFreeDictionaryPronunciation(json, targetWord);
+  headword = pronData.headword || targetWord;
+
+  if (Array.isArray(json) && json.length > 0) {
+    const first = json[0];
+    (first.meanings || []).forEach((m) => {
+      const senses = (m.definitions || []).map((d) => ({
+        definition: d.definition,
+        examples: d.example ? [d.example] : [],
+        synonyms: d.synonyms || [],
+      }));
+      entries.push({
+        partOfSpeech: m.partOfSpeech,
+        senses,
+        synonyms: m.synonyms || [],
+      });
+    });
+  } else if (json && typeof json === 'object' && Array.isArray(json.entries)) {
+    headword = json.word || targetWord;
+    entries = json.entries;
+  }
+
+  if (entries.length === 0) {
+    return {
+      headword: targetWord,
+      pronunciation: pronData.pronunciation,
+      audio: pronData.audio,
+      definitions: [],
+      wordFamily: [],
+      hasCoreData: false,
+      source,
+    };
+  }
+
+  const pronunciation = pronData.pronunciation;
+  const audio = pronData.audio;
 
   // 2. Extract meanings, definitions, synonyms/antonyms
   const definitions = [];
@@ -214,7 +258,7 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
   return {
     headword,
     pronunciation,
-    audio: { us: audioUs, uk: audioUk },
+    audio,
     definitions,
     wordFamily: wordFamily.slice(0, 20),
     hasCoreData: Boolean(headword && definitions.length > 0),

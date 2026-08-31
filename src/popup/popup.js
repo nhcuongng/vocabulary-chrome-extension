@@ -24,7 +24,11 @@ import {
 } from '../content/historySliderRenderer.js';
 import { createZeroStateElement } from './popupZeroStateRenderer.js';
 import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
-import { generateStressSvg } from '../domain/stressDiagramUtils.js';
+import {
+  generateStressSvg,
+  generateEqualizerBarsSvg,
+  PITCH_LEVELS,
+} from '../domain/stressDiagramUtils.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -40,6 +44,15 @@ const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
   <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>`;
+
+const waveformSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2 10v3"></path>
+  <path d="M6 6v11"></path>
+  <path d="M10 3v18"></path>
+  <path d="M14 8v7"></path>
+  <path d="M18 5v13"></path>
+  <path d="M22 10v3"></path>
 </svg>`;
 
 async function bootstrapPopupRuntime({
@@ -549,12 +562,12 @@ async function bootstrapPopupRuntime({
             usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
 
-          pronContainer.appendChild(h('span', {}, usText));
+          pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${usText} `));
           pronContainer.appendChild(
             h('button', {
               className: 'vocab-popup-audio-btn',
-              title: 'US pronunciation',
-              ariaLabel: 'US pronunciation',
+              title: 'Play US Pronunciation',
+              ariaLabel: 'Play US Pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -574,12 +587,12 @@ async function bootstrapPopupRuntime({
             ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }
 
-          pronContainer.appendChild(h('span', {}, ukText));
+          pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${ukText} `));
           pronContainer.appendChild(
             h('button', {
               className: 'vocab-popup-audio-btn',
-              title: 'UK pronunciation',
-              ariaLabel: 'UK pronunciation',
+              title: 'Play UK Pronunciation',
+              ariaLabel: 'Play UK Pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -590,15 +603,15 @@ async function bootstrapPopupRuntime({
           hasRendered = true;
         }
 
-        if (!hasRendered) {
+        if (!hasRendered && (textValue || audioObj.us || audioObj.uk)) {
           if (textValue) {
-            pronContainer.appendChild(h('span', {}, textValue));
+            pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${textValue} `));
           }
           pronContainer.appendChild(
             h('button', {
               className: 'vocab-popup-audio-btn',
-              title: 'Listen pronunciation',
-              ariaLabel: 'Listen pronunciation',
+              title: 'Play Pronunciation',
+              ariaLabel: 'Play Pronunciation',
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
@@ -611,7 +624,7 @@ async function bootstrapPopupRuntime({
         container.appendChild(pronContainer);
       } else if (item.type === 'stress-diagram') {
         const stressData = item.value;
-        if (stressData && stressData.hasStressInfo) {
+        if (stressData && stressData.hasStressInfo && Array.isArray(stressData.syllables)) {
           const wrapper = h('div', { className: 'vocab-stress-wrapper' });
           let isDiagramOpen = false;
 
@@ -628,28 +641,61 @@ async function bootstrapPopupRuntime({
             </div>
           `;
 
+          // Build syllables chain with highlight on stressed syllables
+          const syllableNodes = [];
+          stressData.syllables.forEach((syl, i) => {
+            if (i > 0) {
+              syllableNodes.push(h('span', { className: 'vocab-syl-dot' }, '·'));
+            }
+            const isHigh = syl.level === PITCH_LEVELS.HIGH;
+            const isMid = syl.level === PITCH_LEVELS.MID;
+            const tagClass = isHigh ? 'vocab-syl-high' : isMid ? 'vocab-syl-mid' : 'vocab-syl-low';
+            syllableNodes.push(h('span', { className: `vocab-syl-item ${tagClass}` }, syl.text));
+          });
+
+          const syllablesChain = h('div', { className: 'vocab-syllables-chain' }, ...syllableNodes);
+          const waveIcon = h('span', { className: 'vocab-stress-wave-icon', innerHTML: waveformSVG });
+
+          const pillLeft = h('div', { className: 'vocab-stress-pill-left' }, waveIcon, syllablesChain);
+
+          const eqBars = h('span', {
+            className: 'vocab-eq-bars-container',
+            innerHTML: generateEqualizerBarsSvg(stressData),
+          });
           const toggleSpan = h('span', { className: 'vocab-stress-toggle-icon' }, '▼');
-          const ctaBtn = h(
+
+          const pillRight = h(
+            'div',
+            { className: 'vocab-stress-pill-right' },
+            eqBars,
+            toggleSpan
+          );
+
+          const pillTitle = stressData.stressSummary
+            ? `${stressData.stressSummary} · Click to toggle pitch contour`
+            : 'Click to toggle pitch contour';
+
+          const rhythmPill = h(
             'div',
             {
-              className: 'vocab-stress-cta',
+              className: 'vocab-stress-pill',
               role: 'button',
               tabIndex: 0,
-              title: 'Toggle stress line diagram',
+              title: pillTitle,
+              ariaLabel: pillTitle,
               onClick: (e) => {
                 e.stopPropagation();
                 isDiagramOpen = !isDiagramOpen;
                 card.style.display = isDiagramOpen ? 'flex' : 'none';
                 toggleSpan.textContent = isDiagramOpen ? '▲' : '▼';
+                toggleSpan.style.color = isDiagramOpen ? '#1677C9' : '';
               },
             },
-            h('span', { className: 'vocab-stress-icon' }, '📈'),
-            h('span', {}, 'Stress:'),
-            h('span', { className: 'vocab-stress-notation' }, stressData.patternNotation),
-            toggleSpan
+            pillLeft,
+            pillRight
           );
 
-          wrapper.appendChild(ctaBtn);
+          wrapper.appendChild(rhythmPill);
           wrapper.appendChild(card);
           container.appendChild(wrapper);
         }
