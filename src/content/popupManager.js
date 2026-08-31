@@ -36,6 +36,11 @@ const dictionarySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height
   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
 </svg>`;
 
+const gearSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="3"></circle>
+  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+</svg>`;
+
 export function createPopupManager({
   documentObj,
   windowObj,
@@ -81,8 +86,11 @@ export function createPopupManager({
       currentSlideIndex = 0;
       isHistorySearching = false;
       historySearchQuery = '';
+      isAutoOrderOpen = false;
     }
   }
+
+  let isAutoOrderOpen = false;
 
   function createPopup() {
     if (popupElement) return popupElement;
@@ -411,6 +419,45 @@ export function createPopupManager({
       }
       .vocab-source-menu-item.active .source-item-check {
         opacity: 1;
+      }
+
+      .vocab-source-auto-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        width: 100%;
+      }
+
+      .vocab-source-auto-wrapper .vocab-source-menu-item {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-auto-config-btn {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        cursor: pointer;
+        padding: 5px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.2s;
+        flex-shrink: 0;
+      }
+
+      .vocab-auto-config-btn:hover {
+        background-color: #f3f4f6;
+        color: #1677C9;
+        border-color: #1677C9;
+      }
+
+      .vocab-auto-config-btn.active {
+        color: #1677C9;
+        border-color: #1677C9;
+        background-color: rgba(22, 119, 201, 0.1);
+        transform: rotate(45deg);
       }
 
       .vocab-auto-order-section {
@@ -807,6 +854,17 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-check {
         color: #60a5fa;
       }
+      .vocab-popup.dark-mode .vocab-auto-config-btn {
+        background: #1f2937;
+        border-color: #374151;
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-auto-config-btn:hover,
+      .vocab-popup.dark-mode .vocab-auto-config-btn.active {
+        color: #60a5fa;
+        border-color: #60a5fa;
+        background-color: rgba(96, 165, 250, 0.15);
+      }
       .vocab-popup.dark-mode .vocab-auto-order-section {
         background: rgba(255, 255, 255, 0.03);
         border-color: #374151;
@@ -1054,7 +1112,8 @@ export function createPopupManager({
     const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
     popoverMenu.appendChild(menuTitle);
 
-    // 1. Auto Option Button
+    // 1. Auto Option Button + Config Gear Button
+    const autoWrapper = h('div', { className: 'vocab-source-auto-wrapper' });
     const isAutoActive = activeDictSource === 'auto';
     const autoHintText = buildAutoSourceHint(autoSourceOrder);
     const autoItemBtn = h(
@@ -1088,10 +1147,34 @@ export function createPopupManager({
       ),
       h('span', { className: 'source-item-check' }, '✓')
     );
-    popoverMenu.appendChild(autoItemBtn);
+    autoWrapper.appendChild(autoItemBtn);
+
+    const autoConfigBtn = h('button', {
+      type: 'button',
+      className: `vocab-auto-config-btn ${isAutoOrderOpen ? 'active' : ''}`,
+      id: 'vocab-auto-config-btn',
+      title: 'Configure auto priority order',
+      ariaLabel: 'Configure auto priority order',
+      innerHTML: gearSVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        isAutoOrderOpen = !isAutoOrderOpen;
+        autoOrderSection.style.display = isAutoOrderOpen ? 'flex' : 'none';
+        if (isAutoOrderOpen) {
+          autoConfigBtn.classList.add('active');
+        } else {
+          autoConfigBtn.classList.remove('active');
+        }
+      },
+    });
+    autoWrapper.appendChild(autoConfigBtn);
+    popoverMenu.appendChild(autoWrapper);
 
     // 2. Auto Priority Draggable Section
-    const autoOrderSection = h('div', { className: 'vocab-auto-order-section' });
+    const autoOrderSection = h('div', {
+      className: 'vocab-auto-order-section',
+      style: { display: isAutoOrderOpen ? 'flex' : 'none' },
+    });
     const autoOrderHeader = h('div', { className: 'vocab-auto-order-header' }, UI_COPY.AUTO_ORDER_TITLE);
     const autoOrderList = h('div', { className: 'vocab-auto-order-list' });
 

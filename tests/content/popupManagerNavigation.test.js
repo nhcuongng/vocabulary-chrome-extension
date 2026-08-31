@@ -374,14 +374,25 @@ test('popupManager: popover hiển thị danh sách auto priority draggable và 
   }
   collect(container);
 
-  // 1. Verify auto-order-item elements exist (3 sources)
+  // 1. Verify auto-order section is hidden by default and config button exists
+  const autoOrderSection = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-auto-order-section'));
+  const autoConfigBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-auto-config-btn'));
+  assert.ok(autoOrderSection);
+  assert.ok(autoConfigBtn);
+  assert.equal(autoOrderSection.style.display, 'none');
+
+  // Toggle open auto order section via gear button
+  autoConfigBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(autoOrderSection.style.display, 'flex');
+
+  // 2. Verify auto-order-item elements exist (3 sources)
   const orderItems = all.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-auto-order-item'));
   assert.equal(orderItems.length, 3);
   assert.equal(orderItems[0].getAttribute('data-source-id'), 'vocabulary');
   assert.equal(orderItems[1].getAttribute('data-source-id'), 'freedictionary');
   assert.equal(orderItems[2].getAttribute('data-source-id'), 'cambridge');
 
-  // 2. Simulate dragstart on Cambridge (item 2)
+  // 3. Simulate dragstart on Cambridge (item 2)
   const dragStartEvent = {
     stopPropagation: () => {},
     dataTransfer: {
@@ -391,7 +402,7 @@ test('popupManager: popover hiển thị danh sách auto priority draggable và 
   };
   orderItems[2].dispatchEvent('dragstart', dragStartEvent);
 
-  // 3. Simulate drop on Vocabulary (item 0)
+  // 4. Simulate drop on Vocabulary (item 0)
   const dropEvent = {
     preventDefault: () => {},
     stopPropagation: () => {},
@@ -401,7 +412,7 @@ test('popupManager: popover hiển thị danh sách auto priority draggable và 
   };
   await orderItems[0].dispatchEvent('drop', dropEvent);
 
-  // 4. Verify settings update called with reordered autoSourceOrder
+  // 5. Verify settings update called with reordered autoSourceOrder
   assert.equal(savedSettings.length, 1);
   assert.deepEqual(savedSettings[0].autoSourceOrder, ['cambridge', 'vocabulary', 'freedictionary']);
 });

@@ -404,6 +404,57 @@
         opacity: 1;
       }
 
+      .vocab-source-auto-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        width: 100%;
+      }
+
+      .vocab-source-auto-wrapper .vocab-source-menu-item {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-auto-config-btn {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        padding: 5px;
+        color: var(--hint-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.2s;
+        flex-shrink: 0;
+      }
+
+      .vocab-auto-config-btn:hover {
+        background-color: var(--border-color);
+        color: #1677C9;
+        border-color: #1677C9;
+      }
+
+      .vocab-auto-config-btn.active {
+        color: #1677C9;
+        border-color: #1677C9;
+        background-color: rgba(22, 119, 201, 0.1);
+        transform: rotate(45deg);
+      }
+
+      body.dark-mode .vocab-auto-config-btn {
+        border-color: #374151;
+        color: #9ca3af;
+      }
+
+      body.dark-mode .vocab-auto-config-btn:hover,
+      body.dark-mode .vocab-auto-config-btn.active {
+        color: #60a5fa;
+        border-color: #60a5fa;
+        background-color: rgba(96, 165, 250, 0.15);
+      }
+
       .vocab-auto-order-section {
         display: flex;
         flex-direction: column;
@@ -1009,14 +1060,22 @@
               </button>
               <div id="vocab-source-menu-popover" class="vocab-source-menu-popover" style="display: none;">
                 <div class="vocab-source-menu-title">Dictionary Source</div>
-                <button type="button" class="vocab-source-menu-item active" data-source="auto">
-                  <div class="source-item-text">
-                    <span class="source-item-name">⚡ Auto</span>
-                    <span class="source-item-hint" id="vocab-auto-source-hint">Vocab.com → FreeDict → Cambridge</span>
-                  </div>
-                  <span class="source-item-check">✓</span>
-                </button>
-                <div class="vocab-auto-order-section" id="vocab-auto-order-section">
+                <div class="vocab-source-auto-wrapper">
+                  <button type="button" class="vocab-source-menu-item active" data-source="auto">
+                    <div class="source-item-text">
+                      <span class="source-item-name">⚡ Auto</span>
+                      <span class="source-item-hint" id="vocab-auto-source-hint">Vocab.com → FreeDict → Cambridge</span>
+                    </div>
+                    <span class="source-item-check">✓</span>
+                  </button>
+                  <button type="button" class="vocab-auto-config-btn" id="vocab-auto-config-btn" title="Configure auto priority order" aria-label="Configure auto priority order">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="vocab-auto-order-section" id="vocab-auto-order-section" style="display: none;">
                   <div class="vocab-auto-order-header">Auto Priority (Drag to reorder):</div>
                   <div class="vocab-auto-order-list" id="vocab-auto-order-list"></div>
                 </div>

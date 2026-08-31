@@ -325,6 +325,23 @@ async function bootstrapPopupRuntime({
         }
       });
     });
+
+    const autoConfigBtn = documentObj.getElementById('vocab-auto-config-btn');
+    const autoOrderSection = documentObj.getElementById('vocab-auto-order-section');
+    let isAutoOrderOpen = false;
+
+    if (autoConfigBtn && autoOrderSection) {
+      autoConfigBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isAutoOrderOpen = !isAutoOrderOpen;
+        autoOrderSection.style.display = isAutoOrderOpen ? 'flex' : 'none';
+        if (isAutoOrderOpen) {
+          autoConfigBtn.classList.add('active');
+        } else {
+          autoConfigBtn.classList.remove('active');
+        }
+      });
+    }
   }
 
   if (dictionarySourceSelect) {
