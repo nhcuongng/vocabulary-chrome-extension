@@ -1,9 +1,11 @@
-import { createLookupErrorResponse, LOOKUP_MESSAGE_TYPE } from '../shared/lookupContract.js';
+import { createLookupErrorResponse, LOOKUP_MESSAGE_TYPE, FETCH_AUDIO_MESSAGE_TYPE } from '../shared/lookupContract.js';
 import { createServiceWorkerLookupHandler } from './serviceWorkerLookupHandler.js';
+import { handleFetchAudioMessage } from './audioFetchHandler.js';
 
 export function bootstrapServiceWorkerRuntime({
   chromeApi = globalThis.chrome,
   messageHandler = createServiceWorkerLookupHandler(),
+  audioHandler = handleFetchAudioMessage,
 } = {}) {
   const onMessage = chromeApi?.runtime?.onMessage;
 
@@ -15,6 +17,25 @@ export function bootstrapServiceWorkerRuntime({
   }
 
   const listener = (message, sender, sendResponse) => {
+    if (message?.type === FETCH_AUDIO_MESSAGE_TYPE) {
+      Promise.resolve()
+        .then(() => audioHandler(message, sender))
+        .then((result) => {
+          if (result !== null && result !== undefined) {
+            sendResponse(result);
+          }
+        })
+        .catch((error) => {
+          sendResponse({
+            status: 'error',
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+            },
+          });
+        });
+      return true;
+    }
+
     if (message?.type !== LOOKUP_MESSAGE_TYPE) {
       return false;
     }

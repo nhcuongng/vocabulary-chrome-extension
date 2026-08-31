@@ -18,6 +18,10 @@ export const PERMISSION_DISCLOSURE_ITEMS = [
     rationale: 'Save auto-popup settings and anonymous telemetry locally in the browser.',
   },
   {
+    permission: 'declarativeNetRequest',
+    rationale: 'Modify request headers to enable native audio pronunciation playback from Google Translate TTS.',
+  },
+  {
     permission: 'host:https://www.vocabulary.com/*',
     rationale: 'Send lookup requests and retrieve definitions from Vocabulary.com.',
   },

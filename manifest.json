@@ -21,8 +21,18 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "declarativeNetRequest"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "src/rules.json"
+      }
+    ]
+  },
   "host_permissions": [
     "https://www.vocabulary.com/*",
     "https://dictionary.cambridge.org/*",

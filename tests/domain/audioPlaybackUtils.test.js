@@ -93,3 +93,24 @@ test('audioPlaybackUtils: stopCurrentAudio runs safely without active audio', ()
     stopCurrentAudio();
   });
 });
+
+test('audioPlaybackUtils: fetchAudioDataViaBackground safely handles missing chromeApi', async () => {
+  const { fetchAudioDataViaBackground } = await import('../../src/domain/audioPlaybackUtils.js');
+  const result = await fetchAudioDataViaBackground('https://example.com/audio.mp3', null);
+  assert.equal(result, null);
+});
+
+test('audioPlaybackUtils: fetchAudioDataViaBackground resolves dataUrl when chrome runtime responds', async () => {
+  const { fetchAudioDataViaBackground } = await import('../../src/domain/audioPlaybackUtils.js');
+  const mockChrome = {
+    runtime: {
+      sendMessage(msg, callback) {
+        assert.equal(msg.type, 'FETCH_AUDIO_DATA');
+        callback({ status: 'success', data: { dataUrl: 'data:audio/mp3;base64,AAAA' } });
+      },
+    },
+  };
+  const result = await fetchAudioDataViaBackground('https://translate.google.com/translate_tts?q=test', mockChrome);
+  assert.equal(result, 'data:audio/mp3;base64,AAAA');
+});
+

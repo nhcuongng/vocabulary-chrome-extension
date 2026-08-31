@@ -1,6 +1,6 @@
 # Release readiness evidence
 
-- Generated at: 2026-08-30T16:53:08.758Z
+- Generated at: 2026-08-31T08:20:14.780Z
 - Release ready: true
 
 ## Quality gate steps
@@ -10,7 +10,7 @@
 
 ## Permission/disclosure audit snapshot
 - isAligned: true
-- summary: Permission/disclosure đã aligned.
+- summary: Permissions/disclosure aligned.
 - unexpectedPermissions: []
 - missingDisclosureItems: []
 

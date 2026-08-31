@@ -1,4 +1,5 @@
 export const LOOKUP_MESSAGE_TYPE = 'LOOKUP_REQUEST';
+export const FETCH_AUDIO_MESSAGE_TYPE = 'FETCH_AUDIO_DATA';
 
 export const LOOKUP_DECISION_STATUS = {
   VALID: 'valid',

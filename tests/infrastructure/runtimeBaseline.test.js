@@ -27,6 +27,7 @@ test('runtime baseline: manifest MV3 + permission disclosure alignment tối thi
   assert.ok(manifest.permissions.includes('activeTab'));
   assert.ok(manifest.permissions.includes('scripting'));
   assert.ok(manifest.permissions.includes('storage'));
+  assert.ok(manifest.permissions.includes('declarativeNetRequest'));
 
   assert.ok(Array.isArray(manifest.host_permissions));
   assert.ok(manifest.host_permissions.includes('https://www.vocabulary.com/*'));
@@ -112,4 +113,9 @@ test('runtime baseline: service worker listener chỉ mở async channel cho loo
 
   const lookupResult = registeredListener({ type: LOOKUP_MESSAGE_TYPE }, {}, () => {});
   assert.equal(lookupResult, true);
+
+  const { FETCH_AUDIO_MESSAGE_TYPE } = await import('../../src/shared/lookupContract.js');
+  const audioResult = registeredListener({ type: FETCH_AUDIO_MESSAGE_TYPE }, {}, () => {});
+  assert.equal(audioResult, true);
 });
+

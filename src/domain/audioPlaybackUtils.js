@@ -59,17 +59,46 @@ export function speakWord(word, lang = 'en-US', windowObj = null) {
   }
 }
 
+export function fetchAudioDataViaBackground(url, chromeApi = globalThis.chrome) {
+  if (!chromeApi?.runtime?.sendMessage || typeof chromeApi.runtime.sendMessage !== 'function') {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    try {
+      chromeApi.runtime.sendMessage(
+        {
+          type: 'FETCH_AUDIO_DATA',
+          payload: { url },
+        },
+        (response) => {
+          if (response?.status === 'success' && response?.data?.dataUrl) {
+            resolve(response.data.dataUrl);
+          } else {
+            resolve(null);
+          }
+        },
+      );
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 export function playAudioWithFallback(audioInput, fallbackWordParam = '', langParam = 'en-US') {
   let url = '';
   let fallbackWord = '';
   let lang = 'en-US';
   let windowObj = null;
+  let chromeApi = globalThis.chrome;
 
   if (audioInput && typeof audioInput === 'object') {
     url = audioInput.audioUrl || audioInput.url || '';
     fallbackWord = audioInput.word || audioInput.fallbackWord || '';
     lang = audioInput.lang || audioInput.accent || 'en-US';
     windowObj = audioInput.windowObj || null;
+    if (audioInput.chromeApi) {
+      chromeApi = audioInput.chromeApi;
+    }
   } else {
     url = typeof audioInput === 'string' ? audioInput : '';
     fallbackWord = typeof fallbackWordParam === 'string' ? fallbackWordParam : '';
@@ -96,7 +125,7 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
   }
 
   let index = 0;
-  function tryPlayNext() {
+  async function tryPlayNext() {
     if (index >= candidateUrls.length) {
       if (fallbackWord) {
         speakWord(fallbackWord, targetLang, windowObj);
@@ -111,7 +140,16 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
         tryPlayNext();
         return;
       }
-      const audio = new AudioConstructor(currentUrl);
+
+      let effectiveSrc = currentUrl;
+      if (currentUrl.includes('translate.google.com/translate_tts')) {
+        const dataUrl = await fetchAudioDataViaBackground(currentUrl, chromeApi);
+        if (dataUrl) {
+          effectiveSrc = dataUrl;
+        }
+      }
+
+      const audio = new AudioConstructor(effectiveSrc);
       activeAudio = audio;
 
       audio.onerror = () => {
@@ -143,3 +181,4 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
 
   tryPlayNext();
 }
+

@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://translate.google.com/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||translate.google.com/translate_tts*",
+      "resourceTypes": ["media", "xmlhttprequest", "other", "sub_frame"]
+    }
+  }
+]
