@@ -8,9 +8,11 @@
   - `write_to_file` & `replace_file_content`: Tạo mới hoặc sửa đổi các file mã nguồn (`src/`, `tests/`, `docs/`, `_bmad-output/`).
   - `view_file`, `list_dir`, `find_by_name`, `grep_search`: Đọc và tìm kiếm trong codebase.
   - `invoke_subagent` & `manage_subagents`: Tạo và điều phối subagent phân tích / review.
-- **Quy tắc an toàn**:
+- **Quy tắc an toàn & Git Policy**:
   - Không chạy các lệnh phá hủy hệ thống bên ngoài workspace (`rm -rf /`, sửa file hệ thống ngoài project).
   - Luôn đảm bảo chạy test (`npm test`) sau mỗi lần thay đổi mã nguồn để bảo toàn tính ổn định.
+  - **Tuyệt đối KHÔNG tự động chạy lệnh `git commit` hoặc `git push`** trừ khi người dùng yêu cầu rõ ràng. Tất cả các thay đổi thông thường sẽ được giữ ở working directory để người dùng chủ động review.
+  - **Quy trình Nâng Version & Release**: Khi người dùng yêu cầu "nâng version" hoặc tương tự, tự động thực hiện trọn gói: (1) Cập nhật version trong `package.json` và `manifest.json`, (2) Ghi changelog vào `CHANGELOG.md`, (3) Kiểm tra `npm test` & build `npm run build`, (4) Tạo commit và đóng tag `vX.Y.Z`.
 
 ---
 

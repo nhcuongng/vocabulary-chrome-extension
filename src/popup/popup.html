@@ -539,6 +539,126 @@
         border-radius: 4px;
       }
 
+      /* Stress Diagram & Line Notation */
+      .vocab-stress-wrapper {
+        margin: 4px 0 8px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .vocab-stress-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(22, 119, 201, 0.08);
+        border: 1px solid rgba(22, 119, 201, 0.2);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        width: fit-content;
+        color: var(--text-color);
+        user-select: none;
+        transition: background-color 0.15s, border-color 0.15s;
+      }
+
+      .vocab-stress-cta:hover {
+        background: rgba(22, 119, 201, 0.14);
+        border-color: #1677C9;
+      }
+
+      .vocab-stress-icon {
+        font-size: 12px;
+      }
+
+      .vocab-stress-notation {
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #1677C9;
+        letter-spacing: 2px;
+      }
+
+      .vocab-stress-toggle-icon,
+      .vocab-stress-toggle-text {
+        font-size: 9px;
+        color: var(--hint-color);
+        margin-left: 2px;
+      }
+
+      .vocab-stress-card {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .vocab-stress-card .vocab-stress-svg {
+        width: 100%;
+        max-width: 280px;
+        height: auto;
+      }
+
+      .vocab-stress-legend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 10px;
+        color: var(--hint-color);
+        border-top: 1px dashed var(--border-color);
+        padding-top: 4px;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .vocab-stress-legend .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .vocab-stress-legend .dot-high {
+        color: #1677C9;
+        font-size: 9px;
+      }
+
+      .vocab-stress-legend .dot-mid {
+        color: #0284c7;
+        font-size: 8px;
+      }
+
+      .vocab-stress-legend .dot-low {
+        color: #9ca3af;
+        font-size: 7px;
+      }
+
+      body.dark-mode .vocab-stress-cta {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.3);
+      }
+
+      body.dark-mode .vocab-stress-cta:hover {
+        background: rgba(96, 165, 250, 0.2);
+        border-color: #60a5fa;
+      }
+
+      body.dark-mode .vocab-stress-notation {
+        color: #93c5fd;
+      }
+
+      body.dark-mode .vocab-stress-card {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+
       /* History Slider Bar */
       #vocab-history-slider-wrapper,
       .vocab-history-slider-wrapper {

@@ -10,12 +10,12 @@ import {
 
 test('compliance catalog: attribution text rõ ràng và có nguồn dữ liệu', () => {
   const vocabAttribution = buildAttributionText('vocabulary');
-  assert.match(vocabAttribution, /Nguồn dữ liệu:/i);
+  assert.match(vocabAttribution, /Data source:/i);
   assert.match(vocabAttribution, /Vocabulary\.com/i);
   assert.match(vocabAttribution, /https:\/\/www\.vocabulary\.com\//i);
 
   const cambridgeAttribution = buildAttributionText('cambridge');
-  assert.match(cambridgeAttribution, /Nguồn dữ liệu:/i);
+  assert.match(cambridgeAttribution, /Data source:/i);
   assert.match(cambridgeAttribution, /Cambridge Dictionary/i);
   assert.match(cambridgeAttribution, /https:\/\/dictionary\.cambridge\.org\//i);
 });
@@ -28,7 +28,7 @@ test('compliance catalog: disclosure summary nêu đúng mục đích quyền tr
   assert.match(disclosure, /host:https:\/\/www\.vocabulary\.com\/\*/i);
   assert.match(disclosure, /host:https:\/\/dictionary\.cambridge\.org\/\*/i);
   assert.match(disclosure, /storage/i);
-  assert.match(disclosure, /telemetry ẩn danh/i);
+  assert.match(disclosure, /anonymous telemetry/i);
 });
 
 test('compliance catalog: audit phát hiện quyền dư thừa không có disclosure', () => {
@@ -96,5 +96,5 @@ test('compliance catalog: build report trả về đầy đủ thông tin releas
   assert.equal(misalignedReport.isAligned, false);
   assert.deepEqual(misalignedReport.unexpectedPermissions, ['tabs']);
   assert.ok(misalignedReport.missingDisclosureItems.includes('scripting'));
-  assert.match(misalignedReport.summary, /chưa aligned/i);
+  assert.match(misalignedReport.summary, /not aligned/i);
 });

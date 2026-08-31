@@ -25,6 +25,24 @@ test('popup renderer: success state hiển thị đúng thứ bậc headword -> 
   assert.deepEqual(content[2].value, ['A greeting']);
 });
 
+test('popup renderer: success state chứa stress-diagram khi viewModel có stressDiagram', () => {
+  const content = renderSuccessContent({
+    headword: 'photograph',
+    pronunciation: '/ˈfoʊ.t̬ə.ɡræf/',
+    definitions: ['A picture'],
+    stressDiagram: { hasStressInfo: true, patternNotation: '▔ _ _' },
+  });
+
+  assert.deepEqual(content.map((item) => item.type), [
+    'headword',
+    'pronunciation',
+    'stress-diagram',
+    'definition',
+    'compliance-footer',
+  ]);
+  assert.equal(content[2].value.patternNotation, '▔ _ _');
+});
+
 test('popup renderer: success state chứa word-family khi có danh sách wordFamily', () => {
   const content = renderSuccessContent({
     headword: 'create',
@@ -68,16 +86,16 @@ test('popup renderer: error state mapping đúng theo loại lỗi', () => {
   const parseContent = renderErrorContent({ type: 'parse' });
   const rateLimitContent = renderErrorContent({ type: 'rate-limit' });
 
-  assert.equal(timeoutContent[2].value, 'Thử lại');
-  assert.equal(parseContent[2].value, 'Đóng');
-  assert.equal(rateLimitContent[2].value, 'Đợi rồi thử lại');
+  assert.equal(timeoutContent[2].value, 'Retry');
+  assert.equal(parseContent[2].value, 'Close');
+  assert.equal(rateLimitContent[2].value, 'Wait and retry');
   assert.notEqual(timeoutContent[1].value, parseContent[1].value);
 });
 
 test('popup renderer: tương thích với payload chỉ có errorType', () => {
   const timeoutContent = renderErrorContent({ errorType: 'timeout' });
 
-  assert.equal(timeoutContent[2].value, 'Thử lại');
+  assert.equal(timeoutContent[2].value, 'Retry');
 });
 
 test('popup renderer: luôn có compliance footer', () => {

@@ -14,6 +14,7 @@ import {
   UI_COPY,
 } from './historySliderRenderer.js';
 import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
+import { generateStressSvg } from '../domain/stressDiagramUtils.js';
 
 const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -532,6 +533,106 @@ export function createPopupManager({
         border-radius: 4px;
       }
 
+      /* Stress Diagram & Line Notation */
+      .vocab-stress-wrapper {
+        margin: 4px 0 8px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .vocab-stress-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(22, 119, 201, 0.08);
+        border: 1px solid rgba(22, 119, 201, 0.2);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        width: fit-content;
+        color: #111827;
+        user-select: none;
+        transition: background-color 0.15s, border-color 0.15s;
+      }
+
+      .vocab-stress-cta:hover {
+        background: rgba(22, 119, 201, 0.14);
+        border-color: #1677C9;
+      }
+
+      .vocab-stress-icon {
+        font-size: 12px;
+      }
+
+      .vocab-stress-notation {
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #1677C9;
+        letter-spacing: 2px;
+      }
+
+      .vocab-stress-toggle-icon,
+      .vocab-stress-toggle-text {
+        font-size: 9px;
+        color: #6b7280;
+        margin-left: 2px;
+      }
+
+      .vocab-stress-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .vocab-stress-card .vocab-stress-svg {
+        width: 100%;
+        max-width: 280px;
+        height: auto;
+      }
+
+      .vocab-stress-legend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 10px;
+        color: #6b7280;
+        border-top: 1px dashed #e5e7eb;
+        padding-top: 4px;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .vocab-stress-legend .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .vocab-stress-legend .dot-high {
+        color: #1677C9;
+        font-size: 9px;
+      }
+
+      .vocab-stress-legend .dot-mid {
+        color: #0284c7;
+        font-size: 8px;
+      }
+
+      .vocab-stress-legend .dot-low {
+        color: #9ca3af;
+        font-size: 7px;
+      }
+
       /* Search History Inline Bar */
       .vocab-history-search-bar {
         display: flex;
@@ -876,6 +977,30 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-auto-order-item.drag-over {
         border-color: #60a5fa;
         background: rgba(96, 165, 250, 0.15);
+      }
+      .vocab-popup.dark-mode .vocab-stress-cta {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.3);
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-stress-cta:hover {
+        background: rgba(96, 165, 250, 0.2);
+        border-color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-stress-notation {
+        color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-stress-toggle-text {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-stress-card {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+      .vocab-popup.dark-mode .vocab-stress-legend {
+        border-top-color: #374151;
+        color: #9ca3af;
       }
       .vocab-popup.dark-mode .vocab-history-search-input {
         background: #111827;
@@ -1437,6 +1562,51 @@ export function createPopupManager({
         }
 
         popupContainer.appendChild(pronContainer);
+      } else if (item.type === 'stress-diagram') {
+        const stressData = item.value;
+        if (stressData && stressData.hasStressInfo) {
+          const wrapper = h('div', { className: 'vocab-stress-wrapper' });
+          let isDiagramOpen = false;
+
+          const card = h('div', {
+            className: 'vocab-stress-card',
+            style: { display: 'none' },
+          });
+          card.innerHTML = `
+            ${generateStressSvg(stressData)}
+            <div class="vocab-stress-legend">
+              <span class="legend-item"><span class="dot-high">●</span> High (ˈ)</span>
+              <span class="legend-item"><span class="dot-mid">●</span> Mid (ˌ)</span>
+              <span class="legend-item"><span class="dot-low">●</span> Unstressed</span>
+            </div>
+          `;
+
+          const toggleSpan = h('span', { className: 'vocab-stress-toggle-icon' }, '▼');
+          const ctaBtn = h(
+            'div',
+            {
+              className: 'vocab-stress-cta',
+              role: 'button',
+              tabIndex: 0,
+              title: 'Toggle stress line diagram',
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                isDiagramOpen = !isDiagramOpen;
+                card.style.display = isDiagramOpen ? 'flex' : 'none';
+                toggleSpan.textContent = isDiagramOpen ? '▲' : '▼';
+                updatePopupPosition();
+              },
+            },
+            h('span', { className: 'vocab-stress-icon' }, '📈'),
+            h('span', {}, 'Stress:'),
+            h('span', { className: 'vocab-stress-notation' }, stressData.patternNotation),
+            toggleSpan
+          );
+
+          wrapper.appendChild(ctaBtn);
+          wrapper.appendChild(card);
+          popupContainer.appendChild(wrapper);
+        }
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
         defs.forEach((defHtml) => {

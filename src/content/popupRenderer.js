@@ -36,6 +36,13 @@ export function renderSuccessContent(viewModel) {
     },
   ];
 
+  if (viewModel?.stressDiagram?.hasStressInfo) {
+    items.push({
+      type: 'stress-diagram',
+      value: viewModel.stressDiagram,
+    });
+  }
+
   items.push({
     type: 'definition',
     value: definitions,

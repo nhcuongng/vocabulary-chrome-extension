@@ -417,3 +417,58 @@ test('popupManager: popover hiển thị danh sách auto priority draggable và 
   assert.deepEqual(savedSettings[0].autoSourceOrder, ['cambridge', 'vocabulary', 'freedictionary']);
 });
 
+test('popupManager: render Stress Diagram CTA và click toggle mở card sơ đồ', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'photograph',
+    data: {
+      parsedPayload: {
+        headword: 'photograph',
+        pronunciation: '/ˈfoʊ.t̬ə.ɡræf/',
+        definitions: ['A picture made by a camera.'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  // 1. Verify CTA element exists
+  const ctaBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-cta'));
+  const card = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-card'));
+  const notation = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stress-notation'));
+
+  assert.ok(ctaBtn);
+  assert.ok(card);
+  assert.ok(notation);
+  assert.equal(notation.childNodes[0]?.textContent || notation.textContent, '▔ _ _');
+  assert.equal(card.style.display, 'none');
+
+  // 2. Click CTA to toggle open
+  ctaBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(card.style.display, 'flex');
+
+  // 3. Click CTA again to toggle close
+  ctaBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(card.style.display, 'none');
+});
+
+

@@ -23,6 +23,7 @@ import {
   SOURCE_META,
 } from '../content/historySliderRenderer.js';
 import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
+import { generateStressSvg } from '../domain/stressDiagramUtils.js';
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -582,6 +583,50 @@ async function bootstrapPopupRuntime({
         }
 
         container.appendChild(pronContainer);
+      } else if (item.type === 'stress-diagram') {
+        const stressData = item.value;
+        if (stressData && stressData.hasStressInfo) {
+          const wrapper = h('div', { className: 'vocab-stress-wrapper' });
+          let isDiagramOpen = false;
+
+          const card = h('div', {
+            className: 'vocab-stress-card',
+            style: { display: 'none' },
+          });
+          card.innerHTML = `
+            ${generateStressSvg(stressData)}
+            <div class="vocab-stress-legend">
+              <span class="legend-item"><span class="dot-high">●</span> High (ˈ)</span>
+              <span class="legend-item"><span class="dot-mid">●</span> Mid (ˌ)</span>
+              <span class="legend-item"><span class="dot-low">●</span> Unstressed</span>
+            </div>
+          `;
+
+          const toggleSpan = h('span', { className: 'vocab-stress-toggle-icon' }, '▼');
+          const ctaBtn = h(
+            'div',
+            {
+              className: 'vocab-stress-cta',
+              role: 'button',
+              tabIndex: 0,
+              title: 'Toggle stress line diagram',
+              onClick: (e) => {
+                e.stopPropagation();
+                isDiagramOpen = !isDiagramOpen;
+                card.style.display = isDiagramOpen ? 'flex' : 'none';
+                toggleSpan.textContent = isDiagramOpen ? '▲' : '▼';
+              },
+            },
+            h('span', { className: 'vocab-stress-icon' }, '📈'),
+            h('span', {}, 'Stress:'),
+            h('span', { className: 'vocab-stress-notation' }, stressData.patternNotation),
+            toggleSpan
+          );
+
+          wrapper.appendChild(ctaBtn);
+          wrapper.appendChild(card);
+          container.appendChild(wrapper);
+        }
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {

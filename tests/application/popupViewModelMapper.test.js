@@ -19,6 +19,8 @@ test('mapper: ánh xạ parsed payload sang popup view model theo thứ tự b�
   assert.equal(model.pronunciation, '/həˈloʊ/');
   assert.deepEqual(model.definitions, ['A greeting']);
   assert.deepEqual(model.wordFamily, []);
+  assert.ok(model.stressDiagram);
+  assert.equal(model.stressDiagram.patternNotation, '_ ▔');
 });
 
 test('mapper: ánh xạ wordFamily khi có trong parsedPayload', () => {
@@ -67,7 +69,7 @@ test('mapper: ánh xạ error type sang UI copy tương ứng', () => {
 
   assert.equal(model.state, 'error');
   assert.equal(model.errorType, 'timeout');
-  assert.equal(model.cta, 'Thử lại');
+  assert.equal(model.cta, 'Retry');
   assert.ok(model.message.length > 0);
 });
 
@@ -76,6 +78,6 @@ test('mapper: rate-limit trả thông điệp thân thiện cho người dùng',
 
   assert.equal(model.state, 'error');
   assert.equal(model.errorType, 'rate-limit');
-  assert.equal(model.cta, 'Đợi rồi thử lại');
-  assert.match(model.message, /tạm giới hạn truy vấn/i);
+  assert.equal(model.cta, 'Wait and retry');
+  assert.match(model.message, /rate-limiting requests/i);
 });

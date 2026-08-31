@@ -1,37 +1,37 @@
 export const DATA_SOURCE_ATTRIBUTION = {
   providerName: 'Vocabulary.com',
   providerUrl: 'https://www.vocabulary.com/',
-  policyLabel: 'Nguồn dữ liệu tham khảo',
+  policyLabel: 'Reference data source',
 };
 
 export const PERMISSION_DISCLOSURE_ITEMS = [
   {
     permission: 'activeTab',
-    rationale: 'Chỉ đọc từ bạn chủ động bôi đen trên tab đang xem để khởi tạo tra cứu.',
+    rationale: 'Only read the word you actively select on the current tab to initiate lookup.',
   },
   {
     permission: 'scripting',
-    rationale: 'Tiêm content script cho đúng tab đang dùng nhằm bắt selection và hiển thị popup.',
+    rationale: 'Inject content script into the active tab to capture selection and display popup.',
   },
   {
     permission: 'storage',
-    rationale: 'Lưu cài đặt auto-popup và telemetry ẩn danh cục bộ trên trình duyệt.',
+    rationale: 'Save auto-popup settings and anonymous telemetry locally in the browser.',
   },
   {
     permission: 'host:https://www.vocabulary.com/*',
-    rationale: 'Gửi yêu cầu tra cứu từ và nhận nội dung định nghĩa từ nguồn đã công bố.',
+    rationale: 'Send lookup requests and retrieve definitions from Vocabulary.com.',
   },
   {
     permission: 'host:https://dictionary.cambridge.org/*',
-    rationale: 'Gửi yêu cầu tra cứu từ và nhận nội dung định nghĩa từ Cambridge Dictionary.',
+    rationale: 'Send lookup requests and retrieve definitions from Cambridge Dictionary.',
   },
   {
     permission: 'host:https://api.dictionaryapi.dev/*',
-    rationale: 'Tra cứu định nghĩa và phát âm chuẩn tiếng Anh từ Free Dictionary API.',
+    rationale: 'Lookup definitions and pronunciations from Free Dictionary API.',
   },
   {
     permission: 'host:https://translate.google.com/*',
-    rationale: 'Phát âm audio bản ngữ chuẩn tiếng Anh (US/UK).',
+    rationale: 'Native English audio pronunciation (US/UK).',
   },
 ];
 
@@ -86,7 +86,7 @@ export function buildAttributionText(source = 'vocabulary') {
   }
 
   return `<span style="display:inline-block;vertical-align:middle;">
-    <span title='Nguồn dữ liệu: ${providerName} (${providerUrl})' style="cursor:help;">
+    <span title='Data source: ${providerName} (${providerUrl})' style="cursor:help;">
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><circle cx="10" cy="10" r="9" stroke="#888" stroke-width="2" fill="#f6f8fa"/><text x="10" y="15" text-anchor="middle" font-size="12" fill="#888" font-family="Arial, sans-serif">i</text></svg>
     </span>
     <span style="color:#888;font-size:12px;">${providerName}</span>
@@ -96,12 +96,12 @@ export function buildAttributionText(source = 'vocabulary') {
 // Permission disclosure with icon and hover for full text
 export function buildPermissionDisclosureSummary() {
   const permissions = PERMISSION_DISCLOSURE_ITEMS.map((item) => formatPermissionLabel(item.permission));
-  const fullText = `Quyền truy cập: ${permissions.join(', ')}; chỉ dùng cho tra cứu từ, lưu cài đặt, và telemetry ẩn danh cục bộ.`;
+  const fullText = `Permissions: ${permissions.join(', ')}; used only for word lookup, saving settings, and local anonymous telemetry.`;
   return `<span style="display:inline-block;vertical-align:middle;">
     <span title='${fullText.replace(/'/g, '&apos;')}' style="cursor:help;">
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;"><path d="M10 2L17 5V10C17 14.4183 13.4183 18 9 18C4.58172 18 1 14.4183 1 10V5L10 2Z" stroke="#888" stroke-width="2" fill="#f6f8fa"/></svg>
     </span>
-    <span style="color:#888;font-size:12px;">Quyền truy cập</span>
+    <span style="color:#888;font-size:12px;">Permissions</span>
   </span>`;
 }
 
@@ -137,8 +137,8 @@ export function buildManifestDisclosureAuditReport({ permissions = [], hostPermi
   });
 
   const summary = isAligned
-    ? 'Permission/disclosure đã aligned.'
-    : 'Permission/disclosure chưa aligned, cần xử lý trước release.';
+    ? 'Permissions/disclosure aligned.'
+    : 'Permissions/disclosure not aligned, needs resolution before release.';
 
   return {
     isAligned,

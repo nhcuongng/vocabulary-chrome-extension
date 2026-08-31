@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] - 2026-08-31
+
+### 🚀 Added & Improved
+- **Draggable Auto Dictionary Source Priority**:
+  - Added interactive drag-and-drop reordering for Auto dictionary sources with touch and pointer support.
+  - Hidden by default behind a clean gear icon (⚙️) on the Auto selection row for a clutter-free UI.
+- **English Syllable Stress Stepped Line Diagram**:
+  - Implemented phonetic IPA pitch suprasegmental parser (`parseStressDiagramFromIpa`) supporting High (`▔`), Mid (`⎺`), and Low (`_`) levels based on British Council Armstrong & Ward pitch contour conventions.
+  - Generates scalable, responsive SVG Stepped Line Diagram with interactive collapse icon toggle (`▼` / `▲`).
+- **Ecosystem Cross-Extension Bridge**:
+  - Injects a hidden bridge element `<div id="vocabulary-lookup" style="display:none;" data-extension="vocabulary-lookup"></div>` on web pages.
+  - Enables other extensions in the user ecosystem to trigger dictionary lookups and popup UI via `bridgeElement.dispatchEvent(new CustomEvent('vocabulary-lookup', { detail: { word, rect, source } }))`.
+- **100% English UI Localization**:
+  - Converted all user-facing copy, error messages, search guidance, permission disclosures, and tooltips to clean, native English.
+
 ## [0.2.4] - 2026-08-31
 
 ### 🚀 Added & Improved

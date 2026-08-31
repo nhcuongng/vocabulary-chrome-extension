@@ -7,6 +7,32 @@ import { createLookupFlowOrchestrator } from './lookupFlowOrchestrator.js';
 import { createPopupManager } from './popupManager.js';
 import { createTriggerIconManager } from './triggerIconManager.js';
 
+export function ensureEcosystemBridgeElement(documentObj = globalThis.document) {
+  if (!documentObj) return null;
+  const BRIDGE_ID = 'vocabulary-lookup';
+  let bridgeEl = documentObj.getElementById?.(BRIDGE_ID);
+  if (!bridgeEl && typeof documentObj.createElement === 'function') {
+    bridgeEl = documentObj.createElement('div');
+    bridgeEl.id = BRIDGE_ID;
+    bridgeEl.style.display = 'none';
+    bridgeEl.setAttribute('data-extension', 'vocabulary-lookup');
+
+    const appendToDom = () => {
+      const targetParent = documentObj.body || documentObj.documentElement;
+      if (targetParent && typeof targetParent.appendChild === 'function' && !documentObj.getElementById?.(BRIDGE_ID)) {
+        targetParent.appendChild(bridgeEl);
+      }
+    };
+
+    if (documentObj.body || documentObj.documentElement) {
+      appendToDom();
+    } else if (typeof documentObj.addEventListener === 'function') {
+      documentObj.addEventListener('DOMContentLoaded', appendToDom, { once: true });
+    }
+  }
+  return bridgeEl;
+}
+
 export async function bootstrapContentRuntime({
   chromeApi = globalThis.chrome,
   windowObj = globalThis.window,
@@ -26,6 +52,8 @@ export async function bootstrapContentRuntime({
     };
   }
 
+  ensureEcosystemBridgeElement(documentObj);
+
   const settingsStore = createChromeStorageSettingsAdapter({
     storageArea: chromeApi.storage?.local,
     storageChangeEvent: chromeApi.storage?.onChanged,
@@ -42,6 +70,7 @@ export async function bootstrapContentRuntime({
   let darkMode = false;
   let dictionarySource = 'auto';
   let autoSourceOrder = ['vocabulary', 'freedictionary', 'cambridge'];
+  let autoPopupController = null;
 
   const lookupExecutor = async ({ headword, source }) => {
     const cleanWord = typeof headword === 'string' ? headword.trim().toLowerCase() : '';
@@ -52,7 +81,7 @@ export async function bootstrapContentRuntime({
       };
     }
     const effectiveSource = source || dictionarySource || 'auto';
-    const effectiveAutoSourceOrder = autoPopupController.getAutoSourceOrder?.() || autoSourceOrder;
+    const effectiveAutoSourceOrder = autoPopupController?.getAutoSourceOrder?.() || autoSourceOrder;
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
         {
@@ -134,7 +163,7 @@ export async function bootstrapContentRuntime({
   });
 
   // --- Selection detection and trigger ---
-  const autoPopupController = createAutoPopupLookupController({
+  autoPopupController = createAutoPopupLookupController({
     eventTarget: documentObj,
     settingsStore,
     getSnapshot: () => readSelectionSnapshot(windowObj),
@@ -172,11 +201,54 @@ export async function bootstrapContentRuntime({
 
   await autoPopupController.start();
 
+  const handleEcosystemLookupEvent = (event) => {
+    const detail = event?.detail || {};
+    const rawWord = detail.word || detail.headword || detail.token || '';
+    const cleanWord = typeof rawWord === 'string' ? rawWord.trim().toLowerCase() : '';
+    if (!cleanWord) return;
+
+    isUserInitiated = true;
+    if (detail.source) {
+      dictionarySource = detail.source;
+    }
+
+    triggerIconManager.removeIcon();
+    pendingTriggerRequest = null;
+
+    let targetRect = detail.rect || null;
+    if (!targetRect && windowObj?.innerWidth) {
+      const midX = windowObj.innerWidth / 2;
+      const midY = (windowObj.innerHeight || 600) / 3;
+      targetRect = {
+        left: midX - 100,
+        top: midY,
+        right: midX + 100,
+        bottom: midY + 30,
+        width: 200,
+        height: 30,
+      };
+    }
+
+    orchestrator.runLookup({
+      payload: {
+        token: cleanWord,
+        selectionRect: targetRect,
+        source: dictionarySource,
+      },
+    });
+  };
+
+  const bridgeEl = ensureEcosystemBridgeElement(documentObj);
+  if (bridgeEl && typeof bridgeEl.addEventListener === 'function') {
+    bridgeEl.addEventListener('vocabulary-lookup', handleEcosystemLookupEvent);
+  }
+
   globalThis.__vocabularyExtensionContentRuntimeStarted = true;
 
   return {
     started: true,
     dispose: () => {
+      bridgeEl?.removeEventListener?.('vocabulary-lookup', handleEcosystemLookupEvent);
       autoPopupController.stop();
       settingsStore.destroy?.();
       popupManager.removePopup();

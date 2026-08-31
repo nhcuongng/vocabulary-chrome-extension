@@ -1,5 +1,6 @@
 import { getErrorCopyByType, NOT_FOUND_COPY } from './popupCopyCatalog.js';
 import { normalizeLookupErrorType } from '../shared/lookupContract.js';
+import { parseStressDiagramFromIpa } from '../domain/stressDiagramUtils.js';
 
 function normalizeDefinitions(definitions) {
   if (!Array.isArray(definitions)) {
@@ -55,6 +56,7 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
 
   const source = parsedPayload?.source || 'vocabulary';
   const lookupUrl = parsedPayload?.lookupUrl || '';
+  const stressDiagram = parseStressDiagramFromIpa(pronunciation);
 
   return {
     state: 'success',
@@ -63,6 +65,7 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
     source,
     lookupUrl,
     pronunciation,
+    stressDiagram,
     audio,
     wordFamily,
     definitions,
