@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.1] - 2026-08-31
+
+### 🔧 Fixed & Improved (UI Wording & Layout)
+- **Zero-State UI — Wording refinements** (based on multi-agent party review):
+  - CTA hint: changed from `"Click to view full definition & pronunciation ➔"` to `"Click to recall this word ➔"` — shorter and more user-friendly.
+  - Onboarding card title: changed from `"👋 English Vocabulary Lookup"` to `"👋 Your personal vocabulary assistant"` — warmer, ownership-focused tone.
+  - Shuffle button label: changed from `"Shuffle another word from history"` to `"Show another word from your history"` — accurately describes the action.
+  - Onboarding step 2: corrected to describe standalone popup behavior (`"Search any word in the box above for instant definitions and examples."`) instead of in-page popup behavior.
+  - Onboarding step 3: replaced internal jargon `"syllable stress diagrams"` with `"syllable stress patterns"`.
+  - Micro-tip (pronunciation): simplified `"listen to native UK/US audio pronunciation"` to `"hear UK/US pronunciation"`.
+  - Micro-tip (history): fixed relative `"above"` to `"at the top"` to avoid ambiguity.
+- **Settings panel — Wording refinement**:
+  - Dark mode settings hint: changed from `"Dark theme for popup"` to `"Toggle dark theme"`.
+- **Layout fix**:
+  - Added `max-height: 32px` to history slider wrapper to prevent pushing zero-state content too far down when many history chips are present.
+
+---
+
 ## [0.5.0] - 2026-08-31
 
 ### 🚀 Added & Improved
