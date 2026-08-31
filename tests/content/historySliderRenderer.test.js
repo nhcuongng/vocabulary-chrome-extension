@@ -110,3 +110,33 @@ test('historySliderRenderer: renders 5 chips per slide and enables/disables pagi
   nextBtn.dispatchEvent('click');
   assert.equal(changedSlide, 1);
 });
+
+test('historySliderRenderer: slideContainer handles wheel event for horizontal scrolling', () => {
+  const documentObj = createMockDocument();
+  const words = ['w1', 'w2', 'w3'];
+
+  const slider = createHistorySliderElement({
+    documentObj,
+    allWords: words,
+  });
+
+  const [, slideContainer] = slider.childNodes;
+  let prevented = false;
+  let scrolledBy = null;
+
+  slideContainer.scrollBy = (opts) => {
+    scrolledBy = opts;
+  };
+
+  slideContainer.dispatchEvent('wheel', {
+    deltaY: 50,
+    deltaX: 0,
+    preventDefault: () => {
+      prevented = true;
+    },
+  });
+
+  assert.equal(prevented, true);
+  assert.deepEqual(scrolledBy, { left: 50, behavior: 'auto' });
+});
+

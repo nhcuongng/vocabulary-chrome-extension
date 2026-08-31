@@ -155,7 +155,19 @@ export function createHistorySliderElement({
     },
   });
 
-  const slideContainer = createEl('div', { className: 'vocab-history-slide' });
+  const slideContainer = createEl('div', {
+    className: 'vocab-history-slide',
+    onWheel: (e) => {
+      if (e && typeof e.deltaY === 'number' && Math.abs(e.deltaY) > Math.abs(e.deltaX || 0)) {
+        if (typeof slideContainer.scrollBy === 'function') {
+          slideContainer.scrollBy({ left: e.deltaY, behavior: 'auto' });
+        } else if (typeof slideContainer.scrollLeft === 'number') {
+          slideContainer.scrollLeft += e.deltaY;
+        }
+        e.preventDefault?.();
+      }
+    },
+  });
 
   visibleWords.forEach((word) => {
     const isActive = word.toLowerCase() === normalizedCurrentWord;

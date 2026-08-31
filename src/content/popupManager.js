@@ -281,12 +281,19 @@ export function createPopupManager({
       .vocab-history-slide {
         display: flex;
         align-items: center;
-        gap: 4px;
-        overflow: hidden;
+        gap: 5px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
         flex: 1 1 0px;
         min-width: 0;
         width: 0;
         max-width: 100%;
+      }
+      .vocab-history-slide::-webkit-scrollbar {
+        display: none;
       }
 
       .vocab-history-chip {
@@ -295,19 +302,18 @@ export function createPopupManager({
         color: #374151;
         font-size: 11px;
         font-weight: 500;
-        padding: 3px 4px;
+        padding: 3px 8px;
         border-radius: 12px;
         white-space: nowrap;
         cursor: pointer;
         border: 1px solid transparent;
-        transition: background-color 0.15s, color 0.15s;
-        flex: 1 1 0px;
-        min-width: 0;
-        width: 0;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        flex-shrink: 0;
+        width: auto;
+        max-width: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         text-align: center;
         box-sizing: border-box;
       }
