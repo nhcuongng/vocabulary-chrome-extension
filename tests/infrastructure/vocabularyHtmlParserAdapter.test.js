@@ -88,3 +88,19 @@ test('parser adapter: trả wordFamily rỗng an toàn khi không có thẻ <vco
   assert.deepEqual(parsed.wordFamily, []);
 });
 
+test('parser adapter: trích xuất audio.us từ thẻ audio/data-audio độc lập của Vocabulary.com', () => {
+  const html = `
+    <h1 class="dynamictext">innovate</h1>
+    <a class="audio" data-audio="I/INNOVATE" title="Listen"></a>
+    <span class="pronunciation">/ˈɪn.ə.veɪt/</span>
+    <div class="word-area">
+      <p class="short">bring in new methods or ideas</p>
+    </div>
+  `;
+
+  const parsed = parseVocabularyHtml(html);
+  assert.equal(parsed.headword, 'innovate');
+  assert.equal(parsed.audio.us, 'https://audio.vocabulary.com/1.0/us/I/INNOVATE.mp3');
+  assert.equal(parsed.pronunciation, '/ˈɪn.ə.veɪt/');
+});
+

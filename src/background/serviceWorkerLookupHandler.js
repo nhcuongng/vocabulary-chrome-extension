@@ -124,18 +124,27 @@ export function createServiceWorkerLookupHandler({
       result?.data?.parsedPayload &&
       typeof freeDictionaryPronunciationFetcher === 'function'
     ) {
+      const payload = result.data.parsedPayload;
+      const currentPron = payload.pronunciation;
+      const currentAudioUs = payload.audio?.us;
+      const currentAudioUk = payload.audio?.uk;
+
+      // If the source already provides pronunciation or audio, prioritize the corresponding source
+      const hasAudio = Boolean(currentAudioUs || currentAudioUk);
+      if (currentPron && hasAudio) {
+        return result;
+      }
+
       try {
         const pronData = await freeDictionaryPronunciationFetcher({ headword });
         if (pronData && pronData.hasPronunciation) {
-          if (pronData.pronunciation) {
-            result.data.parsedPayload.pronunciation = pronData.pronunciation;
+          if (!payload.pronunciation && pronData.pronunciation) {
+            payload.pronunciation = pronData.pronunciation;
           }
-          if (pronData.audio) {
-            result.data.parsedPayload.audio = {
-              us: pronData.audio.us || result.data.parsedPayload.audio?.us || '',
-              uk: pronData.audio.uk || result.data.parsedPayload.audio?.uk || '',
-            };
-          }
+          payload.audio = {
+            us: currentAudioUs || pronData.audio?.us || '',
+            uk: currentAudioUk || pronData.audio?.uk || '',
+          };
         }
       } catch {
         // Fallback silently to existing pronunciation

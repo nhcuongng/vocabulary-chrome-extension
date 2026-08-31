@@ -94,6 +94,31 @@ test('audioPlaybackUtils: stopCurrentAudio runs safely without active audio', ()
   });
 });
 
+test('audioPlaybackUtils: playAudioWithFallback accepts and plays FreeDictionary audio URLs', () => {
+  let playedUrl = '';
+
+  const mockWindow = {
+    Audio: class {
+      constructor(src) {
+        this.src = src;
+      }
+      play() {
+        playedUrl = this.src;
+        return Promise.resolve();
+      }
+    },
+  };
+
+  playAudioWithFallback({
+    audioUrl: 'https://api.dictionaryapi.dev/media/pronunciations/en/hello-us.mp3',
+    word: 'hello',
+    accent: 'us',
+    windowObj: mockWindow,
+  });
+
+  assert.equal(playedUrl, 'https://api.dictionaryapi.dev/media/pronunciations/en/hello-us.mp3');
+});
+
 test('audioPlaybackUtils: fetchAudioDataViaBackground safely handles missing chromeApi', async () => {
   const { fetchAudioDataViaBackground } = await import('../../src/domain/audioPlaybackUtils.js');
   const result = await fetchAudioDataViaBackground('https://example.com/audio.mp3', null);

@@ -85,7 +85,8 @@ export function parseCambridgeHtml(html) {
     const audioMatch =
       block.match(/<source[^>]*src=["']([^"']+)["']/i) ||
       block.match(/<audio[^>]*src=["']([^"']+)["']/i) ||
-      block.match(/data-src-mp3=["']([^"']+)["']/i);
+      block.match(/data-src-mp3=["']([^"']+)["']/i) ||
+      block.match(/data-src-ogg=["']([^"']+)["']/i);
     if (audioMatch) {
       audio.uk = resolveAudioUrl(audioMatch[1]);
     }
@@ -102,7 +103,8 @@ export function parseCambridgeHtml(html) {
     const audioMatch =
       block.match(/<source[^>]*src=["']([^"']+)["']/i) ||
       block.match(/<audio[^>]*src=["']([^"']+)["']/i) ||
-      block.match(/data-src-mp3=["']([^"']+)["']/i);
+      block.match(/data-src-mp3=["']([^"']+)["']/i) ||
+      block.match(/data-src-ogg=["']([^"']+)["']/i);
     if (audioMatch) {
       audio.us = resolveAudioUrl(audioMatch[1]);
     }

@@ -96,7 +96,7 @@ export function extractFreeDictionaryPronunciation(json, targetWord = '') {
 
   const pronParts = [];
   if (ipaUs) pronParts.push(`US /${ipaUs}/`);
-  if (ipaUk && (ipaUk !== ipaUs || !ipaUs)) {
+  if (ipaUk) {
     pronParts.push(`UK /${ipaUk}/`);
   }
   const pronunciation = pronParts.length > 0 ? pronParts.join(' · ') : (ipaUs ? `/${ipaUs}/` : '');

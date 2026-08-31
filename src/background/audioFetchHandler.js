@@ -22,11 +22,16 @@ export async function handleFetchAudioMessage(message, { fetchImpl = globalThis.
   }
 
   try {
-    const res = await fetchImpl(url, {
-      headers: {
-        Referer: 'https://translate.google.com/',
-      },
-    });
+    const headers = {};
+    if (url.includes('translate.google.com')) {
+      headers.Referer = 'https://translate.google.com/';
+    } else if (url.includes('cambridge.org')) {
+      headers.Referer = 'https://dictionary.cambridge.org/';
+    } else if (url.includes('vocabulary.com')) {
+      headers.Referer = 'https://www.vocabulary.com/';
+    }
+
+    const res = await fetchImpl(url, { headers });
 
     if (!res.ok) {
       return {

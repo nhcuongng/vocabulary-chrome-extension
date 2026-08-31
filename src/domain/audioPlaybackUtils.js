@@ -114,10 +114,8 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
   const candidateUrls = [];
   if (url && typeof url === 'string') {
     let cleanUrl = url.trim();
-    if (!cleanUrl.includes('api.dictionaryapi.dev/media/')) {
-      if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
-      if (cleanUrl) candidateUrls.push(cleanUrl);
-    }
+    if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
+    if (cleanUrl) candidateUrls.push(cleanUrl);
   }
 
   if (fallbackWord) {
@@ -152,11 +150,52 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
       const audio = new AudioConstructor(effectiveSrc);
       activeAudio = audio;
 
-      audio.onerror = () => {
+      let hasHandledError = false;
+      const handleError = async () => {
+        if (hasHandledError) return;
+        hasHandledError = true;
         if (activeAudio === audio) {
           activeAudio = null;
         }
+
+        // If direct playback failed (e.g. CSP blocked in content script) and it wasn't already a data URL,
+        // retry once using background fetch to convert it to base64 data URL
+        if (
+          !effectiveSrc.startsWith('data:') &&
+          chromeApi?.runtime?.sendMessage &&
+          typeof chromeApi.runtime.sendMessage === 'function'
+        ) {
+          try {
+            const backgroundDataUrl = await fetchAudioDataViaBackground(currentUrl, chromeApi);
+            if (backgroundDataUrl) {
+              const retryAudio = new AudioConstructor(backgroundDataUrl);
+              activeAudio = retryAudio;
+              retryAudio.onerror = () => {
+                if (activeAudio === retryAudio) activeAudio = null;
+                tryPlayNext();
+              };
+              retryAudio.onended = () => {
+                if (activeAudio === retryAudio) activeAudio = null;
+              };
+              const retryPromise = retryAudio.play();
+              if (retryPromise !== undefined && typeof retryPromise?.catch === 'function') {
+                retryPromise.catch(() => {
+                  if (activeAudio === retryAudio) activeAudio = null;
+                  tryPlayNext();
+                });
+              }
+              return;
+            }
+          } catch {
+            // Ignore and fall through to try next candidate
+          }
+        }
+
         tryPlayNext();
+      };
+
+      audio.onerror = () => {
+        handleError();
       };
 
       audio.onended = () => {
@@ -168,10 +207,7 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
       const promise = audio.play();
       if (promise !== undefined && typeof promise?.catch === 'function') {
         promise.catch(() => {
-          if (activeAudio === audio) {
-            activeAudio = null;
-          }
-          tryPlayNext();
+          handleError();
         });
       }
     } catch {

@@ -89,7 +89,7 @@ test('service worker handler: parser failure trả parse error thay vì throw', 
   assert.equal(result.error.message, 'parse failed');
 });
 
-test('service worker handler: làm giàu (enrich) phát âm và audio từ FreeDictionary API khi tra cứu thành công', async () => {
+test('service worker handler: ưu tiên giữ nguyên phát âm và audio từ nguồn tương ứng (Vocabulary.com)', async () => {
   const handleMessage = createServiceWorkerLookupHandler({
     lookupExecutor: async ({ headword }) => ({
       status: 'success',
@@ -105,7 +105,7 @@ test('service worker handler: làm giàu (enrich) phát âm và audio từ FreeD
         parsedPayload: {
           headword: 'photograph',
           pronunciation: 'US /ˈfoʊtəɡræf/',
-          audio: { us: 'https://vocab.com/audio-us.mp3', uk: '' },
+          audio: { us: 'https://audio.vocabulary.com/1.0/us/P/12345.mp3', uk: '' },
           definitions: ['<div class="vocab-quick-def">A picture</div>'],
           wordFamily: [],
           hasCoreData: true,
@@ -135,9 +135,58 @@ test('service worker handler: làm giàu (enrich) phát âm và audio từ FreeD
   );
 
   assert.equal(result.status, 'success');
-  assert.equal(result.data.parsedPayload.pronunciation, 'US /ˈfoʊtəɡræf/ · UK /ˈfəʊtəɡrɑːf/');
-  assert.equal(result.data.parsedPayload.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-us.mp3');
-  assert.equal(result.data.parsedPayload.audio.uk, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-uk.mp3');
+  assert.equal(result.data.parsedPayload.pronunciation, 'US /ˈfoʊtəɡræf/');
+  assert.equal(result.data.parsedPayload.audio.us, 'https://audio.vocabulary.com/1.0/us/P/12345.mp3');
+});
+
+test('service worker handler: bổ sung phát âm từ FreeDictionary API khi nguồn chính không có phát âm', async () => {
+  const handleMessage = createServiceWorkerLookupHandler({
+    lookupExecutor: async ({ headword }) => ({
+      status: 'success',
+      data: {
+        headword,
+        lookupUrl: `https://www.vocabulary.com/dictionary/${headword}`,
+        html: '<article><h1 class="dynamictext">rareword</h1><div class="short">Rare definition</div></article>',
+      },
+    }),
+    htmlParser: ({ html }) => ({
+      status: 'success',
+      data: {
+        parsedPayload: {
+          headword: 'rareword',
+          pronunciation: '',
+          audio: { us: '', uk: '' },
+          definitions: ['<div class="vocab-quick-def">Rare definition</div>'],
+          wordFamily: [],
+          hasCoreData: true,
+          source: 'vocabulary',
+        },
+      },
+    }),
+    freeDictionaryPronunciationFetcher: async ({ headword }) => ({
+      headword,
+      pronunciation: 'US /ˈrɛər.wɜːrd/',
+      audio: {
+        us: 'https://api.dictionaryapi.dev/media/pronunciations/en/rareword-us.mp3',
+        uk: '',
+      },
+      hasPronunciation: true,
+    }),
+  });
+
+  const result = await handleMessage(
+    createLookupRequest({
+      token: 'rareword',
+      rawText: 'rareword',
+      selectionRect: { x: 0, y: 0, width: 1, height: 1 },
+      sourceEvent: 'mouseup',
+      requestId: 'lookup-enrich-fallback',
+    }),
+  );
+
+  assert.equal(result.status, 'success');
+  assert.equal(result.data.parsedPayload.pronunciation, 'US /ˈrɛər.wɜːrd/');
+  assert.equal(result.data.parsedPayload.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/rareword-us.mp3');
 });
 
 test('service worker handler: giữ nguyên phát âm gốc khi FreeDictionary API fetcher lỗi hoặc rỗng', async () => {

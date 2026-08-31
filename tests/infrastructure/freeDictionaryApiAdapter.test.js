@@ -43,8 +43,7 @@ test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, đ�
 
   assert.equal(result.headword, 'beautiful');
   assert.ok(result.pronunciation.includes('US /ˈbjuːtɪfəl/'));
-  // if identical, it omits UK
-  assert.ok(!result.pronunciation.includes('UK'));
+  assert.ok(result.pronunciation.includes('UK /ˈbjuːtɪfəl/'));
   assert.ok(result.audio.uk.includes('translate.google.com'));
   assert.ok(result.audio.us.includes('translate.google.com'));
   assert.equal(result.definitions.length, 4);
@@ -89,6 +88,35 @@ test('extractFreeDictionaryPronunciation: trích xuất US & UK IPA và audio di
   assert.equal(pron.audio.uk, 'https://api.dictionaryapi.dev/media/pronunciations/en/photograph-uk.mp3');
   assert.ok(pron.pronunciation.includes('US /ˈfoʊtəɡræf/'));
   assert.ok(pron.pronunciation.includes('UK /ˈfəʊtəɡrɑːf/'));
+});
+
+test('extractFreeDictionaryPronunciation: từ có duy nhất 1 phonetic/audio US như bank vẫn tạo cả US và UK IPA đầy đủ', () => {
+  const bankApiJson = [
+    {
+      word: 'bank',
+      phonetics: [
+        {
+          text: '/bæŋk/',
+          audio: 'https://api.dictionaryapi.dev/media/pronunciations/en/bank-us.mp3',
+        },
+      ],
+      meanings: [
+        {
+          partOfSpeech: 'noun',
+          definitions: [{ definition: 'A financial institution.' }],
+        },
+      ],
+    },
+  ];
+
+  const pron = extractFreeDictionaryPronunciation(bankApiJson, 'bank');
+
+  assert.equal(pron.headword, 'bank');
+  assert.equal(pron.hasPronunciation, true);
+  assert.equal(pron.audio.us, 'https://api.dictionaryapi.dev/media/pronunciations/en/bank-us.mp3');
+  assert.ok(pron.audio.uk.includes('tl=en-GB'));
+  assert.ok(pron.pronunciation.includes('US /bæŋk/'));
+  assert.ok(pron.pronunciation.includes('UK /bæŋk/'));
 });
 
 test('freeDictionaryApiAdapter: xử lý an toàn khi json rỗng hoặc không hợp lệ', () => {

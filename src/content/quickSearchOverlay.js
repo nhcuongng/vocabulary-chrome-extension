@@ -487,8 +487,15 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
         if (audioObj.us || textValue.includes('US')) {
           let usText = 'US';
           const usMatch = textValue.match(/US\s*([^·]+)/);
+          const ukMatch = textValue.match(/UK\s*([^·]+)/);
+          const generalIpaMatch = textValue.match(/(?:\/|\[)[^/\]]+(?:\/|\])/);
+
           if (usMatch && usMatch[1].trim()) {
             usText = `US ${usMatch[1].trim()}`;
+          } else if (ukMatch && ukMatch[1].trim()) {
+            usText = `US ${ukMatch[1].trim()}`;
+          } else if (generalIpaMatch && generalIpaMatch[0]) {
+            usText = `US ${generalIpaMatch[0].trim()}`;
           } else if (textValue && !textValue.includes('UK')) {
             usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
           }
@@ -512,8 +519,15 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
         if (audioObj.uk || textValue.includes('UK')) {
           let ukText = 'UK';
           const ukMatch = textValue.match(/UK\s*([^·]+)/);
+          const usMatch = textValue.match(/US\s*([^·]+)/);
+          const generalIpaMatch = textValue.match(/(?:\/|\[)[^/\]]+(?:\/|\])/);
+
           if (ukMatch && ukMatch[1].trim()) {
             ukText = `UK ${ukMatch[1].trim()}`;
+          } else if (usMatch && usMatch[1].trim()) {
+            ukText = `UK ${usMatch[1].trim()}`;
+          } else if (generalIpaMatch && generalIpaMatch[0]) {
+            ukText = `UK ${generalIpaMatch[0].trim()}`;
           } else if (textValue && !textValue.includes('US')) {
             ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
           }

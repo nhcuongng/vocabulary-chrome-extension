@@ -74,8 +74,21 @@ export function parseVocabularyHtml(html) {
     } else if (isUK) {
       ipaUk = ipa;
       audio.uk = audioUrl;
+    } else {
+      if (!ipaUs) ipaUs = ipa;
+      if (!audio.us) audio.us = audioUrl;
     }
   });
+
+  // Fallback to extract data-audio from other elements (e.g. <a class="audio" data-audio="...">)
+  if (!audio.us) {
+    const generalAudioMatch =
+      safeHtml.match(/<a[^>]*class=["'][^"']*audio[^"']*["'][^>]*data-audio=["']([^"']+)["']/i) ||
+      safeHtml.match(/data-audio=["']([^"']+)["']/i);
+    if (generalAudioMatch) {
+      audio.us = `https://audio.vocabulary.com/1.0/us/${generalAudioMatch[1]}.mp3`;
+    }
+  }
 
   // 2. Ghép chuỗi Pronunciation
   let pronunciation = '';
