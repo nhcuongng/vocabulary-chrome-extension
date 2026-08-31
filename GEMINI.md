@@ -35,3 +35,4 @@
 3. **Event Propagation**: Luôn gọi `e.stopPropagation()` trên các sự kiện tương tác trong popup để tránh dismiss ngoài ý muốn.
 4. **Cache & Rate-limiting**: Tuân thủ guardrails (Cache-first 30 ngày, Rate-limiting an toàn) đối với các request tra cứu Vocabulary.com.
 5. **No PII**: Không lưu trữ bất kỳ thông tin nhạy cảm của người dùng trong telemetry hay storage.
+6. **English UI Only**: Mọi text hiển thị trên giao diện người dùng (UI strings, button labels, tooltips, hints, placeholders, empty states, onboarding, error messages) bắt buộc 100% bằng tiếng Anh (English).

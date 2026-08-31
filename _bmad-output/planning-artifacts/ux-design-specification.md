@@ -325,3 +325,35 @@ Defining experience của sản phẩm là: **“Highlight một từ tiếng An
     - Links: Màu `primary-600` (`#0B5EA8`), có gạch chân (`text-decoration: underline`) khi hover để nhận diện khả năng tương tác.
     - Spacing: Cách lề dưới 8px để tách biệt với danh sách mẹo tra cứu.
   - **Safety:** Tất cả các link phải mở trong tab mới (`target="_blank"`) và có thuộc tính `rel="noopener noreferrer"`.
+
+### 4. Standalone Toolbar Popup Zero-State Experience (Trạng thái mở popup ban đầu)
+
+- **UX Goal:** Loại bỏ cảm giác trống trải, lạc lõng khi người dùng click mở popup từ thanh công cụ trình duyệt (zero-state); biến không gian ban đầu thành một **Micro-learning Space** truyền cảm hứng, khuyến khích người dùng ôn tập từ vựng cũ hoặc khám phá các tính năng thông minh của extension.
+- **Problem Context:** Khi chưa nhập từ khóa tìm kiếm, phần thân dưới thanh search input và history slider thường để lại một khoảng trắng lớn (~60% diện tích popup), khiến giao diện bị lạnh lẽo và thiếu định hướng hành động.
+- **Layout & Structure:**
+  - **State A: Returning User (Đã có lịch sử tra cứu)**
+    - **Flashcard mini ôn tập ngẫu nhiên (Smart Review Card):**
+      - Hiển thị 1 từ ngẫu nhiên lấy từ lịch sử (`chromeStorageHistoryAdapter`).
+      - Cấu trúc card:
+        - Header: Badge "✨ Quick Review", Headword in đậm, phiên âm IPA, nút loa phát âm thanh (UK/US audio fallback).
+        - Action: Nút biểu tượng "🔀" (Shuffle) nhỏ ở góc phải để chuyển sang từ ngẫu nhiên khác trong lịch sử.
+        - Body: Định nghĩa ngắn gọn 1 dòng súc tích nhất của từ.
+        - Footer / CTA: Gợi ý nhỏ *"Nhấn vào để xem đầy đủ định nghĩa, ví dụ & họ từ"*.
+    - **Micro-tips Footer:**
+      - Một box nhỏ thanh thoát ở đáy: *"💡 Mẹo: Bôi đen bất kỳ từ tiếng Anh nào trên trang web để tra nghĩa tức thì mà không cần mở popup!"*
+  - **State B: First-time User (Chưa có lịch sử)**
+    - **Onboarding Guide Card:**
+      - Biểu tượng minh họa nhẹ nhàng (Vocabulary Icon / Book).
+      - 3 bước hướng dẫn trực quan:
+        1. 🖱️ *Bôi đen từ tiếng Anh* bất kỳ khi đang đọc báo, tài liệu.
+        2. ⚡ *Xem định nghĩa tức thì* hiển thị ngay cạnh con trỏ chuột.
+        3. 🔊 *Luyện phát âm chuẩn* với biểu đồ trọng âm và audio bản xứ.
+  - **Transitions & Micro-interactions:**
+    - Khi người dùng bắt đầu gõ vào ô tìm kiếm hoặc click vào chip lịch sử/card từ vựng, giao diện Zero-State sẽ biến mất nhẹ nhàng (fade-out 120ms) và nhường chỗ cho kết quả tra cứu (search results).
+    - Khi người dùng xóa trắng ô tìm kiếm (nút Clear hoặc Backspace), Zero-State quay trở lại tự nhiên.
+- **Design Tokens & Dark Mode Compatibility:**
+  - Card background: `#F8FAFC` (Light) / `#111827` (Dark Mode).
+  - Card border: `1px solid #E2E8F0` (Light) / `1px solid #374151` (Dark Mode), bo góc `10px`.
+  - Shadow: `0 2px 6px rgba(0, 0, 0, 0.04)`.
+  - Shuffle icon button: Hover chuyển nền xám nhạt/xanh nhẹ, xoay nhẹ 45 độ khi click.
+

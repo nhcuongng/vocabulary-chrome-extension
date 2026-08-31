@@ -22,6 +22,7 @@ import {
   buildAutoSourceHint,
   SOURCE_META,
 } from '../content/historySliderRenderer.js';
+import { createZeroStateElement } from './popupZeroStateRenderer.js';
 import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 import { generateStressSvg } from '../domain/stressDiagramUtils.js';
 
@@ -55,6 +56,7 @@ async function bootstrapPopupRuntime({
   const searchClearBtn = documentObj.getElementById('vocab-search-clear');
   const historySliderContainer = documentObj.getElementById('vocab-history-slider-wrapper');
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
+  const zeroStateContainer = documentObj.getElementById('vocab-zero-state-container');
   const sourceMenuBtn = documentObj.getElementById('vocab-source-menu-btn');
   const sourceMenuPopover = documentObj.getElementById('vocab-source-menu-popover');
   const autoSourceHint = documentObj.getElementById('vocab-auto-source-hint');
@@ -430,6 +432,30 @@ async function bootstrapPopupRuntime({
     historySliderContainer.appendChild(sliderElement);
   };
 
+  let currentZeroStateWordIndex = 0;
+
+  const renderZeroStateUI = () => {
+    if (!zeroStateContainer) return;
+    zeroStateContainer.replaceChildren();
+    const recentWords = historyStore.getRecentSearchWords(50);
+    const zeroStateEl = createZeroStateElement({
+      documentObj,
+      historyWords: recentWords,
+      currentWordIndex: currentZeroStateWordIndex,
+      onSelectWord: (word) => {
+        if (searchInput) searchInput.value = word;
+        performSearch(word);
+        renderHistorySlider(word);
+      },
+      onShuffleWord: () => {
+        currentZeroStateWordIndex++;
+        renderZeroStateUI();
+      },
+    });
+    zeroStateContainer.appendChild(zeroStateEl);
+    zeroStateContainer.style.display = 'flex';
+  };
+
   function renderState(state, container) {
     container.replaceChildren();
 
@@ -738,7 +764,11 @@ async function bootstrapPopupRuntime({
       if (searchClearBtn) {
         searchClearBtn.style.display = 'none';
       }
+      renderZeroStateUI();
       return;
+    }
+    if (zeroStateContainer) {
+      zeroStateContainer.style.display = 'none';
     }
     if (searchClearBtn) {
       searchClearBtn.style.display = 'flex';
@@ -815,6 +845,7 @@ async function bootstrapPopupRuntime({
   if (searchInput) {
     searchInput.focus();
     renderHistorySlider('');
+    renderZeroStateUI();
   }
 
   const destroy = () => {

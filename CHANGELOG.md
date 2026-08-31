@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] - 2026-08-31
+
+### 🚀 Added & Improved
+- **Standalone Toolbar Popup Zero-State Experience**:
+  - Implemented `popupZeroStateRenderer` for the standalone extension action popup (`popup.html`).
+  - Added **Smart Flashcard Review (`✨ From Your History`)**:
+    - Randomly highlights previously searched words from history when the search input is empty.
+    - Includes interactive **Shuffle 🔀** button to cycle through history words.
+    - Click-to-lookup interaction that immediately populates the search bar and triggers lookup.
+  - Added **Onboarding Guide Card**:
+    - Displays a clean 3-step guide for first-time users before any search history exists.
+  - Added **Micro-Tips Banner**:
+    - Displays helpful tips highlighting key extension capabilities (auto-popup, pronunciation audio, history chips, dictionary source priority).
+  - Added **Zero-State & Search Transitions**:
+    - Automatically hides zero-state and reveals live search results when user types or selects a word.
+    - Restores zero-state seamlessly when search query is cleared.
+  - Full **Dark Mode** & **Light Mode** styling and accessibility support.
+- **English UI Standardization**:
+  - Enforced 100% English UI consistency across all popup zero-state components, buttons, tooltips, and hints.
+  - Formally codified the **English UI Only** rule in project guidelines.
+- **Automated Test Coverage**:
+  - Added unit tests for zero-state renderer in `tests/popup/popupZeroStateRenderer.test.js` covering returning user, first-time user, shuffle, and keyboard navigation.
+
 ## [0.4.0] - 2026-08-31
 
 ### 🚀 Added & Improved

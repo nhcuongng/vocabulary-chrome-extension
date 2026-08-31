@@ -873,6 +873,163 @@
       }
 
       /* Result display */
+      /* Zero State View */
+      .vocab-zero-state-wrapper {
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        animation: fadeIn 0.2s ease-in;
+      }
+
+      .vocab-zero-state {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .vocab-zero-state-card {
+        background: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 14px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+
+      body.dark-mode .vocab-zero-state-card {
+        background: #111827;
+        border-color: #374151;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      }
+
+      .vocab-quick-review-card {
+        cursor: pointer;
+        outline: none;
+      }
+
+      .vocab-quick-review-card:hover,
+      .vocab-quick-review-card:focus-visible {
+        border-color: #1677C9;
+        box-shadow: 0 3px 10px rgba(22, 119, 201, 0.12);
+        transform: translateY(-1px);
+      }
+
+      body.dark-mode .vocab-quick-review-card:hover,
+      body.dark-mode .vocab-quick-review-card:focus-visible {
+        border-color: #60a5fa;
+        box-shadow: 0 3px 10px rgba(96, 165, 250, 0.15);
+      }
+
+      .vocab-zero-state-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .vocab-zero-state-badge {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #1677C9;
+        background: rgba(22, 119, 201, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      body.dark-mode .vocab-zero-state-badge {
+        color: #93c5fd;
+        background: rgba(96, 165, 250, 0.15);
+      }
+
+      .vocab-zero-state-shuffle-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px 5px;
+        font-size: 13px;
+        border-radius: 4px;
+        color: var(--hint-color);
+        transition: background-color 0.15s, transform 0.2s;
+        line-height: 1;
+      }
+
+      .vocab-zero-state-shuffle-btn:hover {
+        background-color: var(--border-color);
+        transform: rotate(45deg);
+      }
+
+      .vocab-zero-state-word {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 4px;
+      }
+
+      .vocab-zero-state-cta-hint {
+        font-size: 11px;
+        color: #1677C9;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      body.dark-mode .vocab-zero-state-cta-hint {
+        color: #60a5fa;
+      }
+
+      /* Onboarding view */
+      .vocab-onboarding-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 4px;
+      }
+
+      .vocab-onboarding-desc {
+        font-size: 11.5px;
+        color: var(--hint-color);
+        margin-bottom: 8px;
+      }
+
+      .vocab-onboarding-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .vocab-onboarding-step-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--text-color);
+      }
+
+      .vocab-onboarding-step-icon {
+        flex-shrink: 0;
+        font-size: 13px;
+      }
+
+      /* Micro-tips banner */
+      .vocab-micro-tips-banner {
+        background: rgba(22, 119, 201, 0.05);
+        border: 1px dashed rgba(22, 119, 201, 0.2);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 11px;
+        color: var(--hint-color);
+        line-height: 1.4;
+      }
+
+      body.dark-mode .vocab-micro-tips-banner {
+        background: rgba(96, 165, 250, 0.06);
+        border-color: rgba(96, 165, 250, 0.2);
+      }
+
       .vocab-popup-headword {
         font-size: 24px;
         font-weight: 700;
@@ -1273,6 +1430,7 @@
         <div id="vocab-history-slider-wrapper" class="vocab-history-slider-wrapper"></div>
       </div>
 
+      <div id="vocab-zero-state-container" class="vocab-zero-state-wrapper"></div>
       <div id="vocab-search-results" class="results-container"></div>
     </main>
 
