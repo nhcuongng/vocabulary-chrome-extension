@@ -421,42 +421,35 @@ export function createPopupManager({
         opacity: 1;
       }
 
-      .vocab-source-auto-wrapper {
+      .source-item-actions {
         display: flex;
         align-items: center;
-        gap: 3px;
-        width: 100%;
-      }
-
-      .vocab-source-auto-wrapper .vocab-source-menu-item {
-        flex: 1;
-        min-width: 0;
+        gap: 6px;
+        flex-shrink: 0;
       }
 
       .vocab-auto-config-btn {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
+        background: transparent;
+        border: none;
         cursor: pointer;
-        padding: 5px;
+        padding: 4px;
         color: #6b7280;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 6px;
-        transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.2s;
-        flex-shrink: 0;
+        border-radius: 4px;
+        transition: background-color 0.15s, color 0.15s, transform 0.2s;
+        line-height: 1;
       }
 
       .vocab-auto-config-btn:hover {
         background-color: #f3f4f6;
         color: #1677C9;
-        border-color: #1677C9;
       }
 
       .vocab-auto-config-btn.active {
         color: #1677C9;
-        border-color: #1677C9;
-        background-color: rgba(22, 119, 201, 0.1);
+        background-color: rgba(22, 119, 201, 0.12);
         transform: rotate(45deg);
       }
 
@@ -855,15 +848,15 @@ export function createPopupManager({
         color: #60a5fa;
       }
       .vocab-popup.dark-mode .vocab-auto-config-btn {
-        background: #1f2937;
-        border-color: #374151;
         color: #9ca3af;
       }
-      .vocab-popup.dark-mode .vocab-auto-config-btn:hover,
+      .vocab-popup.dark-mode .vocab-auto-config-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #60a5fa;
+      }
       .vocab-popup.dark-mode .vocab-auto-config-btn.active {
         color: #60a5fa;
-        border-color: #60a5fa;
-        background-color: rgba(96, 165, 250, 0.15);
+        background-color: rgba(96, 165, 250, 0.2);
       }
       .vocab-popup.dark-mode .vocab-auto-order-section {
         background: rgba(255, 255, 255, 0.03);
@@ -1112,43 +1105,8 @@ export function createPopupManager({
     const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
     popoverMenu.appendChild(menuTitle);
 
-    // 1. Auto Option Button + Config Gear Button
-    const autoWrapper = h('div', { className: 'vocab-source-auto-wrapper' });
+    // 1. Auto Option with Config Gear Button in the same row
     const isAutoActive = activeDictSource === 'auto';
-    const autoHintText = buildAutoSourceHint(autoSourceOrder);
-    const autoItemBtn = h(
-      'button',
-      {
-        type: 'button',
-        className: `vocab-source-menu-item ${isAutoActive ? 'active' : ''}`,
-        'data-source': 'auto',
-        title: 'Select source: ⚡ Auto',
-        onClick: async (e) => {
-          e?.stopPropagation?.();
-          popoverMenu.style.display = 'none';
-          isMenuOpen = false;
-          if (isAutoActive) return;
-          if (settingsAdapter?.update) {
-            await settingsAdapter.update({ dictionarySource: 'auto' });
-          }
-          if (typeof onSourceChange === 'function') {
-            onSourceChange('auto');
-          }
-          if (currentWord) {
-            navigateToWord(currentWord, { source: 'auto' });
-          }
-        },
-      },
-      h(
-        'div',
-        { className: 'source-item-text' },
-        h('span', { className: 'source-item-name' }, '⚡ Auto'),
-        h('span', { className: 'source-item-hint' }, autoHintText)
-      ),
-      h('span', { className: 'source-item-check' }, '✓')
-    );
-    autoWrapper.appendChild(autoItemBtn);
-
     const autoConfigBtn = h('button', {
       type: 'button',
       className: `vocab-auto-config-btn ${isAutoOrderOpen ? 'active' : ''}`,
@@ -1167,8 +1125,43 @@ export function createPopupManager({
         }
       },
     });
-    autoWrapper.appendChild(autoConfigBtn);
-    popoverMenu.appendChild(autoWrapper);
+
+    const autoItemBtn = h(
+      'div',
+      {
+        className: `vocab-source-menu-item ${isAutoActive ? 'active' : ''}`,
+        'data-source': 'auto',
+        role: 'button',
+        tabIndex: 0,
+        title: 'Select source: ⚡ Auto',
+        onClick: async (e) => {
+          if (e?.target && typeof e?.target?.closest === 'function' && e.target.closest('#vocab-auto-config-btn')) {
+            return;
+          }
+          e?.stopPropagation?.();
+          popoverMenu.style.display = 'none';
+          isMenuOpen = false;
+          if (isAutoActive) return;
+          if (settingsAdapter?.update) {
+            await settingsAdapter.update({ dictionarySource: 'auto' });
+          }
+          if (typeof onSourceChange === 'function') {
+            onSourceChange('auto');
+          }
+          if (currentWord) {
+            navigateToWord(currentWord, { source: 'auto' });
+          }
+        },
+      },
+      h('span', { className: 'source-item-name' }, '⚡ Auto'),
+      h(
+        'div',
+        { className: 'source-item-actions' },
+        autoConfigBtn,
+        h('span', { className: 'source-item-check' }, '✓')
+      )
+    );
+    popoverMenu.appendChild(autoItemBtn);
 
     // 2. Auto Priority Draggable Section
     const autoOrderSection = h('div', {

@@ -314,6 +314,9 @@ async function bootstrapPopupRuntime({
     const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
     menuItems.forEach((item) => {
       item.addEventListener('click', async (e) => {
+        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#vocab-auto-config-btn')) {
+          return;
+        }
         e.stopPropagation();
         const nextSource = item.getAttribute('data-source');
         sourceMenuPopover.style.display = 'none';
