@@ -74,6 +74,19 @@ export function createPopupManager({
   let historySearchQuery = '';
   let customPosition = null;
   let cleanupActiveDrag = null;
+  let customWords = null;
+  let lastRenderedWord = null;
+
+  function setCustomWords(words) {
+    if (Array.isArray(words)) {
+      customWords = words
+        .filter((w) => typeof w === 'string')
+        .map((w) => w.trim().toLowerCase())
+        .filter(Boolean);
+    } else {
+      customWords = null;
+    }
+  }
 
   const handleScrollResize = () => {
     if (popupElement && (absoluteSelectionRect || customPosition)) {
@@ -101,6 +114,8 @@ export function createPopupManager({
       popupElement = null;
       popupCtrl = null;
       lastState = null;
+      lastRenderedWord = null;
+      customWords = null;
       currentSlideIndex = 0;
       isHistorySearching = false;
       historySearchQuery = '';
@@ -1441,6 +1456,15 @@ export function createPopupManager({
     const normalized = word.trim().toLowerCase();
     if (!normalized) return;
 
+    const allHistoryWords = (Array.isArray(customWords) && customWords.length > 0)
+      ? customWords
+      : (historyAdapter?.getRecentSearchWords?.(50) ?? []);
+
+    const wordIdx = allHistoryWords.findIndex((w) => (w || '').trim().toLowerCase() === normalized);
+    if (wordIdx !== -1) {
+      currentSlideIndex = Math.floor(wordIdx / 5);
+    }
+
     if (typeof onLookupWord === 'function') {
       const opts = { fromHistory };
       if (source) {
@@ -1510,7 +1534,17 @@ export function createPopupManager({
 
     // 1. Render Header Bar: Slide (5 words/slide) with Prev/Next, Source Switcher, Close Button
     const currentWord = (viewModel?.headword || state.headword || state?.data?.headword || state?.data?.token || state?.error?.headword || '').toLowerCase();
-    const allHistoryWords = historyAdapter?.getRecentSearchWords?.(50) ?? [];
+    const allHistoryWords = (Array.isArray(customWords) && customWords.length > 0)
+      ? customWords
+      : (historyAdapter?.getRecentSearchWords?.(50) ?? []);
+
+    if (currentWord && allHistoryWords.length > 0) {
+      const wordIdx = allHistoryWords.findIndex((w) => (w || '').trim().toLowerCase() === currentWord);
+      if (wordIdx !== -1 && lastRenderedWord !== currentWord) {
+        currentSlideIndex = Math.floor(wordIdx / 5);
+        lastRenderedWord = currentWord;
+      }
+    }
 
     const headerBar = h('div', { className: 'vocab-popup-header-bar', title: 'Drag to move popup' });
     initHeaderBarDragging(headerBar);
@@ -2153,7 +2187,10 @@ export function createPopupManager({
     updatePopupPosition();
   }
 
-  function showPopup(state, selectionRect, { darkMode = false } = {}) {
+  function showPopup(state, selectionRect, { darkMode = false, customWords: words } = {}) {
+    if (words !== undefined) {
+      setCustomWords(words);
+    }
     if (selectionRect && typeof selectionRect === 'object') {
       const scrollX = windowObj?.scrollX || 0;
       const scrollY = windowObj?.scrollY || 0;
@@ -2209,5 +2246,6 @@ export function createPopupManager({
   return {
     showPopup,
     removePopup,
+    setCustomWords,
   };
 }

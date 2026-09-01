@@ -407,3 +407,184 @@ test('bootstrapContentRuntime: ecosystem bridge extracts target positioning from
 
   runtime.dispose();
 });
+
+test('bootstrapContentRuntime: ecosystem bridge accepts words array and sets up custom words on popup slider', async () => {
+  const sentMessages = [];
+  const chromeApi = {
+    runtime: {
+      sendMessage: (msg, callback) => {
+        sentMessages.push(msg);
+        callback?.({
+          status: 'success',
+          data: {
+            headword: msg.payload.token,
+            definitions: ['Sample definition for ' + msg.payload.token],
+          },
+        });
+      },
+      getURL: (p) => `chrome-extension://mock/${p}`,
+    },
+    storage: {
+      local: {
+        get: (keys, cb) => cb?.({}),
+        set: (items, cb) => cb?.(),
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+  };
+
+  function createElement(tag) {
+    const listeners = new Map();
+    const children = [];
+    const classListSet = new Set();
+    const attrs = new Map();
+
+    const el = {
+      tagName: tag.toUpperCase(),
+      listeners,
+      style: {},
+      parentNode: null,
+      childNodes: children,
+      className: '',
+      tabIndex: -1,
+      innerHTML: '',
+      textContent: '',
+      value: '',
+      addEventListener: (type, handler) => {
+        const list = listeners.get(type) || [];
+        list.push(handler);
+        listeners.set(type, list);
+      },
+      removeEventListener: (type, handler) => {
+        const list = listeners.get(type) || [];
+        listeners.set(type, list.filter((h) => h !== handler));
+      },
+      dispatchEvent: (type, event = {}) => {
+        const list = listeners.get(type) || [];
+        for (const h of list) h(event);
+      },
+      appendChild: (child) => {
+        children.push(child);
+        child.parentNode = el;
+        return child;
+      },
+      removeChild: (child) => {
+        const idx = children.indexOf(child);
+        if (idx !== -1) children.splice(idx, 1);
+        child.parentNode = null;
+        return child;
+      },
+      replaceChildren: (...newChildren) => {
+        children.length = 0;
+        for (const c of newChildren) {
+          children.push(c);
+          c.parentNode = el;
+        }
+      },
+      setAttribute: (k, v) => attrs.set(k, v),
+      getAttribute: (k) => attrs.get(k),
+      contains: (target) => target === el || children.some((c) => c.contains?.(target)),
+      querySelectorAll: () => [],
+      querySelector: () => null,
+      classList: {
+        add: (cls) => classListSet.add(cls),
+        remove: (cls) => classListSet.delete(cls),
+        contains: (cls) => classListSet.has(cls),
+      },
+      attachShadow: () => createElement('shadow-root'),
+      focus: () => {},
+      remove: () => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      },
+    };
+    return el;
+  }
+
+  const mockBody = createElement('body');
+  const docElements = [mockBody];
+
+  const mockDoc = {
+    body: mockBody,
+    getElementById(id) {
+      if (id === 'vocabulary-lookup') {
+        return docElements.find((e) => e.id === 'vocabulary-lookup') || null;
+      }
+      return null;
+    },
+    createElement(tag) {
+      const el = createElement(tag);
+      docElements.push(el);
+      return el;
+    },
+    createTextNode(text) {
+      return { nodeType: 3, textContent: text };
+    },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+
+  const windowObj = {
+    innerWidth: 1000,
+    innerHeight: 800,
+    getSelection: () => null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+
+  globalThis.__vocabularyExtensionContentRuntimeStarted = false;
+
+  const runtime = await bootstrapContentRuntime({
+    chromeApi,
+    windowObj,
+    documentObj: mockDoc,
+  });
+
+  const bridgeEl = mockDoc.getElementById('vocabulary-lookup');
+  assert.ok(bridgeEl);
+
+  const customWordsList = ['apple', 'banana', 'cherry', 'durian', 'elderberry', 'fig', 'grape'];
+
+  // Trigger bridge event with words list (and without explicit word -> defaults to first word)
+  bridgeEl.dispatchEvent('vocabulary-lookup', {
+    detail: {
+      words: customWordsList,
+    },
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.equal(sentMessages.length, 1);
+  assert.equal(sentMessages[0].payload.token, 'apple');
+
+  const popupEl = mockDoc.body.childNodes[0];
+  assert.ok(popupEl);
+  const container = popupEl._vocabContainer;
+  assert.ok(container);
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  // Check chips rendered on slide 0 (first 5 words)
+  const chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 5);
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'apple');
+  assert.equal(chips[4].childNodes[0]?.textContent || chips[4].textContent, 'elderberry');
+
+  // Allow background prefetching to process
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // Verify that subsequent words are pre-fetched via LOOKUP_REQUEST
+  const tokensRequested = sentMessages.map((m) => m.payload?.token);
+  assert.ok(tokensRequested.includes('apple'));
+  assert.ok(tokensRequested.includes('banana'));
+
+  runtime.dispose();
+});

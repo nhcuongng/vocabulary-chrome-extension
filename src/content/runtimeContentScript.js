@@ -208,9 +208,21 @@ export async function bootstrapContentRuntime({
 
   const handleEcosystemLookupEvent = (event) => {
     const detail = event?.detail || {};
-    const rawWord = detail.word || detail.headword || detail.token || '';
+    const rawWords = Array.isArray(detail.words)
+      ? detail.words
+      : (Array.isArray(detail.wordList) ? detail.wordList : (Array.isArray(detail.historyWords) ? detail.historyWords : null));
+
+    const validWords = rawWords
+      ? rawWords.filter((w) => typeof w === 'string').map((w) => w.trim().toLowerCase()).filter(Boolean)
+      : null;
+
+    const rawWord = detail.word || detail.headword || detail.token || (validWords && validWords.length > 0 ? validWords[0] : '');
     const cleanWord = typeof rawWord === 'string' ? rawWord.trim().toLowerCase() : '';
     if (!cleanWord) return;
+
+    if (validWords && validWords.length > 0) {
+      popupManager.setCustomWords(validWords);
+    }
 
     isUserInitiated = true;
     if (detail.source) {
@@ -276,6 +288,19 @@ export async function bootstrapContentRuntime({
         source: dictionarySource,
       },
     });
+
+    if (validWords && validWords.length > 1) {
+      const remainingWords = [...new Set(validWords)].filter((w) => w !== cleanWord);
+      const effectiveSource = dictionarySource || 'auto';
+      const effectiveAutoOrder = autoPopupController?.getAutoSourceOrder?.() || autoSourceOrder;
+      (async () => {
+        for (const wordToFetch of remainingWords) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          if (!globalThis.__vocabularyExtensionContentRuntimeStarted) break;
+          lookupExecutor({ headword: wordToFetch, source: effectiveSource }).catch(() => {});
+        }
+      })().catch(() => {});
+    }
   };
 
   const bridgeEl = ensureEcosystemBridgeElement(documentObj);

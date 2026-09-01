@@ -425,6 +425,13 @@ async function bootstrapPopupRuntime({
     }
 
     const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    if (currentWord && allWords.length > 0) {
+      const wordIdx = allWords.findIndex((w) => (w || '').trim().toLowerCase() === currentWord);
+      if (wordIdx !== -1) {
+        currentSlideIndex = Math.floor(wordIdx / ITEMS_PER_PAGE);
+      }
+    }
+
     const sliderElement = createHistorySliderElement({
       documentObj,
       allWords,
@@ -433,8 +440,13 @@ async function bootstrapPopupRuntime({
       itemsPerPage: ITEMS_PER_PAGE,
       onSelectWord: (word) => {
         if (searchInput) searchInput.value = word;
+        const normalized = (word || '').trim().toLowerCase();
+        const wordIdx = allWords.findIndex((w) => (w || '').trim().toLowerCase() === normalized);
+        if (wordIdx !== -1) {
+          currentSlideIndex = Math.floor(wordIdx / ITEMS_PER_PAGE);
+        }
         performSearch(word);
-        renderHistorySlider(word);
+        renderHistorySlider();
       },
       onSlideChange: (newIndex) => {
         currentSlideIndex = newIndex;
@@ -457,8 +469,13 @@ async function bootstrapPopupRuntime({
       currentWordIndex: currentZeroStateWordIndex,
       onSelectWord: (word) => {
         if (searchInput) searchInput.value = word;
+        const normalized = (word || '').trim().toLowerCase();
+        const wordIdx = recentWords.findIndex((w) => (w || '').trim().toLowerCase() === normalized);
+        if (wordIdx !== -1) {
+          currentSlideIndex = Math.floor(wordIdx / ITEMS_PER_PAGE);
+        }
         performSearch(word);
-        renderHistorySlider(word);
+        renderHistorySlider();
       },
       onShuffleWord: () => {
         currentZeroStateWordIndex++;

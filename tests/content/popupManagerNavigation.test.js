@@ -678,5 +678,271 @@ test('popupManager: render Headword mini history stepper [ ‹ 2/3 › ] và nav
   popupManager.removePopup();
 });
 
+test('popupManager: replaces history slide bar and stepper when customWords are provided', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  const lookedUpCalls = [];
 
+  const defaultHistory = ['hist1', 'hist2', 'hist3'];
+  const mockHistory = {
+    getRecentSearchWords: () => defaultHistory,
+  };
 
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter: mockHistory,
+    onLookupWord: (word, opts) => {
+      lookedUpCalls.push({ word, opts });
+    },
+  });
+
+  const customWords = ['word1', 'word2', 'word3', 'word4', 'word5', 'word6', 'word7'];
+
+  const state = {
+    status: 'success',
+    headword: 'word1',
+    data: {
+      parsedPayload: {
+        headword: 'word1',
+        definitions: ['Def 1'],
+      },
+    },
+  };
+
+  // 1. Show popup with customWords passed in options
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 }, { customWords });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  function getAll() {
+    const list = [];
+    function collect(n) {
+      if (!n) return;
+      list.push(n);
+      for (const c of n.childNodes || []) collect(c);
+    }
+    collect(container);
+    return list;
+  }
+
+  // 2. Slide 0 contains first 5 custom words
+  let all = getAll();
+  let chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 5);
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word1');
+  assert.equal(chips[4].childNodes[0]?.textContent || chips[4].textContent, 'word5');
+
+  // 3. Next slide navigation
+  const slideNavBtns = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-slide-nav-btn'));
+  assert.equal(slideNavBtns.length, 2);
+  const nextSlideBtn = slideNavBtns[1];
+  nextSlideBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  // 4. Slide 1 contains remaining 2 custom words ('word6', 'word7')
+  all = getAll();
+  chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 2);
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word6');
+  assert.equal(chips[1].childNodes[0]?.textContent || chips[1].textContent, 'word7');
+
+  // 5. Click chip 'word6'
+  chips[0].dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(lookedUpCalls.length, 1);
+  assert.equal(lookedUpCalls[0].word, 'word6');
+  assert.equal(lookedUpCalls[0].opts?.fromHistory, true);
+
+  // 6. Stepper shows 1/7 for word1
+  const stepperCounter = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stepper-counter'));
+  assert.ok(stepperCounter);
+  assert.equal(stepperCounter.childNodes[0]?.textContent || stepperCounter.textContent, '1/7');
+
+  // 7. Closing popup resets customWords back to default history adapter
+  popupManager.removePopup();
+  assert.equal(documentObj.body.childNodes.length, 0);
+
+  // Reopen without customWords -> uses defaultHistory
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+  const newPopupEl = documentObj.body.childNodes[0];
+  const newContainer = newPopupEl._vocabContainer;
+  const newAll = [];
+  function collectNew(n) {
+    if (!n) return;
+    newAll.push(n);
+    for (const c of n.childNodes || []) collectNew(c);
+  }
+  collectNew(newContainer);
+
+  const defaultChips = newAll.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(defaultChips.length, 3);
+  assert.equal(defaultChips[0].childNodes[0]?.textContent || defaultChips[0].textContent, 'hist1');
+
+  popupManager.removePopup();
+});
+
+test('popupManager: stepper next/prev across slide boundary automatically updates currentSlideIndex', async () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  let popupManagerInstance = null;
+
+  const words = ['word1', 'word2', 'word3', 'word4', 'word5', 'word6', 'word7', 'word8'];
+  const mockHistory = {
+    getRecentSearchWords: () => words,
+  };
+
+  popupManagerInstance = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter: mockHistory,
+    onLookupWord: (word, opts) => {
+      // Simulate orchestrator loading & updating popup with new word
+      popupManagerInstance.showPopup({
+        status: 'success',
+        headword: word,
+        data: {
+          parsedPayload: {
+            headword: word,
+            definitions: [`Definition of ${word}`],
+          },
+        },
+      }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+    },
+  });
+
+  // Start with word5 (index 4 -> Slide 0)
+  popupManagerInstance.showPopup({
+    status: 'success',
+    headword: 'word5',
+    data: {
+      parsedPayload: {
+        headword: 'word5',
+        definitions: ['Definition of word5'],
+      },
+    },
+  }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  function getAll() {
+    const list = [];
+    function collect(n) {
+      if (!n) return;
+      list.push(n);
+      for (const c of n.childNodes || []) collect(c);
+    }
+    collect(container);
+    return list;
+  }
+
+  // Verify slide 0 is displayed (words 1 to 5)
+  let all = getAll();
+  let chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 5);
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word1');
+  assert.equal(chips[4].childNodes[0]?.textContent || chips[4].textContent, 'word5');
+
+  // Find Stepper Next Button (›)
+  const nextBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('next-btn'));
+  assert.ok(nextBtn);
+
+  // Click Next Button: moves from word5 (index 4) to word6 (index 5 -> Slide 1)
+  nextBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  // Verify slide automatically switched to Slide 1 (words 6 to 8)
+  all = getAll();
+  chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 3);
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word6');
+  assert.equal(chips[2].childNodes[0]?.textContent || chips[2].textContent, 'word8');
+
+  // Find Stepper Prev Button (‹)
+  const prevBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('prev-btn'));
+  assert.ok(prevBtn);
+
+  // Click Prev Button: moves back from word6 (index 5) to word5 (index 4 -> Slide 0)
+  prevBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  // Verify slide automatically switched back to Slide 0 (words 1 to 5)
+  all = getAll();
+  chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 5);
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word1');
+
+  popupManagerInstance.removePopup();
+});
+
+test('popupManager: selecting chip on another slide or with mixed casing correctly syncs slide', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  let popupManagerInstance = null;
+
+  const words = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta'];
+  const mockHistory = {
+    getRecentSearchWords: () => words,
+  };
+
+  popupManagerInstance = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter: mockHistory,
+    onLookupWord: (word) => {
+      popupManagerInstance.showPopup({
+        status: 'success',
+        headword: word,
+        data: {
+          parsedPayload: {
+            headword: word,
+            definitions: [`Definition of ${word}`],
+          },
+        },
+      }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+    },
+  });
+
+  // Start with 'Alpha' (Slide 0)
+  popupManagerInstance.showPopup({
+    status: 'success',
+    headword: 'Alpha',
+    data: {
+      parsedPayload: {
+        headword: 'Alpha',
+        definitions: ['First letter'],
+      },
+    },
+  }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  function getAll() {
+    const list = [];
+    function collect(n) {
+      if (!n) return;
+      list.push(n);
+      for (const c of n.childNodes || []) collect(c);
+    }
+    collect(container);
+    return list;
+  }
+
+  // Navigate directly to 'zeta' (which is on slide 1, index 5)
+  popupManagerInstance.showPopup({
+    status: 'success',
+    headword: 'zeta',
+    data: {
+      parsedPayload: {
+        headword: 'zeta',
+        definitions: ['Sixth letter'],
+      },
+    },
+  }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  let all = getAll();
+  let chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
+  assert.equal(chips.length, 2); // Slide 1 contains 'Zeta', 'Eta'
+  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'Zeta');
+
+  popupManagerInstance.removePopup();
+});
