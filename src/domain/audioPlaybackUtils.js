@@ -1,6 +1,7 @@
 let activeAudio = null;
+let activeUtterance = null;
 
-export function stopCurrentAudio(windowObj = null) {
+export function stopCurrentAudio(windowObj = null, chromeApi = globalThis.chrome) {
   if (activeAudio) {
     try {
       activeAudio.pause();
@@ -11,6 +12,14 @@ export function stopCurrentAudio(windowObj = null) {
     activeAudio = null;
   }
 
+  if (chromeApi?.tts?.stop && typeof chromeApi.tts.stop === 'function') {
+    try {
+      chromeApi.tts.stop();
+    } catch {
+      // Ignore chrome.tts stop errors
+    }
+  }
+
   const win = windowObj || (typeof window !== 'undefined' ? window : null);
   if (win && 'speechSynthesis' in win) {
     try {
@@ -19,9 +28,31 @@ export function stopCurrentAudio(windowObj = null) {
       // Ignore speech synthesis errors
     }
   }
+  activeUtterance = null;
 }
 
-export function speakWord(word, lang = 'en-US', windowObj = null) {
+export function speakWord(word, lang = 'en-US', windowObj = null, chromeApi = globalThis.chrome) {
+  if (!word || typeof word !== 'string') {
+    return false;
+  }
+
+  const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+
+  // 1. Try native chrome.tts API first if available in extension context
+  if (chromeApi?.tts?.speak && typeof chromeApi.tts.speak === 'function') {
+    try {
+      chromeApi.tts.speak(word, {
+        lang: targetLang,
+        rate: 0.9,
+        enqueue: false,
+      });
+      return true;
+    } catch (e) {
+      console.warn('chrome.tts error:', e);
+    }
+  }
+
+  // 2. Fall back to window.speechSynthesis with GC protection
   const win = windowObj || (typeof window !== 'undefined' ? window : null);
   if (!win || !('speechSynthesis' in win)) {
     return false;
@@ -41,11 +72,22 @@ export function speakWord(word, lang = 'en-US', windowObj = null) {
     }
 
     const utterance = new SpeechSynthesisUtteranceConstructor(word);
-    const targetLang = (lang === 'uk' || lang === 'en-GB' || lang === 'gb') ? 'en-GB' : 'en-US';
+    activeUtterance = utterance;
     utterance.lang = targetLang;
     utterance.rate = 0.9;
 
-    const voices = synth.getVoices() || [];
+    utterance.onend = () => {
+      if (activeUtterance === utterance) {
+        activeUtterance = null;
+      }
+    };
+    utterance.onerror = () => {
+      if (activeUtterance === utterance) {
+        activeUtterance = null;
+      }
+    };
+
+    const voices = (typeof synth.getVoices === 'function' && synth.getVoices()) || [];
     const matchedVoice = voices.find((v) => v.lang === targetLang || v.lang.startsWith(targetLang.slice(0, 2)));
     if (matchedVoice) {
       utterance.voice = matchedVoice;
@@ -105,7 +147,7 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
     lang = typeof langParam === 'string' ? langParam : 'en-US';
   }
 
-  stopCurrentAudio(windowObj);
+  stopCurrentAudio(windowObj, chromeApi);
 
   const isUk = lang === 'uk' || lang === 'en-GB' || lang === 'gb';
   const targetLang = isUk ? 'en-GB' : 'en-US';
@@ -126,7 +168,7 @@ export function playAudioWithFallback(audioInput, fallbackWordParam = '', langPa
   async function tryPlayNext() {
     if (index >= candidateUrls.length) {
       if (fallbackWord) {
-        speakWord(fallbackWord, targetLang, windowObj);
+        speakWord(fallbackWord, targetLang, windowObj, chromeApi);
       }
       return;
     }

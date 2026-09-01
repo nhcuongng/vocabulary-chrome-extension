@@ -22,7 +22,8 @@
     "activeTab",
     "scripting",
     "storage",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "tts"
   ],
   "declarative_net_request": {
     "rule_resources": [

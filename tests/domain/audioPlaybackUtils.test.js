@@ -139,3 +139,76 @@ test('audioPlaybackUtils: fetchAudioDataViaBackground resolves dataUrl when chro
   assert.equal(result, 'data:audio/mp3;base64,AAAA');
 });
 
+test('audioPlaybackUtils: speakWord uses chrome.tts when available', () => {
+  let spokenText = '';
+  let spokenOptions = null;
+
+  const mockChrome = {
+    tts: {
+      speak(word, options) {
+        spokenText = word;
+        spokenOptions = options;
+      },
+    },
+  };
+
+  const result = speakWord('hello', 'en-US', null, mockChrome);
+  assert.equal(result, true);
+  assert.equal(spokenText, 'hello');
+  assert.equal(spokenOptions.lang, 'en-US');
+  assert.equal(spokenOptions.rate, 0.9);
+});
+
+test('audioPlaybackUtils: speakWord uses window.speechSynthesis when chrome.tts is unavailable', () => {
+  let spokenUtterance = null;
+  const mockWindow = {
+    speechSynthesis: {
+      paused: false,
+      resume() {},
+      cancel() {},
+      getVoices() {
+        return [{ lang: 'en-GB' }];
+      },
+      speak(utt) {
+        spokenUtterance = utt;
+      },
+    },
+    SpeechSynthesisUtterance: class {
+      constructor(text) {
+        this.text = text;
+      }
+    },
+  };
+
+  const result = speakWord('world', 'en-GB', mockWindow, null);
+  assert.equal(result, true);
+  assert.equal(spokenUtterance?.text, 'world');
+  assert.equal(spokenUtterance?.lang, 'en-GB');
+});
+
+test('audioPlaybackUtils: stopCurrentAudio stops both chrome.tts and speechSynthesis', () => {
+  let ttsStopped = false;
+  let synthCancelled = false;
+
+  const mockChrome = {
+    tts: {
+      stop() {
+        ttsStopped = true;
+      },
+    },
+  };
+
+  const mockWindow = {
+    speechSynthesis: {
+      cancel() {
+        synthCancelled = true;
+      },
+    },
+  };
+
+  stopCurrentAudio(mockWindow, mockChrome);
+  assert.equal(ttsStopped, true);
+  assert.equal(synthCancelled, true);
+});
+
+

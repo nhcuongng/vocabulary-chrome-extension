@@ -28,6 +28,7 @@ test('runtime baseline: manifest MV3 + permission disclosure alignment tối thi
   assert.ok(manifest.permissions.includes('scripting'));
   assert.ok(manifest.permissions.includes('storage'));
   assert.ok(manifest.permissions.includes('declarativeNetRequest'));
+  assert.ok(manifest.permissions.includes('tts'));
 
   assert.ok(Array.isArray(manifest.host_permissions));
   assert.ok(manifest.host_permissions.includes('https://www.vocabulary.com/*'));
