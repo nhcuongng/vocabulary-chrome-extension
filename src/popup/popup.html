@@ -1041,6 +1041,69 @@
         color: #60a5fa;
       }
 
+      /* Recent Search Chips in Zero State */
+      .vocab-recent-chips-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .vocab-recent-chips-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .vocab-recent-chips-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--hint-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .vocab-recent-chips-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .vocab-recent-chip {
+        background: #f1f5f9;
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-color);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        line-height: 1.2;
+      }
+
+      .vocab-recent-chip:hover,
+      .vocab-recent-chip:focus-visible {
+        background: #e2e8f0;
+        border-color: #1677C9;
+        color: #1677C9;
+        transform: translateY(-1px);
+        outline: none;
+      }
+
+      body.dark-mode .vocab-recent-chip {
+        background: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+      }
+
+      body.dark-mode .vocab-recent-chip:hover,
+      body.dark-mode .vocab-recent-chip:focus-visible {
+        background: #374151;
+        border-color: #60a5fa;
+        color: #60a5fa;
+      }
+
       /* Onboarding view */
       .vocab-onboarding-title {
         font-size: 14px;
@@ -1133,6 +1196,20 @@
 
       .vocab-popup-audio-btn:hover {
         background-color: var(--border-color);
+      }
+
+      .vocab-popup-audio-btn.is-playing {
+        color: #1677C9 !important;
+        animation: vocabAudioPulse 0.6s ease-in-out infinite alternate;
+      }
+
+      body.dark-mode .vocab-popup-audio-btn.is-playing {
+        color: #60a5fa !important;
+      }
+
+      @keyframes vocabAudioPulse {
+        0% { transform: scale(1); opacity: 0.85; }
+        100% { transform: scale(1.22); opacity: 1; }
       }
 
       .vocab-popup-definition {

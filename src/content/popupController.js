@@ -21,6 +21,8 @@ export function createPopupController({
 
   const handleKeydown = (event) => {
     if (event?.key === 'Escape') {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
       close('escape');
     }
   };
@@ -33,12 +35,12 @@ export function createPopupController({
   };
 
   function attachListeners() {
-    eventTarget.addEventListener('keydown', handleKeydown);
+    eventTarget.addEventListener('keydown', handleKeydown, true);
     eventTarget.addEventListener('pointerdown', handlePointerDown);
   }
 
   function detachListeners() {
-    eventTarget.removeEventListener('keydown', handleKeydown);
+    eventTarget.removeEventListener('keydown', handleKeydown, true);
     eventTarget.removeEventListener('pointerdown', handlePointerDown);
   }
 

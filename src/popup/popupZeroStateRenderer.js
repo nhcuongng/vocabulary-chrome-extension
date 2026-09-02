@@ -98,6 +98,42 @@ export function createZeroStateElement({
     });
 
     container.appendChild(card);
+
+    // Recent search chips section
+    const recentChipsSection = documentObj.createElement('div');
+    recentChipsSection.className = 'vocab-recent-chips-section';
+
+    const recentHeader = documentObj.createElement('div');
+    recentHeader.className = 'vocab-recent-chips-header';
+
+    const recentTitle = documentObj.createElement('span');
+    recentTitle.className = 'vocab-recent-chips-title';
+    recentTitle.textContent = 'Recent Searches';
+    recentHeader.appendChild(recentTitle);
+    recentChipsSection.appendChild(recentHeader);
+
+    const chipsList = documentObj.createElement('div');
+    chipsList.className = 'vocab-recent-chips-list';
+
+    const uniqueRecent = [...new Set(validHistory)].slice(0, 6);
+    uniqueRecent.forEach((word) => {
+      const chipBtn = documentObj.createElement('button');
+      chipBtn.type = 'button';
+      chipBtn.className = 'vocab-recent-chip';
+      chipBtn.textContent = word;
+      chipBtn.setAttribute('title', `Search "${word}"`);
+      chipBtn.setAttribute('aria-label', `Search ${word}`);
+      chipBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof onSelectWord === 'function') {
+          onSelectWord(word);
+        }
+      });
+      chipsList.appendChild(chipBtn);
+    });
+
+    recentChipsSection.appendChild(chipsList);
+    container.appendChild(recentChipsSection);
   } else {
     // First-time onboarding card
     const onboardingCard = documentObj.createElement('div');

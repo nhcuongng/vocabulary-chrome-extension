@@ -67,10 +67,22 @@ test('popup controller: đóng bằng Esc và click-outside, restore focus khi �
   });
 
   controller.open();
-  eventTarget.dispatch('keydown', { key: 'Escape' });
+  let prevented = false;
+  let stopped = false;
+  eventTarget.dispatch('keydown', {
+    key: 'Escape',
+    preventDefault: () => {
+      prevented = true;
+    },
+    stopPropagation: () => {
+      stopped = true;
+    },
+  });
 
   assert.equal(controller.isOpen(), false);
   assert.equal(closedReasons[0], 'escape');
+  assert.equal(prevented, true);
+  assert.equal(stopped, true);
   assert.equal(focusState.focused, true);
 
   focusState.focused = false;

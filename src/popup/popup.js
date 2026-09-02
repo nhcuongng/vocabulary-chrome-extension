@@ -570,6 +570,14 @@ async function bootstrapPopupRuntime({
 
         let hasRendered = false;
 
+        const triggerAudioFeedback = (btn) => {
+          if (!btn) return;
+          btn.classList.add('is-playing');
+          setTimeout(() => {
+            btn.classList.remove('is-playing');
+          }, 1200);
+        };
+
         if (audioObj.us || textValue.includes('US')) {
           let usText = 'US';
           const usMatch = textValue.match(/US\s*([^·]+)/);
@@ -588,6 +596,7 @@ async function bootstrapPopupRuntime({
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
+                triggerAudioFeedback(e.currentTarget);
                 playAudioWithFallback(audioObj.us, word, 'en-US');
               },
             })
@@ -613,6 +622,7 @@ async function bootstrapPopupRuntime({
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
+                triggerAudioFeedback(e.currentTarget);
                 playAudioWithFallback(audioObj.uk, word, 'en-GB');
               },
             })
@@ -632,6 +642,7 @@ async function bootstrapPopupRuntime({
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e.stopPropagation();
+                triggerAudioFeedback(e.currentTarget);
                 playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
               },
             })
@@ -888,6 +899,8 @@ async function bootstrapPopupRuntime({
         clearTimeout(debounceTimer);
         performSearch(value);
       }
+    } else if (e.key === 'Escape') {
+      handleClear();
     }
   };
 
@@ -906,7 +919,13 @@ async function bootstrapPopupRuntime({
   }
 
   if (searchInput) {
-    searchInput.focus();
+    if (typeof globalThis.requestAnimationFrame === 'function') {
+      globalThis.requestAnimationFrame(() => {
+        searchInput.focus();
+      });
+    } else {
+      searchInput.focus();
+    }
     renderHistorySlider('');
     renderZeroStateUI();
   }

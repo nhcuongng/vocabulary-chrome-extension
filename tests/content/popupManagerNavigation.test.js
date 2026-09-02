@@ -946,3 +946,40 @@ test('popupManager: selecting chip on another slide or with mixed casing correct
 
   popupManagerInstance.removePopup();
 });
+
+test('popupManager: removePopup with clearSelection clears text selection ranges', () => {
+  const documentObj = createMockDocument();
+  let selectionCleared = false;
+  const windowObj = {
+    ...createMockWindow(),
+    getSelection: () => ({
+      isCollapsed: false,
+      removeAllRanges: () => {
+        selectionCleared = true;
+      },
+    }),
+  };
+
+  const store = { vocab_search_history: ['test'] };
+  const historyAdapter = createChromeStorageHistoryAdapter({
+    storageArea: {
+      get: (keys, cb) => cb?.(store),
+      set: (items, cb) => cb?.(),
+    },
+  });
+
+  const popupManagerInstance = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter,
+  });
+
+  popupManagerInstance.showPopup({
+    status: 'success',
+    headword: 'test',
+    data: { parsedPayload: { headword: 'test', definitions: ['a test'] } },
+  }, { left: 50, top: 50, width: 50, height: 20 });
+
+  popupManagerInstance.removePopup({ clearSelection: true });
+  assert.equal(selectionCleared, true);
+});

@@ -103,7 +103,7 @@ export function createPopupManager({
     }, 50);
   };
 
-  function removePopup() {
+  function removePopup({ clearSelection = false } = {}) {
     if (popupElement && popupElement.parentNode) {
       windowObj.removeEventListener('scroll', throttledHandleScrollResize, true);
       windowObj.removeEventListener('resize', throttledHandleScrollResize, true);
@@ -121,6 +121,19 @@ export function createPopupManager({
       historySearchQuery = '';
       isAutoOrderOpen = false;
       customPosition = null;
+
+      if (clearSelection && windowObj?.getSelection) {
+        try {
+          const sel = windowObj.getSelection();
+          if (sel && !sel.isCollapsed) {
+            if (typeof sel.removeAllRanges === 'function') {
+              sel.removeAllRanges();
+            } else if (typeof sel.empty === 'function') {
+              sel.empty();
+            }
+          }
+        } catch {}
+      }
     }
   }
 
@@ -129,6 +142,7 @@ export function createPopupManager({
   function createPopup() {
     if (popupElement) return popupElement;
     popupElement = documentObj.createElement('div');
+    popupElement.tabIndex = -1;
     popupElement.style.position = 'absolute';
     popupElement.style.zIndex = 2147483647;
     // Shadow DOM root
@@ -139,6 +153,17 @@ export function createPopupManager({
     popupContainer.tabIndex = -1;
     popupContainer.setAttribute('role', 'dialog');
     popupContainer.setAttribute('aria-live', 'polite');
+    popupContainer.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (popupCtrl) {
+          popupCtrl.close('escape');
+        } else {
+          removePopup({ clearSelection: true });
+        }
+      }
+    });
     // Style for shadow root
     const style = documentObj.createElement('style');
     style.textContent = `
@@ -213,6 +238,11 @@ export function createPopupManager({
         scrollbar-color: #e5e7eb transparent;
         scrollbar-gutter: stable;
         box-sizing: border-box;
+        outline: none;
+      }
+
+      .vocab-popup:focus {
+        outline: none;
       }
 
       .vocab-popup::-webkit-scrollbar {
@@ -917,6 +947,18 @@ export function createPopupManager({
         padding: 0 4px;
         color: #4B5563;
         display: flex;
+        transition: transform 0.15s ease;
+      }
+      .vocab-popup-audio-btn.is-playing {
+        color: #1677C9 !important;
+        animation: vocabAudioPulse 0.6s ease-in-out infinite alternate;
+      }
+      .vocab-popup.dark-mode .vocab-popup-audio-btn.is-playing {
+        color: #60a5fa !important;
+      }
+      @keyframes vocabAudioPulse {
+        0% { transform: scale(1); opacity: 0.85; }
+        100% { transform: scale(1.22); opacity: 1; }
       }
       .vocab-popup-definition {
         font-size: 14px;
@@ -1917,6 +1959,14 @@ export function createPopupManager({
 
         let hasRendered = false;
 
+        const triggerAudioFeedback = (btn) => {
+          if (!btn) return;
+          btn.classList.add('is-playing');
+          setTimeout(() => {
+            btn.classList.remove('is-playing');
+          }, 1200);
+        };
+
         if (audioObj.us || textValue.includes('US')) {
           let usText = 'US';
           const usMatch = textValue.match(/US\s*([^·]+)/);
@@ -1945,6 +1995,7 @@ export function createPopupManager({
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e?.stopPropagation?.();
+                triggerAudioFeedback(e?.currentTarget || e?.target?.closest('button'));
                 playAudioWithFallback({
                   audioUrl: audioObj.us,
                   word,
@@ -1985,6 +2036,7 @@ export function createPopupManager({
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e?.stopPropagation?.();
+                triggerAudioFeedback(e?.currentTarget || e?.target?.closest('button'));
                 playAudioWithFallback({
                   audioUrl: audioObj.uk,
                   word,
@@ -2010,6 +2062,7 @@ export function createPopupManager({
               innerHTML: speakerSVG,
               onClick: (e) => {
                 e?.stopPropagation?.();
+                triggerAudioFeedback(e?.currentTarget || e?.target?.closest('button'));
                 playAudioWithFallback({
                   audioUrl: audioObj.us || audioObj.uk,
                   word,
@@ -2233,14 +2286,30 @@ export function createPopupManager({
         eventTarget: documentObj,
         popupElement,
         onClose: ({ reason }) => {
-          removePopup();
+          removePopup({ clearSelection: reason === 'escape' });
         },
         onOpen: () => {
-          popupElement.focus();
+          if (popupContainer && typeof popupContainer.focus === 'function') {
+            try {
+              popupContainer.focus({ preventScroll: true });
+            } catch {
+              popupContainer.focus();
+            }
+          } else if (typeof popupElement.focus === 'function') {
+            popupElement.focus();
+          }
         },
       });
     }
     popupCtrl.open();
+
+    if (popupContainer && typeof popupContainer.focus === 'function') {
+      try {
+        popupContainer.focus({ preventScroll: true });
+      } catch {
+        popupContainer.focus();
+      }
+    }
   }
 
   return {

@@ -99,7 +99,7 @@ test('popupZeroStateRenderer: renders Quick Review card when historyWords are av
   });
 
   assert.equal(container.className, 'vocab-zero-state');
-  const [card, tip] = container.childNodes;
+  const [card, recentSection, tip] = container.childNodes;
   assert.ok(card.className.includes('vocab-quick-review-card'));
   assert.ok(card.getAttribute('aria-label').includes('serendipity'));
 
@@ -118,6 +118,17 @@ test('popupZeroStateRenderer: renders Quick Review card when historyWords are av
   assert.equal(wordEl.textContent, 'serendipity');
   card.dispatchEvent('click');
   assert.equal(selectedWord, 'serendipity');
+
+  // Recent Searches section is rendered
+  assert.equal(recentSection.className, 'vocab-recent-chips-section');
+  const [recentHeader, chipsList] = recentSection.childNodes;
+  assert.equal(recentHeader.className, 'vocab-recent-chips-header');
+  assert.equal(chipsList.childNodes.length, 3);
+  assert.equal(chipsList.childNodes[1].textContent, 'ephemeral');
+
+  // Click on a chip selects that word
+  chipsList.childNodes[1].dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(selectedWord, 'ephemeral');
 
   // Micro-tip is present
   assert.ok(tip.className.includes('vocab-micro-tips-banner'));
