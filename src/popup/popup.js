@@ -397,11 +397,13 @@ async function bootstrapPopupRuntime({
     const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
     if (menuItems) {
       menuItems.forEach((item) => {
-        item.addEventListener('click', async (e) => {
+        const handleItemSelect = async (e) => {
           if (e.target && typeof e.target.closest === 'function' && (e.target.closest('#vocab-auto-config-btn') || e.target.closest('.vocab-source-star-btn'))) {
             return;
           }
-          e.stopPropagation();
+          if (e.stopPropagation) {
+            e.stopPropagation();
+          }
           const nextSource = item.getAttribute('data-source');
           sourceMenuPopover.style.display = 'none';
           isSourceMenuOpen = false;
@@ -410,6 +412,17 @@ async function bootstrapPopupRuntime({
           const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
           if (currentWord) {
             performSearch(currentWord, nextSource);
+          }
+        };
+
+        item.addEventListener('click', handleItemSelect);
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.target && typeof e.target.closest === 'function' && (e.target.closest('#vocab-auto-config-btn') || e.target.closest('.vocab-source-star-btn'))) {
+              return;
+            }
+            e.preventDefault();
+            handleItemSelect(e);
           }
         });
       });
