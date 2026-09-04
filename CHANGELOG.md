@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.1] - 2026-09-04
+
+### 🔧 Fixed
+- **Synchronize In-Page Popup Active Dictionary Source with Toolbar & User Setting**:
+  - Decoupled the definition payload's resolving source (`viewModel.source`) from the UI's active dictionary source state (`activeDictSource`).
+  - Correctly highlights **⚡ Auto** (or the user's chosen default source) in the in-page popup menu, ensuring 100% consistency with the toolbar popup.
+  - Retained session-based single source selection when switching sources inside the in-page popup while properly resetting upon popup dismissal.
+- **Automated Test Coverage**:
+  - Added unit test in `tests/content/popupManagerNavigation.test.js` verifying that `Auto` remains highlighted even when the definition is served by Vocabulary.com.
+
+---
+
 ## [0.8.0] - 2026-09-04
 
 ### 🚀 Added & Improved (Source Switching, Persistence & Debounce)

@@ -629,8 +629,40 @@ async function bootstrapPopupRuntime({
 
     content.forEach((item) => {
       if (item.type === 'skeleton') {
-        const cls = item.value === 'def-short' ? 'skeleton skeleton-def short' : `skeleton skeleton-${item.value}`;
-        container.appendChild(h('div', { className: cls }));
+        if (item.value === 'headword') {
+          const hwRow = h(
+            'div',
+            { className: 'skeleton-headword-row' },
+            h('div', { className: 'skeleton skeleton-headword' }),
+            h('div', { className: 'skeleton skeleton-circle-btn' })
+          );
+          container.appendChild(hwRow);
+        } else if (item.value === 'pron') {
+          const pronRow = h(
+            'div',
+            { className: 'skeleton-pron-row' },
+            h('div', { className: 'skeleton skeleton-pron' }),
+            h('div', { className: 'skeleton skeleton-circle-btn' })
+          );
+          container.appendChild(pronRow);
+        } else if (item.value === 'def') {
+          const defCard1 = h(
+            'div',
+            { className: 'skeleton-def-card' },
+            h('div', { className: 'skeleton skeleton-tag' }),
+            h('div', { className: 'skeleton skeleton-def' }),
+            h('div', { className: 'skeleton skeleton-def short' })
+          );
+          container.appendChild(defCard1);
+        } else if (item.value === 'def-short') {
+          const defCard2 = h(
+            'div',
+            { className: 'skeleton-def-card' },
+            h('div', { className: 'skeleton skeleton-tag' }),
+            h('div', { className: 'skeleton skeleton-def' })
+          );
+          container.appendChild(defCard2);
+        }
       } else if (item.type === 'headword') {
         const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
         const source = viewModel?.source || item.source || 'vocabulary';

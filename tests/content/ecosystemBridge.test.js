@@ -359,7 +359,7 @@ test('bootstrapContentRuntime: ecosystem bridge extracts target positioning from
   assert.equal(sentMessages[1].payload.token, 'solitude');
   const popupEl2 = mockDoc.body.childNodes[0];
   assert.equal(popupEl2.style.left, '300px');
-  assert.equal(popupEl2.style.top, '428px'); // bottom (420) + 8
+  assert.equal(popupEl2.style.top, '352px'); // clamped to viewport height - popupHeight - 8 (800 - 440 - 8 = 352)
 
   // 3. With explicit rect
   bridgeEl.dispatchEvent('vocabulary-lookup', {
@@ -388,7 +388,7 @@ test('bootstrapContentRuntime: ecosystem bridge extracts target positioning from
   assert.equal(sentMessages[3].payload.token, 'resilience');
   const popupEl4 = mockDoc.body.childNodes[0];
   assert.equal(popupEl4.style.left, '500px');
-  assert.equal(popupEl4.style.top, '358px'); // y (350) + 8
+  assert.equal(popupEl4.style.top, '352px'); // clamped to viewport height - popupHeight - 8 (800 - 440 - 8 = 352)
 
   // 5. With x, y
   bridgeEl.dispatchEvent('vocabulary-lookup', {

@@ -101,26 +101,70 @@
         background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%);
       }
 
+      .skeleton-headword-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        gap: 8px;
+      }
+
       .skeleton-headword {
         height: 28px;
-        width: 60%;
+        width: 55%;
+        border-radius: 6px;
+      }
+
+      .skeleton-circle-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .skeleton-pron-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         margin-bottom: 12px;
       }
 
       .skeleton-pron {
         height: 18px;
-        width: 40%;
-        margin-bottom: 16px;
+        width: 35%;
+        border-radius: 4px;
       }
 
-      .skeleton-def {
-        height: 14px;
-        width: 100%;
+      .skeleton-def-card {
+        padding: 8px 10px;
+        background: #f9fafb;
+        border: 1px solid #f3f4f6;
+        border-radius: 8px;
         margin-bottom: 8px;
       }
 
+      body.dark-mode .skeleton-def-card {
+        background: #1f2937;
+        border-color: #374151;
+      }
+
+      .skeleton-tag {
+        height: 14px;
+        width: 20%;
+        border-radius: 4px;
+        margin-bottom: 6px;
+      }
+
+      .skeleton-def {
+        height: 15px;
+        width: 100%;
+        margin-bottom: 6px;
+        border-radius: 4px;
+      }
+
       .skeleton-def.short {
-        width: 70%;
+        width: 75%;
+        margin-bottom: 0;
       }
 
       /* Search layout & UI */

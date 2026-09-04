@@ -67,10 +67,15 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
         border-radius: 4px;
       }
 
-      .skeleton-headword { height: 28px; width: 60%; margin-bottom: 12px; }
-      .skeleton-pron { height: 18px; width: 40%; margin-bottom: 16px; }
-      .skeleton-def { height: 14px; width: 100%; margin-bottom: 8px; }
-      .skeleton-def.short { width: 70%; }
+      .skeleton-headword-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+      .skeleton-headword { height: 28px; width: 55%; border-radius: 6px; }
+      .skeleton-circle-btn { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+      .skeleton-pron-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+      .skeleton-pron { height: 18px; width: 35%; border-radius: 4px; }
+      .skeleton-def-card { padding: 8px 10px; background: #f9fafb; border: 1px solid #f3f4f6; border-radius: 8px; margin-bottom: 8px; }
+      .skeleton-tag { height: 14px; width: 20%; border-radius: 4px; margin-bottom: 6px; }
+      .skeleton-def { height: 15px; width: 100%; margin-bottom: 6px; border-radius: 4px; }
+      .skeleton-def.short { width: 75%; margin-bottom: 0; }
 
       .container {
         width: 100%;
@@ -460,8 +465,40 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
 
     content.forEach((item) => {
       if (item.type === 'skeleton') {
-        const cls = item.value === 'def-short' ? 'skeleton skeleton-def short' : `skeleton skeleton-${item.value}`;
-        container.appendChild(h('div', { className: cls }));
+        if (item.value === 'headword') {
+          const hwRow = h(
+            'div',
+            { className: 'skeleton-headword-row' },
+            h('div', { className: 'skeleton skeleton-headword' }),
+            h('div', { className: 'skeleton skeleton-circle-btn' })
+          );
+          container.appendChild(hwRow);
+        } else if (item.value === 'pron') {
+          const pronRow = h(
+            'div',
+            { className: 'skeleton-pron-row' },
+            h('div', { className: 'skeleton skeleton-pron' }),
+            h('div', { className: 'skeleton skeleton-circle-btn' })
+          );
+          container.appendChild(pronRow);
+        } else if (item.value === 'def') {
+          const defCard1 = h(
+            'div',
+            { className: 'skeleton-def-card' },
+            h('div', { className: 'skeleton skeleton-tag' }),
+            h('div', { className: 'skeleton skeleton-def' }),
+            h('div', { className: 'skeleton skeleton-def short' })
+          );
+          container.appendChild(defCard1);
+        } else if (item.value === 'def-short') {
+          const defCard2 = h(
+            'div',
+            { className: 'skeleton-def-card' },
+            h('div', { className: 'skeleton skeleton-tag' }),
+            h('div', { className: 'skeleton skeleton-def' })
+          );
+          container.appendChild(defCard2);
+        }
       } else if (item.type === 'headword') {
         const activeSource = viewModel?.source || item.source || 'auto';
         const pillsBar = h('div', { className: 'vocab-source-pills-bar' });

@@ -427,6 +427,58 @@ test('popupManager: clicking source row does not change default settings, but cl
   assert.deepEqual(savedSettings[0], { dictionarySource: 'cambridge' });
 });
 
+test('popupManager: source menu highlights Auto as active when dictionarySource is auto even if definition source is vocabulary', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const settingsAdapter = {
+    getSnapshot: () => ({ dictionarySource: 'auto' }),
+  };
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    settingsAdapter,
+  });
+
+  // Backend returned a payload where source is 'vocabulary' (the resolver that found the definition)
+  const state = {
+    status: 'success',
+    headword: 'resilience',
+    data: {
+      parsedPayload: {
+        headword: 'resilience',
+        definitions: ['The capacity to recover quickly from difficulties.'],
+        source: 'vocabulary',
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
+  const autoOption = menuItems.find((el) => el.getAttribute('data-source') === 'auto');
+  const vocabOption = menuItems.find((el) => el.getAttribute('data-source') === 'vocabulary');
+
+  assert.ok(autoOption);
+  assert.ok(vocabOption);
+
+  // Auto should be active (.active class), Vocabulary should NOT be active
+  assert.ok(autoOption.className.includes('active'));
+  assert.equal(vocabOption.className.includes('active'), false);
+});
+
 test('popupManager: popover hiển thị danh sách auto priority draggable và hỗ trợ kéo thả reorder', async () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
@@ -1174,3 +1226,90 @@ test('popupManager: chuyển slide history cập nhật cục bộ và giữ ngu
 
   popupManager.removePopup();
 });
+
+test('popupManager: loading state renders structured skeleton elements and maintains layout stability', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+  });
+
+  popupManager.showPopup({ status: 'loading' }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+  assert.ok(container, 'Popup container should exist');
+
+  function getAllElements(root) {
+    const all = [];
+    function collect(node) {
+      if (!node) return;
+      all.push(node);
+      for (const c of node.childNodes || []) collect(c);
+    }
+    collect(root);
+    return all;
+  }
+
+  const allElements = getAllElements(container);
+  const skeletonElements = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('skeleton'));
+  assert.ok(skeletonElements.length >= 5, 'Should render structured skeleton elements');
+
+  const skeletonDefCards = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('skeleton-def-card'));
+  assert.equal(skeletonDefCards.length, 2, 'Should render two skeleton definition cards');
+
+  const skeletonHeadwordRow = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('skeleton-headword-row'));
+  assert.equal(skeletonHeadwordRow.length, 1, 'Should render skeleton headword row');
+
+  popupManager.removePopup();
+});
+
+test('popupManager: popup container giữ cố định chiều cao height và hỗ trợ cuộn khi nội dung thay đổi', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  windowObj.innerHeight = 768;
+  windowObj.innerWidth = 1024;
+
+  const mockHistoryAdapter = {
+    getRecentSearchWords: () => ['cat', 'extraordinary'],
+    addSearchWord: () => Promise.resolve(),
+  };
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter: mockHistoryAdapter,
+  });
+
+  popupManager.showPopup(
+    {
+      status: 'success',
+      data: {
+        token: 'cat',
+        headword: 'cat',
+        shortDef: 'A small animal.',
+        definitions: [{ partOfSpeech: 'noun', definition: 'A small domesticated carnivorous mammal.' }],
+      },
+    },
+    { left: 100, top: 100, bottom: 120, right: 150 }
+  );
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+  assert.ok(container, 'Popup container should exist');
+
+  // maxHeight for 768px height viewport is min(520, max(260, round(768 * 0.55))) = 422px
+  assert.equal(container.style.height, '422px');
+  assert.equal(container.style.maxHeight, '422px');
+
+  // Verify footer is rendered
+  const footer = container.childNodes.find((node) => typeof node.className === 'string' && node.className.includes('vocab-popup-compliance-footer'));
+  assert.ok(footer, 'Footer element should exist in popup container');
+
+  popupManager.removePopup();
+});
+
+
+

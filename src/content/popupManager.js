@@ -103,6 +103,7 @@ export function createPopupManager({
   let cleanupActiveDrag = null;
   let customWords = null;
   let lastRenderedWord = null;
+  let activeSearchSource = null;
 
   function setCustomWords(words) {
     if (Array.isArray(words)) {
@@ -147,6 +148,7 @@ export function createPopupManager({
       isHistorySearching = false;
       historySearchQuery = '';
       isAutoOrderOpen = false;
+      activeSearchSource = null;
       customPosition = null;
       currentPlacement = null;
       absoluteSelectionRect = null;
@@ -223,33 +225,77 @@ export function createPopupManager({
         border-radius: 4px;
       }
 
+      .skeleton-headword-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        gap: 8px;
+      }
+
       .skeleton-headword {
-        height: 30px;
+        height: 28px;
         width: 55%;
-        margin-bottom: 6px;
+        border-radius: 6px;
+      }
+
+      .skeleton-circle-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .skeleton-pron-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
       }
 
       .skeleton-pron {
-        height: 20px;
-        width: 45%;
-        margin-bottom: 8px;
+        height: 18px;
+        width: 38%;
+        border-radius: 4px;
       }
 
       .skeleton-stress {
-        height: 28px;
+        height: 24px;
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         border-radius: 8px;
       }
 
-      .skeleton-def {
-        height: 16px;
-        width: 100%;
+      .skeleton-def-card {
+        padding: 8px 10px;
+        background: #f9fafb;
+        border: 1px solid #f3f4f6;
+        border-radius: 8px;
         margin-bottom: 8px;
+      }
+
+      .vocab-popup.dark-mode .skeleton-def-card {
+        background: #1f2937;
+        border-color: #374151;
+      }
+
+      .skeleton-tag {
+        height: 14px;
+        width: 22%;
+        border-radius: 4px;
+        margin-bottom: 6px;
+      }
+
+      .skeleton-def {
+        height: 15px;
+        width: 100%;
+        margin-bottom: 6px;
+        border-radius: 4px;
       }
 
       .skeleton-def.short {
         width: 75%;
+        margin-bottom: 0;
       }
 
       .custom-definition-list .definition {
@@ -259,6 +305,9 @@ export function createPopupManager({
       }
 
       .vocab-popup {
+        display: flex;
+        flex-direction: column;
+        height: var(--vocab-popup-height, 420px);
         max-height: var(--vocab-popup-max-height, 420px);
         min-height: var(--vocab-popup-min-height, 200px);
         overflow-y: auto;
@@ -319,7 +368,7 @@ export function createPopupManager({
       .vocab-popup-body {
         display: flex;
         flex-direction: column;
-        flex: 1;
+        flex: 1 0 auto;
         min-width: 0;
       }
 
@@ -1062,8 +1111,12 @@ export function createPopupManager({
       .vocab-popup-compliance-footer {
         position: sticky;
         bottom: -12px;
+        margin-top: auto;
+        flex-shrink: 0;
         background: #ffffff;
-        margin: 14px -14px -12px -14px;
+        margin-left: -14px;
+        margin-right: -14px;
+        margin-bottom: -12px;
         padding: 8px 14px 7px 14px;
         display: flex;
         justify-content: space-between;
@@ -1441,17 +1494,19 @@ export function createPopupManager({
     if (popupContainer && popupContainer.style) {
       if (typeof popupContainer.style.setProperty === 'function') {
         popupContainer.style.setProperty('--vocab-popup-width', `${responsiveWidth}px`);
+        popupContainer.style.setProperty('--vocab-popup-height', `${maxHeight}px`);
         popupContainer.style.setProperty('--vocab-popup-max-height', `${maxHeight}px`);
         popupContainer.style.setProperty('--vocab-popup-min-height', `${minHeight}px`);
       }
       popupContainer.style.width = `${responsiveWidth}px`;
       popupContainer.style.maxWidth = `${responsiveWidth}px`;
+      popupContainer.style.height = `${maxHeight}px`;
       popupContainer.style.maxHeight = `${maxHeight}px`;
       popupContainer.style.minHeight = `${minHeight}px`;
     }
 
     const popupWidth = popupElement.offsetWidth || responsiveWidth;
-    const popupHeight = popupElement.offsetHeight || minHeight;
+    const popupHeight = popupElement.offsetHeight || maxHeight;
 
     if (customPosition) {
       const minLeft = viewport.scrollX + 8;
@@ -1736,8 +1791,9 @@ export function createPopupManager({
       settingsAdapter?.getSnapshot?.()?.dictionarySource || 'auto';
 
     const activeDictSource =
-      viewModel?.source ||
-      state?.source ||
+      activeSearchSource ||
+      state?.requestedSource ||
+      (state?.source === 'auto' ? 'auto' : null) ||
       defaultDictSource;
 
     const autoSourceOrder =
@@ -1805,6 +1861,7 @@ export function createPopupManager({
           popoverMenu.style.display = 'none';
           isMenuOpen = false;
           if (isAutoActive) return;
+          activeSearchSource = 'auto';
           if (typeof onSourceChange === 'function') {
             onSourceChange('auto');
           }
@@ -1947,6 +2004,7 @@ export function createPopupManager({
             popoverMenu.style.display = 'none';
             isMenuOpen = false;
             if (isActive) return;
+            activeSearchSource = s.id;
             if (typeof onSourceChange === 'function') {
               onSourceChange(s.id);
             }
@@ -2020,15 +2078,40 @@ export function createPopupManager({
     content.forEach((item) => {
       if (item.type === 'skeleton') {
         if (item.value === 'headword') {
-          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-headword' }));
+          const hwRow = h(
+            'div',
+            { className: 'skeleton-headword-row' },
+            h('div', { className: 'skeleton skeleton-headword' }),
+            h('div', { className: 'skeleton skeleton-circle-btn' })
+          );
+          bodyContainer.appendChild(hwRow);
         } else if (item.value === 'pron') {
-          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-pron' }));
+          const pronRow = h(
+            'div',
+            { className: 'skeleton-pron-row' },
+            h('div', { className: 'skeleton skeleton-pron' }),
+            h('div', { className: 'skeleton skeleton-circle-btn' })
+          );
+          bodyContainer.appendChild(pronRow);
         } else if (item.value === 'stress') {
           bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-stress' }));
         } else if (item.value === 'def') {
-          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-def' }));
+          const defCard1 = h(
+            'div',
+            { className: 'skeleton-def-card' },
+            h('div', { className: 'skeleton skeleton-tag' }),
+            h('div', { className: 'skeleton skeleton-def' }),
+            h('div', { className: 'skeleton skeleton-def short' })
+          );
+          bodyContainer.appendChild(defCard1);
         } else if (item.value === 'def-short') {
-          bodyContainer.appendChild(h('div', { className: 'skeleton skeleton-def short' }));
+          const defCard2 = h(
+            'div',
+            { className: 'skeleton-def-card' },
+            h('div', { className: 'skeleton skeleton-tag' }),
+            h('div', { className: 'skeleton skeleton-def' })
+          );
+          bodyContainer.appendChild(defCard2);
         }
       } else if (item.type === 'headword') {
         const cap =
