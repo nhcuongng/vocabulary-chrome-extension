@@ -61,6 +61,7 @@ async function bootstrapPopupRuntime({
 } = {}) {
   const toggleElement = documentObj.getElementById('auto-popup-toggle');
   const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
+  const rememberLastLookupToggleElement = documentObj.getElementById('remember-last-lookup-toggle');
   const dictionarySourceSelect = documentObj.getElementById('dictionary-source-select');
   const statusElement = documentObj.getElementById('auto-popup-status');
   const attributionElement = documentObj.getElementById('attribution');
@@ -105,6 +106,7 @@ async function bootstrapPopupRuntime({
 
   let autoPopupEnabled = true;
   let darkMode = false;
+  let rememberLastLookup = true;
   let dictionarySource = 'auto';
   let autoSourceOrder = [...DEFAULT_AUTO_SOURCE_ORDER];
   let currentSlideIndex = 0;
@@ -121,18 +123,42 @@ async function bootstrapPopupRuntime({
     }
   };
 
-  const updateSourceMenuUI = (source) => {
+  let activeSearchSource = null;
+
+  const updateSourceMenuUI = (activeSrc, defaultSrc) => {
+    const effectiveDefault = defaultSrc || dictionarySource || 'auto';
+    const effectiveActive = activeSrc || activeSearchSource || effectiveDefault;
+
     if (dictionarySourceSelect) {
-      dictionarySourceSelect.value = source;
+      dictionarySourceSelect.value = effectiveDefault;
     }
     const menuItems = documentObj.querySelectorAll('#vocab-source-menu-popover .vocab-source-menu-item');
-    menuItems.forEach((item) => {
-      if (item.getAttribute('data-source') === source) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-    });
+    if (menuItems) {
+      menuItems.forEach((item) => {
+        if (item.getAttribute('data-source') === effectiveActive) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    const starBtns = documentObj.querySelectorAll('#vocab-source-menu-popover .vocab-source-star-btn');
+    if (starBtns) {
+      starBtns.forEach((btn) => {
+        const src = btn.getAttribute('data-source');
+        const isDefault = src === effectiveDefault;
+        if (isDefault) {
+          btn.classList.add('is-default');
+          btn.setAttribute('title', 'Current default source');
+          btn.setAttribute('aria-label', 'Current default source');
+        } else {
+          btn.classList.remove('is-default');
+          btn.setAttribute('title', 'Set as default dictionary source');
+          btn.setAttribute('aria-label', 'Set as default dictionary source');
+        }
+      });
+    }
   };
 
   const renderAutoOrderUI = (order = []) => {
@@ -237,11 +263,15 @@ async function bootstrapPopupRuntime({
       const settings = await settingsStore.load();
       autoPopupEnabled = Boolean(settings?.autoPopupEnabled);
       darkMode = Boolean(settings?.darkMode);
+      rememberLastLookup = Boolean(settings?.rememberLastLookup ?? true);
       dictionarySource = settings?.dictionarySource || 'auto';
       autoSourceOrder = settings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
-      updateSourceMenuUI(dictionarySource);
+      if (rememberLastLookupToggleElement) {
+        rememberLastLookupToggleElement.checked = rememberLastLookup;
+      }
+      updateSourceMenuUI(activeSearchSource, dictionarySource);
       renderAutoOrderUI(autoSourceOrder);
     },
     stop() {},
@@ -250,6 +280,9 @@ async function bootstrapPopupRuntime({
     },
     isDarkMode() {
       return darkMode;
+    },
+    isRememberLastLookup() {
+      return rememberLastLookup;
     },
     getDictionarySource() {
       return dictionarySource;
@@ -266,9 +299,16 @@ async function bootstrapPopupRuntime({
       updateBodyTheme(darkMode);
       await settingsStore.update({ darkMode });
     },
+    async setRememberLastLookup(enabled) {
+      rememberLastLookup = Boolean(enabled);
+      if (rememberLastLookupToggleElement) {
+        rememberLastLookupToggleElement.checked = rememberLastLookup;
+      }
+      await settingsStore.update({ rememberLastLookup });
+    },
     async setDictionarySource(source) {
       dictionarySource = source || 'auto';
-      updateSourceMenuUI(dictionarySource);
+      updateSourceMenuUI(activeSearchSource, dictionarySource);
       await settingsStore.update({ dictionarySource });
     },
     async setAutoSourceOrder(order) {
@@ -280,13 +320,17 @@ async function bootstrapPopupRuntime({
       return settingsStore.subscribe((nextSettings) => {
         autoPopupEnabled = Boolean(nextSettings?.autoPopupEnabled);
         darkMode = Boolean(nextSettings?.darkMode);
+        rememberLastLookup = Boolean(nextSettings?.rememberLastLookup ?? true);
         dictionarySource = nextSettings?.dictionarySource || 'auto';
         autoSourceOrder = nextSettings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
-        updateSourceMenuUI(dictionarySource);
+        if (rememberLastLookupToggleElement) {
+          rememberLastLookupToggleElement.checked = rememberLastLookup;
+        }
+        updateSourceMenuUI(activeSearchSource, dictionarySource);
         renderAutoOrderUI(autoSourceOrder);
-        listener({ autoPopupEnabled, darkMode, dictionarySource, autoSourceOrder });
+        listener({ autoPopupEnabled, darkMode, rememberLastLookup, dictionarySource, autoSourceOrder });
       });
     },
   };
@@ -315,6 +359,15 @@ async function bootstrapPopupRuntime({
   };
   darkModeToggleElement.addEventListener('change', handleDarkModeChange);
 
+  const handleRememberLastLookupChange = async () => {
+    if (rememberLastLookupToggleElement) {
+      await autoPopupController.setRememberLastLookup(rememberLastLookupToggleElement.checked);
+    }
+  };
+  if (rememberLastLookupToggleElement) {
+    rememberLastLookupToggleElement.addEventListener('change', handleRememberLastLookupChange);
+  }
+
   // Source popover event listeners
   if (sourceMenuBtn && sourceMenuPopover) {
     sourceMenuBtn.addEventListener('click', (e) => {
@@ -327,23 +380,40 @@ async function bootstrapPopupRuntime({
       }
     });
 
-    const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
-    menuItems.forEach((item) => {
-      item.addEventListener('click', async (e) => {
-        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#vocab-auto-config-btn')) {
-          return;
-        }
-        e.stopPropagation();
-        const nextSource = item.getAttribute('data-source');
-        sourceMenuPopover.style.display = 'none';
-        isSourceMenuOpen = false;
-        await autoPopupController.setDictionarySource(nextSource);
-        const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        if (currentWord) {
-          performSearch(currentWord, nextSource);
-        }
+    const starBtns = sourceMenuPopover.querySelectorAll('.vocab-source-star-btn');
+    if (starBtns) {
+      starBtns.forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const src = btn.getAttribute('data-source');
+          if (src) {
+            await autoPopupController.setDictionarySource(src);
+            updateSourceMenuUI(activeSearchSource, src);
+          }
+        });
       });
-    });
+    }
+
+    const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
+    if (menuItems) {
+      menuItems.forEach((item) => {
+        item.addEventListener('click', async (e) => {
+          if (e.target && typeof e.target.closest === 'function' && (e.target.closest('#vocab-auto-config-btn') || e.target.closest('.vocab-source-star-btn'))) {
+            return;
+          }
+          e.stopPropagation();
+          const nextSource = item.getAttribute('data-source');
+          sourceMenuPopover.style.display = 'none';
+          isSourceMenuOpen = false;
+          activeSearchSource = nextSource;
+          updateSourceMenuUI(activeSearchSource, dictionarySource);
+          const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+          if (currentWord) {
+            performSearch(currentWord, nextSource);
+          }
+        });
+      });
+    }
 
     const autoConfigBtn = documentObj.getElementById('vocab-auto-config-btn');
     const autoOrderSection = documentObj.getElementById('vocab-auto-order-section');
@@ -828,7 +898,13 @@ async function bootstrapPopupRuntime({
     });
   };
 
+  let debounceTimer = null;
+  let latestSearchRequestId = 0;
+  let isComposing = false;
+
   const performSearch = async (word, source) => {
+    const requestId = ++latestSearchRequestId;
+
     if (!word) {
       if (searchResultsContainer) {
         searchResultsContainer.replaceChildren();
@@ -854,6 +930,9 @@ async function bootstrapPopupRuntime({
 
     try {
       const response = await lookupExecutor(word, source);
+      if (requestId !== latestSearchRequestId) {
+        return;
+      }
       if (response && response.status === 'success') {
         const canonicalWord = response.data?.parsedPayload?.headword || word;
         await historyStore.addSearchWord(canonicalWord).catch(() => {});
@@ -863,16 +942,18 @@ async function bootstrapPopupRuntime({
         renderState(response, searchResultsContainer);
       }
     } catch (error) {
+      if (requestId !== latestSearchRequestId) {
+        return;
+      }
       if (searchResultsContainer) {
         renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, searchResultsContainer);
       }
     }
   };
 
-  let debounceTimer = null;
   const handleInput = () => {
-    const value = searchInput.value.trim().toLowerCase();
     clearTimeout(debounceTimer);
+    const value = searchInput.value.trim().toLowerCase();
     renderHistorySlider(value);
 
     if (!value) {
@@ -880,12 +961,31 @@ async function bootstrapPopupRuntime({
       return;
     }
 
+    if (isComposing) {
+      return;
+    }
+
     debounceTimer = setTimeout(() => {
-      performSearch(value);
+      const currentValue = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      if (currentValue) {
+        performSearch(currentValue);
+      } else {
+        performSearch('');
+      }
     }, 400);
   };
 
+  const handleCompositionStart = () => {
+    isComposing = true;
+  };
+
+  const handleCompositionEnd = () => {
+    isComposing = false;
+    handleInput();
+  };
+
   const handleClear = () => {
+    clearTimeout(debounceTimer);
     searchInput.value = '';
     performSearch('');
     renderHistorySlider('');
@@ -911,6 +1011,8 @@ async function bootstrapPopupRuntime({
 
   if (searchInput) {
     searchInput.addEventListener('input', handleInput);
+    searchInput.addEventListener('compositionstart', handleCompositionStart);
+    searchInput.addEventListener('compositionend', handleCompositionEnd);
     searchInput.addEventListener('keydown', handleKeyDown);
     searchInput.addEventListener('focus', handleFocus);
   }
@@ -926,16 +1028,32 @@ async function bootstrapPopupRuntime({
     } else {
       searchInput.focus();
     }
-    renderHistorySlider('');
-    renderZeroStateUI();
+
+    const recentWords = historyStore.getRecentSearchWords(1);
+    const lastWord = recentWords && recentWords.length > 0 ? recentWords[0] : '';
+
+    if (rememberLastLookup && lastWord) {
+      searchInput.value = lastWord;
+      renderHistorySlider(lastWord);
+      performSearch(lastWord);
+    } else {
+      renderHistorySlider('');
+      renderZeroStateUI();
+    }
   }
 
   const destroy = () => {
+    clearTimeout(debounceTimer);
     unsubscribe?.();
     panel.destroy();
     darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
+    if (rememberLastLookupToggleElement) {
+      rememberLastLookupToggleElement.removeEventListener('change', handleRememberLastLookupChange);
+    }
     if (searchInput) {
       searchInput.removeEventListener('input', handleInput);
+      searchInput.removeEventListener('compositionstart', handleCompositionStart);
+      searchInput.removeEventListener('compositionend', handleCompositionEnd);
       searchInput.removeEventListener('keydown', handleKeyDown);
       searchInput.removeEventListener('focus', handleFocus);
     }
@@ -946,7 +1064,9 @@ async function bootstrapPopupRuntime({
     historyStore.destroy?.();
   };
 
-  globalThis.addEventListener('unload', destroy, { once: true });
+  if (typeof globalThis.addEventListener === 'function') {
+    globalThis.addEventListener('unload', destroy, { once: true });
+  }
 
   return {
     destroy,

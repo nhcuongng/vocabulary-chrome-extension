@@ -55,6 +55,10 @@ const gearSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" 
   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
 </svg>`;
 
+const starSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+</svg>`;
+
 export function createPopupManager({
   documentObj,
   windowObj,
@@ -555,6 +559,31 @@ export function createPopupManager({
         color: #1677C9;
         background-color: rgba(22, 119, 201, 0.12);
         transform: rotate(45deg);
+      }
+
+      .vocab-source-star-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 3px;
+        color: #9ca3af;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: color 0.15s, transform 0.15s, background-color 0.15s;
+        line-height: 1;
+      }
+      .vocab-source-star-btn:hover {
+        color: #f59e0b;
+        background-color: rgba(245, 158, 11, 0.12);
+        transform: scale(1.15);
+      }
+      .vocab-source-star-btn.is-default {
+        color: #f59e0b;
+      }
+      .vocab-source-star-btn.is-default svg {
+        fill: #f59e0b;
       }
 
       .vocab-auto-order-section {
@@ -1205,6 +1234,19 @@ export function createPopupManager({
         color: #60a5fa;
         background-color: rgba(96, 165, 250, 0.2);
       }
+      .vocab-popup.dark-mode .vocab-source-star-btn {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-source-star-btn:hover {
+        color: #fbbf24;
+        background-color: rgba(251, 191, 36, 0.15);
+      }
+      .vocab-popup.dark-mode .vocab-source-star-btn.is-default {
+        color: #fbbf24;
+      }
+      .vocab-popup.dark-mode .vocab-source-star-btn.is-default svg {
+        fill: #fbbf24;
+      }
       .vocab-popup.dark-mode .vocab-auto-order-section {
         background: rgba(255, 255, 255, 0.03);
         border-color: #374151;
@@ -1612,11 +1654,13 @@ export function createPopupManager({
     const headerActions = h('div', { className: 'vocab-popup-header-actions' });
     const sourceWrapper = h('div', { className: 'vocab-source-menu-wrapper' });
 
+    const defaultDictSource =
+      settingsAdapter?.getSnapshot?.()?.dictionarySource || 'auto';
+
     const activeDictSource =
-      settingsAdapter?.getSnapshot?.()?.dictionarySource ||
       viewModel?.source ||
       state?.source ||
-      'auto';
+      defaultDictSource;
 
     const autoSourceOrder =
       settingsAdapter?.getSnapshot?.()?.autoSourceOrder ||
@@ -1629,8 +1673,10 @@ export function createPopupManager({
     const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
     popoverMenu.appendChild(menuTitle);
 
-    // 1. Auto Option with Config Gear Button in the same row
+    // 1. Auto Option with Config Gear Button and Star Button
     const isAutoActive = activeDictSource === 'auto';
+    const isAutoDefault = defaultDictSource === 'auto';
+
     const autoConfigBtn = h('button', {
       type: 'button',
       className: `vocab-auto-config-btn ${isAutoOrderOpen ? 'active' : ''}`,
@@ -1650,6 +1696,21 @@ export function createPopupManager({
       },
     });
 
+    const autoStarBtn = h('button', {
+      type: 'button',
+      className: `vocab-source-star-btn ${isAutoDefault ? 'is-default' : ''}`,
+      title: isAutoDefault ? 'Current default source' : 'Set as default dictionary source',
+      ariaLabel: isAutoDefault ? 'Current default source' : 'Set as default dictionary source',
+      innerHTML: starSVG,
+      onClick: async (e) => {
+        e?.stopPropagation?.();
+        if (settingsAdapter?.update) {
+          await settingsAdapter.update({ dictionarySource: 'auto' });
+        }
+        renderPopupContent(lastState);
+      },
+    });
+
     const autoItemBtn = h(
       'div',
       {
@@ -1659,16 +1720,13 @@ export function createPopupManager({
         tabIndex: 0,
         title: 'Select source: ⚡ Auto',
         onClick: async (e) => {
-          if (e?.target && typeof e?.target?.closest === 'function' && e.target.closest('#vocab-auto-config-btn')) {
+          if (e?.target && typeof e?.target?.closest === 'function' && (e.target.closest('#vocab-auto-config-btn') || e.target.closest('.vocab-source-star-btn'))) {
             return;
           }
           e?.stopPropagation?.();
           popoverMenu.style.display = 'none';
           isMenuOpen = false;
           if (isAutoActive) return;
-          if (settingsAdapter?.update) {
-            await settingsAdapter.update({ dictionarySource: 'auto' });
-          }
           if (typeof onSourceChange === 'function') {
             onSourceChange('auto');
           }
@@ -1682,6 +1740,7 @@ export function createPopupManager({
         'div',
         { className: 'source-item-actions' },
         autoConfigBtn,
+        autoStarBtn,
         h('span', { className: 'source-item-check' }, '✓')
       )
     );
@@ -1778,6 +1837,23 @@ export function createPopupManager({
 
     singleSources.forEach((s) => {
       const isActive = activeDictSource === s.id;
+      const isDefault = defaultDictSource === s.id;
+
+      const starBtn = h('button', {
+        type: 'button',
+        className: `vocab-source-star-btn ${isDefault ? 'is-default' : ''}`,
+        title: isDefault ? 'Current default source' : 'Set as default dictionary source',
+        ariaLabel: isDefault ? 'Current default source' : 'Set as default dictionary source',
+        innerHTML: starSVG,
+        onClick: async (e) => {
+          e?.stopPropagation?.();
+          if (settingsAdapter?.update) {
+            await settingsAdapter.update({ dictionarySource: s.id });
+          }
+          renderPopupContent(lastState);
+        },
+      });
+
       const itemBtn = h(
         'button',
         {
@@ -1786,13 +1862,13 @@ export function createPopupManager({
           'data-source': s.id,
           title: `Select source: ${s.name}`,
           onClick: async (e) => {
+            if (e?.target && typeof e?.target?.closest === 'function' && e.target.closest('.vocab-source-star-btn')) {
+              return;
+            }
             e?.stopPropagation?.();
             popoverMenu.style.display = 'none';
             isMenuOpen = false;
             if (isActive) return;
-            if (settingsAdapter?.update) {
-              await settingsAdapter.update({ dictionarySource: s.id });
-            }
             if (typeof onSourceChange === 'function') {
               onSourceChange(s.id);
             }
@@ -1812,7 +1888,12 @@ export function createPopupManager({
           ),
           h('span', { className: 'source-item-hint' }, s.hint)
         ),
-        h('span', { className: 'source-item-check' }, '✓')
+        h(
+          'div',
+          { className: 'source-item-actions' },
+          starBtn,
+          h('span', { className: 'source-item-check' }, '✓')
+        )
       );
       popoverMenu.appendChild(itemBtn);
     });

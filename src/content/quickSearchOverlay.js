@@ -313,18 +313,40 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
     };
 
     let debounceTimer = null;
+    let latestSearchRequestId = 0;
+    let isComposing = false;
+
+    input.addEventListener('compositionstart', () => {
+      isComposing = true;
+    });
+
+    input.addEventListener('compositionend', () => {
+      isComposing = false;
+      input.dispatchEvent(new Event('input'));
+    });
+
     input.addEventListener('input', () => {
       const value = input.value.trim();
       clearTimeout(debounceTimer);
       updateSuggestions(value);
 
       if (!value) {
+        latestSearchRequestId++;
         resultsArea.replaceChildren();
         return;
       }
 
+      if (isComposing) {
+        return;
+      }
+
       debounceTimer = setTimeout(() => {
-        performSearch(value, resultsArea);
+        const currentValue = input.value.trim();
+        if (currentValue) {
+          performSearch(currentValue, resultsArea);
+        } else {
+          resultsArea.replaceChildren();
+        }
       }, 400);
     });
 
@@ -357,12 +379,18 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
     overlayElement._updateSuggestions = updateSuggestions;
   }
 
+  let latestSearchRequestId = 0;
+
   async function performSearch(word, resultsArea, source) {
+    const requestId = ++latestSearchRequestId;
     currentHeadword = word;
     renderState({ status: 'loading' }, resultsArea);
 
     try {
       const response = await lookupExecutor({ headword: word, source });
+      if (requestId !== latestSearchRequestId) {
+        return;
+      }
       if (response && response.status === 'success') {
         const canonicalWord = response.data?.parsedPayload?.headword || word;
         if (historyAdapter?.addSearchWord) {
@@ -371,6 +399,9 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       }
       renderState(response, resultsArea);
     } catch (error) {
+      if (requestId !== latestSearchRequestId) {
+        return;
+      }
       renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, resultsArea);
     }
   }

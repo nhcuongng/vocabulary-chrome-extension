@@ -436,6 +436,51 @@
         transform: rotate(45deg);
       }
 
+      .vocab-source-star-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 3px;
+        color: var(--hint-color, #9ca3af);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: color 0.15s, transform 0.15s, background-color 0.15s;
+        line-height: 1;
+      }
+
+      .vocab-source-star-btn:hover {
+        color: #f59e0b;
+        background-color: rgba(245, 158, 11, 0.12);
+        transform: scale(1.15);
+      }
+
+      .vocab-source-star-btn.is-default {
+        color: #f59e0b;
+      }
+
+      .vocab-source-star-btn.is-default svg {
+        fill: #f59e0b;
+      }
+
+      body.dark-mode .vocab-source-star-btn {
+        color: #9ca3af;
+      }
+
+      body.dark-mode .vocab-source-star-btn:hover {
+        color: #fbbf24;
+        background-color: rgba(251, 191, 36, 0.15);
+      }
+
+      body.dark-mode .vocab-source-star-btn.is-default {
+        color: #fbbf24;
+      }
+
+      body.dark-mode .vocab-source-star-btn.is-default svg {
+        fill: #fbbf24;
+      }
+
       body.dark-mode .vocab-auto-config-btn {
         color: #9ca3af;
       }
@@ -1485,6 +1530,11 @@
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                       </svg>
                     </button>
+                    <button type="button" class="vocab-source-star-btn is-default" data-source="auto" title="Current default source" aria-label="Current default source">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                    </button>
                     <span class="source-item-check">✓</span>
                   </div>
                 </div>
@@ -1498,14 +1548,28 @@
                     <span class="source-item-name">📘 Vocabulary.com</span>
                     <span class="source-item-hint">Explanations & word family</span>
                   </div>
-                  <span class="source-item-check">✓</span>
+                  <div class="source-item-actions">
+                    <button type="button" class="vocab-source-star-btn" data-source="vocabulary" title="Set as default dictionary source" aria-label="Set as default dictionary source">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                    </button>
+                    <span class="source-item-check">✓</span>
+                  </div>
                 </button>
                 <button type="button" class="vocab-source-menu-item" data-source="freedictionary">
                   <div class="source-item-text">
                     <span class="source-item-name">🆓 Free Dictionary API</span>
                     <span class="source-item-hint">Free dictionary with audio</span>
                   </div>
-                  <span class="source-item-check">✓</span>
+                  <div class="source-item-actions">
+                    <button type="button" class="vocab-source-star-btn" data-source="freedictionary" title="Set as default dictionary source" aria-label="Set as default dictionary source">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                    </button>
+                    <span class="source-item-check">✓</span>
+                  </div>
                 </button>
                 <button type="button" class="vocab-source-menu-item" data-source="cambridge">
                   <div class="source-item-text">
@@ -1515,7 +1579,14 @@
                     </span>
                     <span class="source-item-hint">Native UK/US audio & IPA</span>
                   </div>
-                  <span class="source-item-check">✓</span>
+                  <div class="source-item-actions">
+                    <button type="button" class="vocab-source-star-btn" data-source="cambridge" title="Set as default dictionary source" aria-label="Set as default dictionary source">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                    </button>
+                    <span class="source-item-check">✓</span>
+                  </div>
                 </button>
               </div>
             </div>
@@ -1551,6 +1622,20 @@
                     <span class="vocab-settings-option-hint">Toggle dark theme</span>
                   </div>
                   <input id="dark-mode-toggle" type="checkbox" class="vocab-checkbox-toggle" />
+                </div>
+
+                <div class="vocab-settings-option-item">
+                  <div class="vocab-settings-option-info">
+                    <div class="vocab-settings-option-label-row">
+                      <label for="remember-last-lookup-toggle" class="vocab-settings-option-label">Remember last lookup</label>
+                      <div class="tooltip-container">
+                        <span class="help-icon" aria-label="How to use">?</span>
+                        <span class="tooltip-text">Restore your most recently searched word automatically when opening the popup.</span>
+                      </div>
+                    </div>
+                    <span class="vocab-settings-option-hint">Restore last searched word</span>
+                  </div>
+                  <input id="remember-last-lookup-toggle" type="checkbox" class="vocab-checkbox-toggle" />
                 </div>
 
                 <p id="auto-popup-status" class="hint vocab-settings-status" aria-live="polite"></p>

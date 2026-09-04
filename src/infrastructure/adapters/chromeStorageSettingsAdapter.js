@@ -14,7 +14,8 @@ function isSameSettings(left, right) {
     left?.schemaVersion === right?.schemaVersion &&
     left?.autoPopupEnabled === right?.autoPopupEnabled &&
     left?.darkMode === right?.darkMode &&
-    left?.dictionarySource === right?.dictionarySource
+    left?.dictionarySource === right?.dictionarySource &&
+    left?.rememberLastLookup === right?.rememberLastLookup
   );
 }
 
