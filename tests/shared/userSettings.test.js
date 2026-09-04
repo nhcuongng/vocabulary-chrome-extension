@@ -58,3 +58,17 @@ test('normalizeUserSettings: chuẩn hóa autoSourceOrder đúng thứ tự và 
   assert.deepEqual(custom3.autoSourceOrder, ['vocabulary', 'freedictionary', 'cambridge']);
 });
 
+test('normalizeUserSettings & mergeUserSettings: chuẩn hóa và merge rememberLastLookup', () => {
+  assert.equal(normalizeUserSettings({}).rememberLastLookup, true);
+  assert.equal(normalizeUserSettings({ rememberLastLookup: false }).rememberLastLookup, false);
+  assert.equal(normalizeUserSettings({ rememberLastLookup: 'false' }).rememberLastLookup, false);
+  assert.equal(normalizeUserSettings({ rememberLastLookup: true }).rememberLastLookup, true);
+  assert.equal(normalizeUserSettings({ rememberLastLookup: 'true' }).rememberLastLookup, true);
+
+  const merged = mergeUserSettings(
+    { rememberLastLookup: true },
+    { rememberLastLookup: false }
+  );
+  assert.equal(merged.rememberLastLookup, false);
+});
+

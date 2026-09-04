@@ -61,6 +61,7 @@ async function bootstrapPopupRuntime({
 } = {}) {
   const toggleElement = documentObj.getElementById('auto-popup-toggle');
   const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
+  const rememberLastLookupToggleElement = documentObj.getElementById('remember-last-lookup-toggle');
   const dictionarySourceSelect = documentObj.getElementById('dictionary-source-select');
   const statusElement = documentObj.getElementById('auto-popup-status');
   const attributionElement = documentObj.getElementById('attribution');
@@ -105,6 +106,7 @@ async function bootstrapPopupRuntime({
 
   let autoPopupEnabled = true;
   let darkMode = false;
+  let rememberLastLookup = true;
   let dictionarySource = 'auto';
   let autoSourceOrder = [...DEFAULT_AUTO_SOURCE_ORDER];
   let currentSlideIndex = 0;
@@ -237,10 +239,14 @@ async function bootstrapPopupRuntime({
       const settings = await settingsStore.load();
       autoPopupEnabled = Boolean(settings?.autoPopupEnabled);
       darkMode = Boolean(settings?.darkMode);
+      rememberLastLookup = Boolean(settings?.rememberLastLookup ?? true);
       dictionarySource = settings?.dictionarySource || 'auto';
       autoSourceOrder = settings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
+      if (rememberLastLookupToggleElement) {
+        rememberLastLookupToggleElement.checked = rememberLastLookup;
+      }
       updateSourceMenuUI(dictionarySource);
       renderAutoOrderUI(autoSourceOrder);
     },
@@ -250,6 +256,9 @@ async function bootstrapPopupRuntime({
     },
     isDarkMode() {
       return darkMode;
+    },
+    isRememberLastLookup() {
+      return rememberLastLookup;
     },
     getDictionarySource() {
       return dictionarySource;
@@ -266,6 +275,13 @@ async function bootstrapPopupRuntime({
       updateBodyTheme(darkMode);
       await settingsStore.update({ darkMode });
     },
+    async setRememberLastLookup(enabled) {
+      rememberLastLookup = Boolean(enabled);
+      if (rememberLastLookupToggleElement) {
+        rememberLastLookupToggleElement.checked = rememberLastLookup;
+      }
+      await settingsStore.update({ rememberLastLookup });
+    },
     async setDictionarySource(source) {
       dictionarySource = source || 'auto';
       updateSourceMenuUI(dictionarySource);
@@ -280,13 +296,17 @@ async function bootstrapPopupRuntime({
       return settingsStore.subscribe((nextSettings) => {
         autoPopupEnabled = Boolean(nextSettings?.autoPopupEnabled);
         darkMode = Boolean(nextSettings?.darkMode);
+        rememberLastLookup = Boolean(nextSettings?.rememberLastLookup ?? true);
         dictionarySource = nextSettings?.dictionarySource || 'auto';
         autoSourceOrder = nextSettings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
+        if (rememberLastLookupToggleElement) {
+          rememberLastLookupToggleElement.checked = rememberLastLookup;
+        }
         updateSourceMenuUI(dictionarySource);
         renderAutoOrderUI(autoSourceOrder);
-        listener({ autoPopupEnabled, darkMode, dictionarySource, autoSourceOrder });
+        listener({ autoPopupEnabled, darkMode, rememberLastLookup, dictionarySource, autoSourceOrder });
       });
     },
   };
@@ -314,6 +334,15 @@ async function bootstrapPopupRuntime({
     await autoPopupController.setDarkMode(darkModeToggleElement.checked);
   };
   darkModeToggleElement.addEventListener('change', handleDarkModeChange);
+
+  const handleRememberLastLookupChange = async () => {
+    if (rememberLastLookupToggleElement) {
+      await autoPopupController.setRememberLastLookup(rememberLastLookupToggleElement.checked);
+    }
+  };
+  if (rememberLastLookupToggleElement) {
+    rememberLastLookupToggleElement.addEventListener('change', handleRememberLastLookupChange);
+  }
 
   // Source popover event listeners
   if (sourceMenuBtn && sourceMenuPopover) {
@@ -926,14 +955,27 @@ async function bootstrapPopupRuntime({
     } else {
       searchInput.focus();
     }
-    renderHistorySlider('');
-    renderZeroStateUI();
+
+    const recentWords = historyStore.getRecentSearchWords(1);
+    const lastWord = recentWords && recentWords.length > 0 ? recentWords[0] : '';
+
+    if (rememberLastLookup && lastWord) {
+      searchInput.value = lastWord;
+      renderHistorySlider(lastWord);
+      performSearch(lastWord);
+    } else {
+      renderHistorySlider('');
+      renderZeroStateUI();
+    }
   }
 
   const destroy = () => {
     unsubscribe?.();
     panel.destroy();
     darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
+    if (rememberLastLookupToggleElement) {
+      rememberLastLookupToggleElement.removeEventListener('change', handleRememberLastLookupChange);
+    }
     if (searchInput) {
       searchInput.removeEventListener('input', handleInput);
       searchInput.removeEventListener('keydown', handleKeyDown);

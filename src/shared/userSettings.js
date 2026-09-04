@@ -20,6 +20,7 @@ export const DEFAULT_USER_SETTINGS = Object.freeze({
   darkMode: false,
   dictionarySource: DICTIONARY_SOURCE.AUTO,
   autoSourceOrder: DEFAULT_AUTO_SOURCE_ORDER,
+  rememberLastLookup: true,
 });
 
 function toBooleanOrNull(value) {
@@ -115,6 +116,9 @@ export function normalizeUserSettings(rawValue) {
   const normalizedDarkMode =
     toBooleanOrNull(rawValue.darkMode) ?? DEFAULT_USER_SETTINGS.darkMode;
 
+  const normalizedRememberLastLookup =
+    toBooleanOrNull(rawValue.rememberLastLookup) ?? DEFAULT_USER_SETTINGS.rememberLastLookup;
+
   const normalizedDictionarySource = normalizeDictionarySource(rawValue.dictionarySource);
   const normalizedAutoSourceOrder = normalizeAutoSourceOrder(rawValue.autoSourceOrder);
 
@@ -124,6 +128,7 @@ export function normalizeUserSettings(rawValue) {
     darkMode: normalizedDarkMode,
     dictionarySource: normalizedDictionarySource,
     autoSourceOrder: normalizedAutoSourceOrder,
+    rememberLastLookup: normalizedRememberLastLookup,
   };
 }
 

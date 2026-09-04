@@ -164,6 +164,20 @@ test('settings adapter: runtime update khi storage thay đổi từ context khá
   assert.equal(observed.at(-1).nextSettings.dictionarySource, 'cambridge');
   assert.equal(observed.at(-1).meta.source, 'external-change');
 
+  // Test rememberLastLookup external change
+  storageChangeEvent.emit(
+    {
+      'user-settings': {
+        oldValue: { schemaVersion: 1, autoPopupEnabled: false, rememberLastLookup: true },
+        newValue: { schemaVersion: 1, autoPopupEnabled: false, rememberLastLookup: false },
+      },
+    },
+    'local',
+  );
+
+  assert.equal(observed.at(-1).nextSettings.rememberLastLookup, false);
+  assert.equal(observed.at(-1).meta.source, 'external-change');
+
   unsubscribe();
   adapter.destroy();
 });
