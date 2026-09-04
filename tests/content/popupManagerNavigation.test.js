@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createPopupManager } from '../../src/content/popupManager.js';
+import { createPopupManager, calculateResponsivePopupDimensions } from '../../src/content/popupManager.js';
 import { createChromeStorageHistoryAdapter } from '../../src/infrastructure/adapters/chromeStorageHistoryAdapter.js';
 
 function createMockDocument() {
@@ -40,6 +40,26 @@ function createMockDocument() {
         children.push(child);
         child.parentNode = el;
         return child;
+      },
+      insertBefore: (newChild, refChild) => {
+        const idx = children.indexOf(refChild);
+        if (idx !== -1) {
+          children.splice(idx, 0, newChild);
+        } else {
+          children.push(newChild);
+        }
+        newChild.parentNode = el;
+        return newChild;
+      },
+      replaceChild: (newChild, oldChild) => {
+        const idx = children.indexOf(oldChild);
+        if (idx !== -1) {
+          children.splice(idx, 1, newChild);
+          oldChild.parentNode = null;
+          newChild.parentNode = el;
+          return oldChild;
+        }
+        return null;
       },
       removeChild: (child) => {
         const idx = children.indexOf(child);
@@ -1060,4 +1080,97 @@ test('popupManager: removePopup with clearSelection clears text selection ranges
 
   popupManagerInstance.removePopup({ clearSelection: true });
   assert.equal(selectionCleared, true);
+});
+
+test('calculateResponsivePopupDimensions: tính toán width và height responsive theo các loại màn hình', () => {
+  // Mobile 375x667
+  const mobile = calculateResponsivePopupDimensions({ width: 375, height: 667 });
+  assert.equal(mobile.width, 351); // 375 - 24
+  assert.ok(mobile.maxHeight >= 260 && mobile.maxHeight <= 520);
+  assert.ok(mobile.minHeight >= 160 && mobile.minHeight <= 220);
+
+  // Very small 320x480
+  const small = calculateResponsivePopupDimensions({ width: 320, height: 480 });
+  assert.equal(small.width, 296); // 320 - 24
+  assert.equal(small.maxHeight, 264); // 480 * 0.55 = 264
+
+  // Tablet 768x1024
+  const tablet = calculateResponsivePopupDimensions({ width: 768, height: 1024 });
+  assert.ok(tablet.width >= 240 && tablet.width <= 420);
+  assert.ok(tablet.maxHeight <= 520);
+
+  // Laptop 1366x768
+  const laptop = calculateResponsivePopupDimensions({ width: 1366, height: 768 });
+  assert.equal(laptop.width, 420); // clamped to 420
+  assert.equal(laptop.maxHeight, 422); // 768 * 0.55
+
+  // Large desktop 1920x1080
+  const desktop = calculateResponsivePopupDimensions({ width: 1920, height: 1080 });
+  assert.equal(desktop.width, 420); // capped at 420
+  assert.equal(desktop.maxHeight, 520); // capped at 520
+});
+
+test('popupManager: chuyển slide history cập nhật cục bộ và giữ nguyên body không bị reset', async () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const words = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8'];
+  const store = { vocab_search_history: words };
+  const historyAdapter = createChromeStorageHistoryAdapter({
+    storageArea: {
+      get: async (k) => ({ [k]: store[k] }),
+      set: async (p) => Object.assign(store, p),
+    },
+  });
+  await historyAdapter.load();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    historyAdapter,
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'w1',
+    data: {
+      parsedPayload: {
+        headword: 'w1',
+        definitions: ['Stable definition content'],
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  // Lấy node định nghĩa ban đầu
+  const bodyContainer = container.childNodes.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-body'));
+  assert.ok(bodyContainer, 'Body container should exist');
+
+  // Tìm nút next slide
+  function getAllElements() {
+    const all = [];
+    function collect(node) {
+      if (!node) return;
+      all.push(node);
+      for (const c of node.childNodes || []) collect(c);
+    }
+    collect(container);
+    return all;
+  }
+
+  const slideNavBtns = getAllElements().filter((el) => typeof el.className === 'string' && el.className.includes('vocab-slide-nav-btn'));
+  const nextBtn = slideNavBtns[1];
+
+  // Click next slide
+  nextBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  // Kiểm tra bodyContainer vẫn là instance cũ (không bị replaceChildren phá hủy)
+  const currentBodyContainer = container.childNodes.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-body'));
+  assert.equal(currentBodyContainer, bodyContainer, 'Body container must remain stable without being recreated');
+
+  popupManager.removePopup();
 });

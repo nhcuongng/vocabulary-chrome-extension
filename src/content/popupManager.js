@@ -20,6 +20,28 @@ import {
   PITCH_LEVELS,
 } from '../domain/stressDiagramUtils.js';
 
+export function calculateResponsivePopupDimensions(viewport = {}) {
+  const vpWidth = Number(viewport.width) > 0 ? Number(viewport.width) : 1024;
+  const vpHeight = Number(viewport.height) > 0 ? Number(viewport.height) : 768;
+
+  let targetWidth;
+  if (vpWidth <= 420) {
+    targetWidth = Math.max(260, vpWidth - 24);
+  } else {
+    targetWidth = Math.min(420, Math.max(340, Math.round(vpWidth * 0.32)));
+    targetWidth = Math.min(targetWidth, vpWidth - 24);
+  }
+
+  const maxHeight = Math.min(520, Math.max(260, Math.round(vpHeight * 0.55)));
+  const minHeight = Math.min(220, Math.max(160, Math.round(vpHeight * 0.3)));
+
+  return {
+    width: targetWidth,
+    maxHeight,
+    minHeight,
+  };
+}
+
 const waveformSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M2 10v4"></path>
   <path d="M6 7v10"></path>
@@ -77,6 +99,7 @@ export function createPopupManager({
   let isHistorySearching = false;
   let historySearchQuery = '';
   let customPosition = null;
+  let currentPlacement = null;
   let cleanupActiveDrag = null;
   let customWords = null;
   let lastRenderedWord = null;
@@ -125,6 +148,8 @@ export function createPopupManager({
       historySearchQuery = '';
       isAutoOrderOpen = false;
       customPosition = null;
+      currentPlacement = null;
+      absoluteSelectionRect = null;
 
       if (clearSelection && windowObj?.getSelection) {
         try {
@@ -234,8 +259,8 @@ export function createPopupManager({
       }
 
       .vocab-popup {
-        max-height: 360px;
-        min-height: 200px;
+        max-height: var(--vocab-popup-max-height, 420px);
+        min-height: var(--vocab-popup-min-height, 200px);
         overflow-y: auto;
         overflow-x: hidden;
         scrollbar-width: thin;
@@ -271,7 +296,7 @@ export function createPopupManager({
         box-shadow: 0 4px 20px rgba(0,0,0,0.18);
         border-radius: 12px;
         padding: 12px 14px;
-        width: 380px;
+        width: var(--vocab-popup-width, 380px);
         max-width: calc(100vw - 24px);
         min-width: 260px;
         font-family: Inter, system-ui, -apple-system, sans-serif;
@@ -1400,17 +1425,33 @@ export function createPopupManager({
     return popupElement;
   }
 
-  function updatePopupPosition() {
+  function updatePopupPosition({ forceReanchor = false } = {}) {
     if (!popupElement) return;
 
-    const popupWidth = popupElement.offsetWidth || 380;
-    const popupHeight = popupElement.offsetHeight || 200;
     const viewport = {
       width: windowObj.innerWidth || 1024,
       height: windowObj.innerHeight || 768,
       scrollX: windowObj.scrollX || 0,
       scrollY: windowObj.scrollY || 0,
     };
+
+    const { width: responsiveWidth, maxHeight, minHeight } = calculateResponsivePopupDimensions(viewport);
+
+    const popupContainer = popupElement._vocabContainer;
+    if (popupContainer && popupContainer.style) {
+      if (typeof popupContainer.style.setProperty === 'function') {
+        popupContainer.style.setProperty('--vocab-popup-width', `${responsiveWidth}px`);
+        popupContainer.style.setProperty('--vocab-popup-max-height', `${maxHeight}px`);
+        popupContainer.style.setProperty('--vocab-popup-min-height', `${minHeight}px`);
+      }
+      popupContainer.style.width = `${responsiveWidth}px`;
+      popupContainer.style.maxWidth = `${responsiveWidth}px`;
+      popupContainer.style.maxHeight = `${maxHeight}px`;
+      popupContainer.style.minHeight = `${minHeight}px`;
+    }
+
+    const popupWidth = popupElement.offsetWidth || responsiveWidth;
+    const popupHeight = popupElement.offsetHeight || minHeight;
 
     if (customPosition) {
       const minLeft = viewport.scrollX + 8;
@@ -1423,34 +1464,47 @@ export function createPopupManager({
 
       popupElement.style.left = `${clampedLeft}px`;
       popupElement.style.top = `${clampedTop}px`;
-      popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
+      popupElement.style.maxWidth = `${Math.min(responsiveWidth, viewport.width - 16)}px`;
       return;
     }
 
     if (!absoluteSelectionRect) return;
 
-    let left = absoluteSelectionRect.left;
-    let top = absoluteSelectionRect.bottom + 8;
+    if (!currentPlacement || forceReanchor) {
+      const spaceBelow = viewport.scrollY + viewport.height - (absoluteSelectionRect.bottom + 8);
+      const spaceAbove = absoluteSelectionRect.top - 8 - viewport.scrollY;
 
-    if (top + popupHeight > viewport.scrollY + viewport.height) {
-      const aboveTop = absoluteSelectionRect.top - popupHeight - 8;
-      if (aboveTop >= viewport.scrollY) {
-        top = aboveTop;
+      if (spaceBelow >= Math.min(popupHeight, maxHeight) || spaceBelow >= spaceAbove) {
+        currentPlacement = 'below';
       } else {
-        top = viewport.scrollY + viewport.height - popupHeight - 8;
+        currentPlacement = 'above';
       }
     }
 
-    if (top < viewport.scrollY) top = viewport.scrollY + 8;
-
-    if (left + popupWidth > viewport.scrollX + viewport.width) {
+    let left = absoluteSelectionRect.left;
+    if (left + popupWidth > viewport.scrollX + viewport.width - 8) {
       left = viewport.scrollX + viewport.width - popupWidth - 8;
     }
-    if (left < viewport.scrollX) left = viewport.scrollX + 8;
+    if (left < viewport.scrollX + 8) {
+      left = viewport.scrollX + 8;
+    }
+
+    let top = absoluteSelectionRect.bottom + 8;
+    if (currentPlacement === 'above') {
+      top = absoluteSelectionRect.top - popupHeight - 8;
+      if (top < viewport.scrollY + 8) {
+        top = viewport.scrollY + 8;
+      }
+    } else {
+      top = absoluteSelectionRect.bottom + 8;
+      if (top + popupHeight > viewport.scrollY + viewport.height - 8) {
+        top = Math.max(viewport.scrollY + 8, viewport.scrollY + viewport.height - popupHeight - 8);
+      }
+    }
 
     popupElement.style.left = `${left}px`;
     popupElement.style.top = `${top}px`;
-    popupElement.style.maxWidth = `${Math.min(380, viewport.width - 16)}px`;
+    popupElement.style.maxWidth = `${Math.min(responsiveWidth, viewport.width - 16)}px`;
   }
 
   function initHeaderBarDragging(headerBarEl) {
@@ -1633,22 +1687,46 @@ export function createPopupManager({
     const headerBar = h('div', { className: 'vocab-popup-header-bar', title: 'Drag to move popup' });
     initHeaderBarDragging(headerBar);
 
-    const sliderWrapper = createHistorySliderElement({
-      documentObj,
-      allWords: allHistoryWords,
-      currentWord,
-      currentSlideIndex,
-      itemsPerPage: 5,
-      h,
-      onSelectWord: (word) => {
-        navigateToWord(word, { fromHistory: true });
-      },
-      onSlideChange: (newIndex) => {
-        currentSlideIndex = newIndex;
-        renderPopupContent(lastState);
-      },
-    });
-    headerBar.appendChild(sliderWrapper);
+    let currentSliderWrapper = null;
+    const renderSlider = () => {
+      const newSlider = createHistorySliderElement({
+        documentObj,
+        allWords: allHistoryWords,
+        currentWord,
+        currentSlideIndex,
+        itemsPerPage: 5,
+        h,
+        onSelectWord: (word) => {
+          navigateToWord(word, { fromHistory: true });
+        },
+        onSlideChange: (newIndex) => {
+          currentSlideIndex = newIndex;
+          renderSlider();
+        },
+      });
+
+      if (currentSliderWrapper && currentSliderWrapper.parentNode === headerBar) {
+        if (typeof headerBar.replaceChild === 'function') {
+          headerBar.replaceChild(newSlider, currentSliderWrapper);
+        } else if (typeof headerBar.removeChild === 'function') {
+          headerBar.removeChild(currentSliderWrapper);
+          if (headerBar.childNodes && headerBar.childNodes.length > 0 && typeof headerBar.insertBefore === 'function') {
+            headerBar.insertBefore(newSlider, headerBar.childNodes[0]);
+          } else {
+            headerBar.appendChild(newSlider);
+          }
+        }
+      } else {
+        if (headerBar.childNodes && headerBar.childNodes.length > 0 && typeof headerBar.insertBefore === 'function') {
+          headerBar.insertBefore(newSlider, headerBar.childNodes[0]);
+        } else {
+          headerBar.appendChild(newSlider);
+        }
+      }
+      currentSliderWrapper = newSlider;
+    };
+
+    renderSlider();
 
     // 2. Header Actions: Source Menu Button (Icon with vertical popover) + Close Button
     const headerActions = h('div', { className: 'vocab-popup-header-actions' });
@@ -2325,7 +2403,8 @@ export function createPopupManager({
     if (words !== undefined) {
       setCustomWords(words);
     }
-    if (selectionRect && typeof selectionRect === 'object') {
+    const isFirstOpen = !popupElement || !popupElement.parentNode;
+    if (selectionRect && typeof selectionRect === 'object' && (selectionRect.width > 0 || selectionRect.height > 0 || selectionRect.left > 0 || selectionRect.top > 0)) {
       const scrollX = windowObj?.scrollX || 0;
       const scrollY = windowObj?.scrollY || 0;
       const left = Number(selectionRect.left) || 0;
@@ -2355,6 +2434,10 @@ export function createPopupManager({
     }
 
     renderPopupContent(state);
+
+    if (isFirstOpen) {
+      updatePopupPosition({ forceReanchor: true });
+    }
 
     if (!isListening) {
       windowObj.addEventListener('scroll', throttledHandleScrollResize, true);
