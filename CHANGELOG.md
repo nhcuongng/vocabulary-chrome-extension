@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] - 2026-09-04
+
+### 🚀 Added & Improved (Source Switching, Persistence & Debounce)
+- **Separate Temporary Source Selection from Default Source**:
+  - Clicking any source row in the dictionary source menu now immediately triggers a lookup for the current search word without altering the persistent default dictionary setting.
+  - Added an interactive Star (⭐) button on each source item allowing users to explicitly set their default dictionary source across sessions.
+- **Remember Last Lookup**:
+  - Added user setting to automatically remember and restore the most recently searched word when opening the standalone popup.
+  - Configurable directly from the extension Settings menu popover.
+- **Hardened Search Debounce & IME Composition**:
+  - Enhanced search input handling with a 400ms debounce timer to eliminate unnecessary intermediate queries.
+  - Added native IME composition check (`e.isComposing`) to avoid premature lookups during non-Latin text entry.
+  - Guarded against out-of-order asynchronous lookup responses overwriting newer searches.
+  - Instant lookup on `Enter` key press bypassing the debounce timer.
+- **Enhanced Zero-State & Dismissal Ergonomics**:
+  - Streamlined flashcard reviews and first-time onboarding cards in standalone popup.
+  - Enhanced `Escape` key handling in the in-page popup modal and trigger icon to cleanly dismiss on demand.
+
+### 🔧 Fixed
+- **Dictionary Source Menu Popover Layout & Invalid HTML**:
+  - Fixed HTML parser syntax issue where interactive `<button>` tags were nested within `<button>` rows, causing layout breakage and premature closing of DOM elements.
+  - Standardized all source menu items to valid semantic `div` elements with full Keyboard Accessibility (`Enter`/`Space`) and `role="button"`.
+  - Refined popover sizing (260px width with ellipsis text truncation) to prevent button crowding and overflow.
+
+---
+
 ## [0.7.0] - 2026-08-31
 
 ### 🚀 Added & Improved (Pronunciation & Stress Sourcing)
