@@ -857,7 +857,13 @@ async function bootstrapPopupRuntime({
     });
   };
 
+  let debounceTimer = null;
+  let latestSearchRequestId = 0;
+  let isComposing = false;
+
   const performSearch = async (word, source) => {
+    const requestId = ++latestSearchRequestId;
+
     if (!word) {
       if (searchResultsContainer) {
         searchResultsContainer.replaceChildren();
@@ -883,6 +889,9 @@ async function bootstrapPopupRuntime({
 
     try {
       const response = await lookupExecutor(word, source);
+      if (requestId !== latestSearchRequestId) {
+        return;
+      }
       if (response && response.status === 'success') {
         const canonicalWord = response.data?.parsedPayload?.headword || word;
         await historyStore.addSearchWord(canonicalWord).catch(() => {});
@@ -892,16 +901,18 @@ async function bootstrapPopupRuntime({
         renderState(response, searchResultsContainer);
       }
     } catch (error) {
+      if (requestId !== latestSearchRequestId) {
+        return;
+      }
       if (searchResultsContainer) {
         renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, searchResultsContainer);
       }
     }
   };
 
-  let debounceTimer = null;
   const handleInput = () => {
-    const value = searchInput.value.trim().toLowerCase();
     clearTimeout(debounceTimer);
+    const value = searchInput.value.trim().toLowerCase();
     renderHistorySlider(value);
 
     if (!value) {
@@ -909,12 +920,31 @@ async function bootstrapPopupRuntime({
       return;
     }
 
+    if (isComposing) {
+      return;
+    }
+
     debounceTimer = setTimeout(() => {
-      performSearch(value);
+      const currentValue = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      if (currentValue) {
+        performSearch(currentValue);
+      } else {
+        performSearch('');
+      }
     }, 400);
   };
 
+  const handleCompositionStart = () => {
+    isComposing = true;
+  };
+
+  const handleCompositionEnd = () => {
+    isComposing = false;
+    handleInput();
+  };
+
   const handleClear = () => {
+    clearTimeout(debounceTimer);
     searchInput.value = '';
     performSearch('');
     renderHistorySlider('');
@@ -940,6 +970,8 @@ async function bootstrapPopupRuntime({
 
   if (searchInput) {
     searchInput.addEventListener('input', handleInput);
+    searchInput.addEventListener('compositionstart', handleCompositionStart);
+    searchInput.addEventListener('compositionend', handleCompositionEnd);
     searchInput.addEventListener('keydown', handleKeyDown);
     searchInput.addEventListener('focus', handleFocus);
   }
@@ -970,6 +1002,7 @@ async function bootstrapPopupRuntime({
   }
 
   const destroy = () => {
+    clearTimeout(debounceTimer);
     unsubscribe?.();
     panel.destroy();
     darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
@@ -978,6 +1011,8 @@ async function bootstrapPopupRuntime({
     }
     if (searchInput) {
       searchInput.removeEventListener('input', handleInput);
+      searchInput.removeEventListener('compositionstart', handleCompositionStart);
+      searchInput.removeEventListener('compositionend', handleCompositionEnd);
       searchInput.removeEventListener('keydown', handleKeyDown);
       searchInput.removeEventListener('focus', handleFocus);
     }
@@ -988,7 +1023,9 @@ async function bootstrapPopupRuntime({
     historyStore.destroy?.();
   };
 
-  globalThis.addEventListener('unload', destroy, { once: true });
+  if (typeof globalThis.addEventListener === 'function') {
+    globalThis.addEventListener('unload', destroy, { once: true });
+  }
 
   return {
     destroy,
