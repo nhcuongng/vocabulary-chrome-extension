@@ -235,7 +235,9 @@
         top: calc(100% + 6px);
         right: 0;
         z-index: 1000;
-        min-width: 220px;
+        width: 260px;
+        max-width: calc(380px - 28px);
+        box-sizing: border-box;
         background: var(--bg-color);
         border: 1px solid var(--border-color);
         border-radius: 10px;
@@ -321,18 +323,21 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 6px 10px;
+        padding: 6px 8px;
         border-radius: 6px;
-        border: none;
+        border: 1px solid transparent;
         background: transparent;
         cursor: pointer;
         text-align: left;
         width: 100%;
         box-sizing: border-box;
-        transition: background-color 0.15s ease;
+        user-select: none;
+        outline: none;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
       }
 
-      .vocab-source-menu-item:hover {
+      .vocab-source-menu-item:hover,
+      .vocab-source-menu-item:focus-visible {
         background-color: var(--border-color);
       }
 
@@ -350,6 +355,7 @@
         gap: 1px;
         flex: 1;
         min-width: 0;
+        overflow: hidden;
       }
 
       .vocab-source-menu-item .source-item-name {
@@ -359,6 +365,9 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .source-badge-experimental {
@@ -377,6 +386,9 @@
       .vocab-source-menu-item .source-item-hint {
         font-size: 10px;
         color: var(--hint-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .vocab-source-menu-item.active .source-item-hint {
@@ -392,7 +404,7 @@
         font-weight: 700;
         color: #4f46e5;
         opacity: 0;
-        margin-left: 8px;
+        margin-left: 4px;
         flex-shrink: 0;
       }
 
@@ -407,8 +419,9 @@
       .source-item-actions {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         flex-shrink: 0;
+        margin-left: 6px;
       }
 
       .vocab-auto-config-btn {
@@ -1522,7 +1535,10 @@
               <div id="vocab-source-menu-popover" class="vocab-source-menu-popover" style="display: none;">
                 <div class="vocab-source-menu-title">Dictionary Source</div>
                 <div class="vocab-source-menu-item active" data-source="auto" role="button" tabindex="0">
-                  <span class="source-item-name">⚡ Auto</span>
+                  <div class="source-item-text">
+                    <span class="source-item-name">⚡ Auto</span>
+                    <span class="source-item-hint">Fallback in priority order</span>
+                  </div>
                   <div class="source-item-actions">
                     <button type="button" class="vocab-auto-config-btn" id="vocab-auto-config-btn" title="Configure auto priority order" aria-label="Configure auto priority order">
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1543,7 +1559,7 @@
                   <div class="vocab-auto-order-list" id="vocab-auto-order-list"></div>
                 </div>
                 <div class="vocab-source-menu-title" style="margin-top: 4px;">Single Source</div>
-                <button type="button" class="vocab-source-menu-item" data-source="vocabulary">
+                <div class="vocab-source-menu-item" data-source="vocabulary" role="button" tabindex="0">
                   <div class="source-item-text">
                     <span class="source-item-name">📘 Vocabulary.com</span>
                     <span class="source-item-hint">Explanations & word family</span>
@@ -1556,8 +1572,8 @@
                     </button>
                     <span class="source-item-check">✓</span>
                   </div>
-                </button>
-                <button type="button" class="vocab-source-menu-item" data-source="freedictionary">
+                </div>
+                <div class="vocab-source-menu-item" data-source="freedictionary" role="button" tabindex="0">
                   <div class="source-item-text">
                     <span class="source-item-name">🆓 Free Dictionary API</span>
                     <span class="source-item-hint">Free dictionary with audio</span>
@@ -1570,8 +1586,8 @@
                     </button>
                     <span class="source-item-check">✓</span>
                   </div>
-                </button>
-                <button type="button" class="vocab-source-menu-item" data-source="cambridge">
+                </div>
+                <div class="vocab-source-menu-item" data-source="cambridge" role="button" tabindex="0">
                   <div class="source-item-text">
                     <span class="source-item-name">
                       🏛 Cambridge Dictionary
@@ -1587,7 +1603,7 @@
                     </button>
                     <span class="source-item-check">✓</span>
                   </div>
-                </button>
+                </div>
               </div>
             </div>
 
