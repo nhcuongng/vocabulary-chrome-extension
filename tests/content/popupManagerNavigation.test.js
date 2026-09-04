@@ -329,6 +329,84 @@ test('popupManager: header bar contains source menu icon button and clicking ope
   assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);
 });
 
+test('popupManager: clicking source row does not change default settings, but clicking star button updates default dictionarySource', async () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+  const lookedUpCalls = [];
+  const sourceChanges = [];
+  const savedSettings = [];
+
+  const settingsAdapter = {
+    getSnapshot: () => ({ dictionarySource: 'auto' }),
+    update: async (patch) => {
+      savedSettings.push(patch);
+      return patch;
+    },
+  };
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    settingsAdapter,
+    onLookupWord: (word, opts) => lookedUpCalls.push({ word, opts }),
+    onSourceChange: (source) => sourceChanges.push(source),
+  });
+
+  const state = {
+    status: 'success',
+    headword: 'resilience',
+    data: {
+      parsedPayload: {
+        headword: 'resilience',
+        definitions: ['The capacity to recover quickly from difficulties.'],
+        source: 'auto',
+      },
+    },
+  };
+
+  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  const all = [];
+  function collect(node) {
+    if (!node) return;
+    all.push(node);
+    for (const c of node.childNodes || []) collect(c);
+  }
+  collect(container);
+
+  // 1. Verify star buttons exist on all 4 items
+  const starBtns = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-star-btn'));
+  assert.equal(starBtns.length, 4);
+
+  // Auto is current default -> has is-default class and "Current default source" title
+  assert.ok(starBtns[0].className.includes('is-default'));
+  assert.equal(starBtns[0].getAttribute('title'), 'Current default source');
+
+  // Single sources are not default -> do not have is-default class and have "Set as default dictionary source" title
+  assert.equal(starBtns[1].className.includes('is-default'), false);
+  assert.equal(starBtns[1].getAttribute('title'), 'Set as default dictionary source');
+
+  // 2. Click on FreeDictionary row (not star) -> triggers sourceChange and lookup, but does NOT call settingsAdapter.update
+  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
+  const freeDictOption = menuItems.find((el) => el.getAttribute('data-source') === 'freedictionary');
+  assert.ok(freeDictOption);
+
+  freeDictOption.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.deepEqual(sourceChanges, ['freedictionary']);
+  assert.deepEqual(lookedUpCalls, [{ word: 'resilience', opts: { fromHistory: false, source: 'freedictionary' } }]);
+  assert.equal(savedSettings.length, 0); // Not saved to default settings!
+
+  // 3. Click on Cambridge star button -> calls settingsAdapter.update({ dictionarySource: 'cambridge' })
+  const cambridgeStarBtn = starBtns[3]; // Index 3 is Cambridge (Auto=0, Vocab=1, FreeDict=2, Cambridge=3)
+  await cambridgeStarBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  assert.equal(savedSettings.length, 1);
+  assert.deepEqual(savedSettings[0], { dictionarySource: 'cambridge' });
+});
+
 test('popupManager: popover hiển thị danh sách auto priority draggable và hỗ trợ kéo thả reorder', async () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();

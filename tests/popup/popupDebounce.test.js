@@ -342,3 +342,105 @@ test('popup debounce: clearing input clears debounce timer and resets results', 
 
   runtime.destroy();
 });
+
+test('popup: clicking source item performs search for current word without changing default setting; clicking star button updates default setting', async () => {
+  const doc = createMockDocument();
+  const searchInput = doc.getElementById('vocab-search-input');
+  searchInput.value = 'galaxy';
+
+  const sourceMenuPopover = doc.getElementById('vocab-source-menu-popover');
+  const starBtnAuto = createMockElement('button');
+  starBtnAuto.className = 'vocab-source-star-btn is-default';
+  starBtnAuto.setAttribute('data-source', 'auto');
+
+  const starBtnCambridge = createMockElement('button');
+  starBtnCambridge.className = 'vocab-source-star-btn';
+  starBtnCambridge.setAttribute('data-source', 'cambridge');
+
+  const itemAuto = createMockElement('div');
+  itemAuto.className = 'vocab-source-menu-item active';
+  itemAuto.setAttribute('data-source', 'auto');
+
+  const itemCambridge = createMockElement('button');
+  itemCambridge.className = 'vocab-source-menu-item';
+  itemCambridge.setAttribute('data-source', 'cambridge');
+
+  sourceMenuPopover.querySelectorAll = (selector) => {
+    if (selector.includes('.vocab-source-star-btn')) {
+      return [starBtnAuto, starBtnCambridge];
+    }
+    if (selector.includes('.vocab-source-menu-item')) {
+      return [itemAuto, itemCambridge];
+    }
+    return [];
+  };
+
+  doc.querySelectorAll = (selector) => {
+    if (selector.includes('.vocab-source-star-btn')) {
+      return [starBtnAuto, starBtnCambridge];
+    }
+    if (selector.includes('.vocab-source-menu-item')) {
+      return [itemAuto, itemCambridge];
+    }
+    return [];
+  };
+
+  const storedSettings = { dictionarySource: 'auto', rememberLastLookup: false };
+  const savedSettings = [];
+  const sentMessages = [];
+
+  const mockChrome = {
+    storage: {
+      local: {
+        get: async (key) => {
+          if (typeof key === 'string') return { [key]: storedSettings[key] };
+          if (Array.isArray(key)) {
+            const res = {};
+            for (const k of key) res[k] = storedSettings[k];
+            return res;
+          }
+          return { ...storedSettings };
+        },
+        set: async (items) => {
+          Object.assign(storedSettings, items);
+          savedSettings.push(items);
+        },
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+    runtime: {
+      sendMessage: (msg, callback) => {
+        sentMessages.push(msg);
+        callback({
+          status: 'success',
+          data: {
+            source: msg.payload?.source,
+            parsedPayload: { headword: msg.payload?.token },
+          },
+        });
+      },
+    },
+  };
+
+  const runtime = await bootstrapPopupRuntime({
+    chromeApi: mockChrome,
+    documentObj: doc,
+  });
+
+  // 1. Click Cambridge source row -> runs search with source 'cambridge', but does NOT save to settings store
+  await itemCambridge.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(sentMessages.length, 1);
+  assert.equal(sentMessages[0].payload.source, 'cambridge');
+  assert.equal(sentMessages[0].payload.token, 'galaxy');
+  assert.equal(savedSettings.length, 0); // Not saved to persistent settings!
+
+  // 2. Click Cambridge star button -> saves { dictionarySource: 'cambridge' } to settings store
+  await starBtnCambridge.dispatchEvent('click', { stopPropagation: () => {} });
+  assert.equal(savedSettings.length, 1);
+  assert.equal(savedSettings[0]['user-settings']?.dictionarySource, 'cambridge');
+
+  runtime.destroy();
+});

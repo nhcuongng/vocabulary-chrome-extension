@@ -123,18 +123,42 @@ async function bootstrapPopupRuntime({
     }
   };
 
-  const updateSourceMenuUI = (source) => {
+  let activeSearchSource = null;
+
+  const updateSourceMenuUI = (activeSrc, defaultSrc) => {
+    const effectiveDefault = defaultSrc || dictionarySource || 'auto';
+    const effectiveActive = activeSrc || activeSearchSource || effectiveDefault;
+
     if (dictionarySourceSelect) {
-      dictionarySourceSelect.value = source;
+      dictionarySourceSelect.value = effectiveDefault;
     }
     const menuItems = documentObj.querySelectorAll('#vocab-source-menu-popover .vocab-source-menu-item');
-    menuItems.forEach((item) => {
-      if (item.getAttribute('data-source') === source) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-    });
+    if (menuItems) {
+      menuItems.forEach((item) => {
+        if (item.getAttribute('data-source') === effectiveActive) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    const starBtns = documentObj.querySelectorAll('#vocab-source-menu-popover .vocab-source-star-btn');
+    if (starBtns) {
+      starBtns.forEach((btn) => {
+        const src = btn.getAttribute('data-source');
+        const isDefault = src === effectiveDefault;
+        if (isDefault) {
+          btn.classList.add('is-default');
+          btn.setAttribute('title', 'Current default source');
+          btn.setAttribute('aria-label', 'Current default source');
+        } else {
+          btn.classList.remove('is-default');
+          btn.setAttribute('title', 'Set as default dictionary source');
+          btn.setAttribute('aria-label', 'Set as default dictionary source');
+        }
+      });
+    }
   };
 
   const renderAutoOrderUI = (order = []) => {
@@ -247,7 +271,7 @@ async function bootstrapPopupRuntime({
       if (rememberLastLookupToggleElement) {
         rememberLastLookupToggleElement.checked = rememberLastLookup;
       }
-      updateSourceMenuUI(dictionarySource);
+      updateSourceMenuUI(activeSearchSource, dictionarySource);
       renderAutoOrderUI(autoSourceOrder);
     },
     stop() {},
@@ -284,7 +308,7 @@ async function bootstrapPopupRuntime({
     },
     async setDictionarySource(source) {
       dictionarySource = source || 'auto';
-      updateSourceMenuUI(dictionarySource);
+      updateSourceMenuUI(activeSearchSource, dictionarySource);
       await settingsStore.update({ dictionarySource });
     },
     async setAutoSourceOrder(order) {
@@ -304,7 +328,7 @@ async function bootstrapPopupRuntime({
         if (rememberLastLookupToggleElement) {
           rememberLastLookupToggleElement.checked = rememberLastLookup;
         }
-        updateSourceMenuUI(dictionarySource);
+        updateSourceMenuUI(activeSearchSource, dictionarySource);
         renderAutoOrderUI(autoSourceOrder);
         listener({ autoPopupEnabled, darkMode, rememberLastLookup, dictionarySource, autoSourceOrder });
       });
@@ -356,23 +380,40 @@ async function bootstrapPopupRuntime({
       }
     });
 
-    const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
-    menuItems.forEach((item) => {
-      item.addEventListener('click', async (e) => {
-        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#vocab-auto-config-btn')) {
-          return;
-        }
-        e.stopPropagation();
-        const nextSource = item.getAttribute('data-source');
-        sourceMenuPopover.style.display = 'none';
-        isSourceMenuOpen = false;
-        await autoPopupController.setDictionarySource(nextSource);
-        const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        if (currentWord) {
-          performSearch(currentWord, nextSource);
-        }
+    const starBtns = sourceMenuPopover.querySelectorAll('.vocab-source-star-btn');
+    if (starBtns) {
+      starBtns.forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const src = btn.getAttribute('data-source');
+          if (src) {
+            await autoPopupController.setDictionarySource(src);
+            updateSourceMenuUI(activeSearchSource, src);
+          }
+        });
       });
-    });
+    }
+
+    const menuItems = sourceMenuPopover.querySelectorAll('.vocab-source-menu-item');
+    if (menuItems) {
+      menuItems.forEach((item) => {
+        item.addEventListener('click', async (e) => {
+          if (e.target && typeof e.target.closest === 'function' && (e.target.closest('#vocab-auto-config-btn') || e.target.closest('.vocab-source-star-btn'))) {
+            return;
+          }
+          e.stopPropagation();
+          const nextSource = item.getAttribute('data-source');
+          sourceMenuPopover.style.display = 'none';
+          isSourceMenuOpen = false;
+          activeSearchSource = nextSource;
+          updateSourceMenuUI(activeSearchSource, dictionarySource);
+          const currentWord = searchInput ? searchInput.value.trim().toLowerCase() : '';
+          if (currentWord) {
+            performSearch(currentWord, nextSource);
+          }
+        });
+      });
+    }
 
     const autoConfigBtn = documentObj.getElementById('vocab-auto-config-btn');
     const autoOrderSection = documentObj.getElementById('vocab-auto-order-section');
