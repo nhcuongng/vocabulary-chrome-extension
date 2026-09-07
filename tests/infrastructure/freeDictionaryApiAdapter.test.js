@@ -54,6 +54,8 @@ test('freeDictionaryApiAdapter: trích xuất headword, UK & US audio, IPA, đ�
   assert.ok(result.hasCoreData);
   assert.equal(result.source, 'cambridge');
   assert.ok(result.wordFamily.some((f) => f.word === 'lovely' || f.word === 'pretty'));
+  assert.ok(result.synonyms.includes('lovely') || result.synonyms.includes('pretty'));
+  assert.ok(Array.isArray(result.antonyms));
 });
 
 test('extractFreeDictionaryPronunciation: trích xuất US & UK IPA và audio direct URLs từ standard dictionary API response', () => {

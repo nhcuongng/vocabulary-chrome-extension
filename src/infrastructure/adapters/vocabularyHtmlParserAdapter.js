@@ -146,6 +146,28 @@ export function parseVocabularyHtml(html) {
     }
   }
 
+  const synonymsList = [];
+  const antonymsList = [];
+  const seenSynonyms = new Set();
+  const seenAntonyms = new Set();
+  const currentHeadwordLower = (headword || '').trim().toLowerCase();
+
+  const collectSynonym = (val) => {
+    const s = String(val || '').toLowerCase().trim();
+    if (s && s !== currentHeadwordLower && !seenSynonyms.has(s)) {
+      seenSynonyms.add(s);
+      synonymsList.push(s);
+    }
+  };
+
+  const collectAntonym = (val) => {
+    const a = String(val || '').toLowerCase().trim();
+    if (a && a !== currentHeadwordLower && !seenAntonyms.has(a)) {
+      seenAntonyms.add(a);
+      antonymsList.push(a);
+    }
+  };
+
   const olMatch = safeHtml.match(/<div[^>]*class=["'][^"']*word-definitions[^"']*["'][^>]*>[\s\S]*?(<ol>[\s\S]*?<\/ol>)/i);
 
   if (olMatch) {
@@ -160,7 +182,76 @@ export function parseVocabularyHtml(html) {
         // Sanitize the content of the definition using the existing safe pipeline
         const sanitizedDef = decodeBasicEntities(defMatch[1] ?? '');
         const plainTextDef = stripTags(sanitizedDef);
-        return `<li style="margin-bottom: 10px;">${plainTextDef}</li>`;
+
+        // Extract instances (synonyms / antonyms / types)
+        const itemSynonyms = [];
+        const itemAntonyms = [];
+
+        // Split by instances blocks: <div class="div-replace-dl instances"> or <dl class="instances">
+        const instanceBlocks = liHtml.split(/(?:<div[^>]*class=["'][^"']*instances[^"']*["'][^>]*>|<dl[^>]*class=["'][^"']*instances[^"']*["'][^>]*>)/i);
+        
+        for (let i = 1; i < instanceBlocks.length; i++) {
+          const block = instanceBlocks[i];
+          const headerSection = block.slice(0, 150);
+          const isSyn = /synonym/i.test(headerSection);
+          const isAnt = /antonym/i.test(headerSection);
+
+          if (isSyn || isAnt) {
+            // Find all word links in this block (stop if another section begins)
+            const blockContent = block.split(/<(?:div|dl)[^>]*class=["'][^"']*(?:instances|more-info-section)/i)[0];
+            const wordMatches = blockContent.match(/<a[^>]*class=["'][^"']*word[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi) || [];
+            
+            wordMatches.forEach((wHtml) => {
+              const raw = stripTags(decodeBasicEntities(wHtml));
+              if (raw) {
+                if (isAnt) {
+                  itemAntonyms.push(raw);
+                  collectAntonym(raw);
+                } else {
+                  itemSynonyms.push(raw);
+                  collectSynonym(raw);
+                }
+              }
+            });
+          }
+        }
+
+        // Also check direct data or plain text synonyms/antonyms in defContent
+        const directSynMatch = liHtml.match(/synonyms?:?\s*<\/dt>\s*<dd>([\s\S]*?)<\/dd>/i);
+        if (directSynMatch) {
+          const rawWords = stripTags(decodeBasicEntities(directSynMatch[1])).split(/,\s*/);
+          rawWords.forEach((rw) => {
+            const clean = rw.trim();
+            if (clean) {
+              itemSynonyms.push(clean);
+              collectSynonym(clean);
+            }
+          });
+        }
+
+        const directAntMatch = liHtml.match(/antonyms?:?\s*<\/dt>\s*<dd>([\s\S]*?)<\/dd>/i);
+        if (directAntMatch) {
+          const rawWords = stripTags(decodeBasicEntities(directAntMatch[1])).split(/,\s*/);
+          rawWords.forEach((rw) => {
+            const clean = rw.trim();
+            if (clean) {
+              itemAntonyms.push(clean);
+              collectAntonym(clean);
+            }
+          });
+        }
+
+        let liResult = `<li style="margin-bottom: 10px;"><b>${plainTextDef}</b>`;
+        if (itemSynonyms.length > 0) {
+          const uniqueSyns = [...new Set(itemSynonyms)];
+          liResult += `<div style="font-size: 12px; margin-top: 3px; color: #166534;"><span style="font-weight: 600;">Synonyms:</span> ${uniqueSyns.join(', ')}</div>`;
+        }
+        if (itemAntonyms.length > 0) {
+          const uniqueAnts = [...new Set(itemAntonyms)];
+          liResult += `<div style="font-size: 12px; margin-top: 2px; color: #9a3412;"><span style="font-weight: 600;">Antonyms:</span> ${uniqueAnts.join(', ')}</div>`;
+        }
+        liResult += `</li>`;
+        return liResult;
       }
       return "";
     }).filter(li => li !== "").join("");
@@ -188,7 +279,6 @@ export function parseVocabularyHtml(html) {
       const familyData = JSON.parse(rawJson);
       if (Array.isArray(familyData)) {
         const seenWords = new Set();
-        const currentHeadwordLower = (headword || '').trim().toLowerCase();
 
         // Ưu tiên sắp xếp theo tần suất freq giảm dần
         const sorted = [...familyData].sort((a, b) => (Number(b.freq) || 0) - (Number(a.freq) || 0));
@@ -218,6 +308,8 @@ export function parseVocabularyHtml(html) {
     audio,
     definitions,
     wordFamily,
+    synonyms: synonymsList.slice(0, 30),
+    antonyms: antonymsList.slice(0, 30),
     hasCoreData: Boolean(headword && (ipaUs || ipaUk)),
   };
 }

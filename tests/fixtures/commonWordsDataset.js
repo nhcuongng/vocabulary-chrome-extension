@@ -115,6 +115,12 @@ export function generateVocabularyHtml(item) {
     }))
   ).replace(/"/g, '&quot;');
 
+  const mockSynonyms = item.synonyms || (item.family && item.family.length > 0 ? [item.family[0]] : ['similar_word']);
+  const mockAntonyms = item.antonyms || ['opposite_word'];
+
+  const synLinks = mockSynonyms.map((s) => `<a class="word" href="/dictionary/${s}">${s}</a>`).join(', ');
+  const antLinks = mockAntonyms.map((a) => `<a class="word" href="/dictionary/${a}">${a}</a>`).join(', ');
+
   return `
     <article>
       <h1 class="dynamictext">${item.word}</h1>
@@ -134,12 +140,61 @@ export function generateVocabularyHtml(item) {
       </div>
       <div class="word-definitions">
         <ol>
-          <li><div class="definition">${item.def}</div></li>
+          <li>
+            <div class="definition">${item.def}</div>
+            <div class="defContent">
+              <dl class="instances synonyms">
+                <dt>Synonyms:</dt>
+                <dd>${synLinks}</dd>
+              </dl>
+              <dl class="instances antonyms">
+                <dt>Antonyms:</dt>
+                <dd>${antLinks}</dd>
+              </dl>
+            </div>
+          </li>
         </ol>
       </div>
       <vcom:wordfamily lang="en" word="${item.word}" data="${familyJson}">
     </article>
   `;
+}
+
+export function generateFreeDictionaryJson(item) {
+  const mockSynonyms = item.synonyms || (item.family && item.family.length > 0 ? [item.family[0]] : ['similar_word']);
+  const mockAntonyms = item.antonyms || ['opposite_word'];
+
+  return [
+    {
+      word: item.word,
+      phonetic: item.ipa?.us ? `/${item.ipa.us}/` : '',
+      phonetics: [
+        {
+          text: item.ipa?.us ? `/${item.ipa.us}/` : '',
+          audio: item.audio?.us ? `https://api.dictionaryapi.dev/media/pronunciations/en/${item.word}-us.mp3` : '',
+        },
+        {
+          text: item.ipa?.uk ? `/${item.ipa.uk}/` : '',
+          audio: item.audio?.uk ? `https://api.dictionaryapi.dev/media/pronunciations/en/${item.word}-uk.mp3` : '',
+        },
+      ],
+      meanings: [
+        {
+          partOfSpeech: item.pos || 'verb',
+          definitions: [
+            {
+              definition: item.def,
+              example: item.example || '',
+              synonyms: mockSynonyms,
+              antonyms: mockAntonyms,
+            },
+          ],
+          synonyms: mockSynonyms,
+          antonyms: mockAntonyms,
+        },
+      ],
+    },
+  ];
 }
 
 export function generateCambridgeHtml(item) {

@@ -57,6 +57,8 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
   const source = parsedPayload?.source || 'vocabulary';
   const lookupUrl = parsedPayload?.lookupUrl || '';
   const stressDiagram = parseStressDiagramFromIpa(pronunciation);
+  const synonyms = Array.isArray(parsedPayload?.synonyms) ? parsedPayload.synonyms : [];
+  const antonyms = Array.isArray(parsedPayload?.antonyms) ? parsedPayload.antonyms : [];
 
   return {
     state: 'success',
@@ -68,6 +70,8 @@ export function mapParsedPayloadToPopupViewModel(parsedPayload) {
     stressDiagram,
     audio,
     wordFamily,
+    synonyms,
+    antonyms,
     definitions,
   };
 }

@@ -1188,6 +1188,67 @@ export function createPopupManager({
         border-color: #e5e7eb;
       }
 
+      /* Synonyms & Antonyms Section */
+      .vocab-thesaurus-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .vocab-thesaurus-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 2px 0 2px 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .vocab-thesaurus-section-title.synonyms-title {
+        color: #15803d;
+      }
+      .vocab-thesaurus-section-title.antonyms-title {
+        color: #c2410c;
+      }
+      .vocab-thesaurus-chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .vocab-synonym-chip {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .vocab-synonym-chip:hover {
+        background: #dcfce7;
+        color: #14532d;
+        border-color: #86efac;
+      }
+      .vocab-antonym-chip {
+        background: #fff7ed;
+        color: #9a3412;
+        border: 1px solid #fed7aa;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .vocab-antonym-chip:hover {
+        background: #ffedd5;
+        color: #7c2d12;
+        border-color: #fdba74;
+      }
+
       /* Dark mode styles */
       .vocab-popup.dark-mode {
         background: #1f2937;
@@ -1340,15 +1401,29 @@ export function createPopupManager({
         background: #065f46;
         color: #d1fae5;
       }
-      .vocab-popup.dark-mode .vocab-family-chip.disabled-inflection {
-        background: #374151;
-        color: #9ca3af;
-        border-color: #4b5563;
+      .vocab-popup.dark-mode .vocab-thesaurus-section-title.synonyms-title {
+        color: #4ade80;
       }
-      .vocab-popup.dark-mode .vocab-family-chip.disabled-inflection:hover {
-        background: #374151;
-        color: #9ca3af;
-        border-color: #4b5563;
+      .vocab-popup.dark-mode .vocab-thesaurus-section-title.antonyms-title {
+        color: #fb923c;
+      }
+      .vocab-popup.dark-mode .vocab-synonym-chip {
+        background: #064e3b;
+        color: #a7f3d0;
+        border-color: #047857;
+      }
+      .vocab-popup.dark-mode .vocab-synonym-chip:hover {
+        background: #065f46;
+        color: #d1fae5;
+      }
+      .vocab-popup.dark-mode .vocab-antonym-chip {
+        background: #7c2d12;
+        color: #fed7aa;
+        border-color: #9a3412;
+      }
+      .vocab-popup.dark-mode .vocab-antonym-chip:hover {
+        background: #9a3412;
+        color: #ffedd5;
       }
       .vocab-popup.dark-mode .vocab-popup-pronunciation,
       .vocab-popup.dark-mode .vocab-popup-audio-btn,
@@ -2249,6 +2324,79 @@ export function createPopupManager({
             label: 'Word Family',
             badge: String(familyList.length),
             contentElement: group,
+          });
+          bodyContainer._pendingTabs = pendingTabs;
+        }
+      } else if (item.type === 'synonyms-antonyms') {
+        const synList = Array.isArray(item.value?.synonyms) ? item.value.synonyms : [];
+        const antList = Array.isArray(item.value?.antonyms) ? item.value.antonyms : [];
+        const totalCount = synList.length + antList.length;
+
+        if (totalCount > 0) {
+          const container = h('div', { className: 'vocab-thesaurus-container' });
+
+          if (synList.length > 0) {
+            const synSection = h('div', {});
+            const synTitle = h('div', { className: 'vocab-thesaurus-section-title synonyms-title' }, `Synonyms (${synList.length})`);
+            const synGroup = h('div', { className: 'vocab-thesaurus-chip-group' });
+
+            synList.forEach((synWord) => {
+              const chip = h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'vocab-synonym-chip',
+                  title: `Lookup synonym "${synWord}"`,
+                  ariaLabel: `Lookup synonym "${synWord}"`,
+                  onClick: (e) => {
+                    e?.stopPropagation?.();
+                    navigateToWord(synWord);
+                  },
+                },
+                synWord
+              );
+              synGroup.appendChild(chip);
+            });
+
+            synSection.appendChild(synTitle);
+            synSection.appendChild(synGroup);
+            container.appendChild(synSection);
+          }
+
+          if (antList.length > 0) {
+            const antSection = h('div', {});
+            const antTitle = h('div', { className: 'vocab-thesaurus-section-title antonyms-title' }, `Antonyms (${antList.length})`);
+            const antGroup = h('div', { className: 'vocab-thesaurus-chip-group' });
+
+            antList.forEach((antWord) => {
+              const chip = h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'vocab-antonym-chip',
+                  title: `Lookup antonym "${antWord}"`,
+                  ariaLabel: `Lookup antonym "${antWord}"`,
+                  onClick: (e) => {
+                    e?.stopPropagation?.();
+                    navigateToWord(antWord);
+                  },
+                },
+                antWord
+              );
+              antGroup.appendChild(chip);
+            });
+
+            antSection.appendChild(antTitle);
+            antSection.appendChild(antGroup);
+            container.appendChild(antSection);
+          }
+
+          const pendingTabs = bodyContainer._pendingTabs || [];
+          pendingTabs.push({
+            id: 'tab-synonyms-antonyms',
+            label: 'Synonyms & Antonyms',
+            badge: String(totalCount),
+            contentElement: container,
           });
           bodyContainer._pendingTabs = pendingTabs;
         }

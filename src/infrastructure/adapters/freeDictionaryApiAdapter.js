@@ -126,11 +126,13 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
         definition: d.definition,
         examples: d.example ? [d.example] : [],
         synonyms: d.synonyms || [],
+        antonyms: d.antonyms || [],
       }));
       entries.push({
         partOfSpeech: m.partOfSpeech,
         senses,
         synonyms: m.synonyms || [],
+        antonyms: m.antonyms || [],
       });
     });
   } else if (json && typeof json === 'object' && Array.isArray(json.entries)) {
@@ -156,8 +158,28 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
   // 2. Extract meanings, definitions, synonyms/antonyms
   const definitions = [];
   const wordFamily = [];
+  const synonymsList = [];
+  const antonymsList = [];
+  const seenSynonyms = new Set();
+  const seenAntonyms = new Set();
   const seenFamily = new Set();
   const currentLower = (headword || targetWord).toLowerCase();
+
+  const collectSynonym = (val) => {
+    const s = String(val || '').toLowerCase().trim();
+    if (s && s !== currentLower && !seenSynonyms.has(s)) {
+      seenSynonyms.add(s);
+      synonymsList.push(s);
+    }
+  };
+
+  const collectAntonym = (val) => {
+    const a = String(val || '').toLowerCase().trim();
+    if (a && a !== currentLower && !seenAntonyms.has(a)) {
+      seenAntonyms.add(a);
+      antonymsList.push(a);
+    }
+  };
 
   const addedSections = new Set();
   function addSection(label, content, isOpen = false) {
@@ -212,6 +234,14 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
     const posCap = pos.charAt(0).toUpperCase() + pos.slice(1);
     const senses = Array.isArray(entry.senses) ? entry.senses : [];
 
+    // Collect entry-level synonyms/antonyms
+    if (Array.isArray(entry.synonyms)) {
+      entry.synonyms.forEach(collectSynonym);
+    }
+    if (Array.isArray(entry.antonyms)) {
+      entry.antonyms.forEach(collectAntonym);
+    }
+
     const lis = [];
     senses.forEach((sense) => {
       const defText = sense.definition;
@@ -222,31 +252,33 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
       if (example) {
         liHtml += `<div style="font-style: italic; color: var(--hint-color); margin-top: 3px; font-size: 13px;">• ${example}</div>`;
       }
+
+      // Collect sense-level synonyms/antonyms
+      const senseSyns = Array.isArray(sense.synonyms) ? sense.synonyms.map(String).map((s) => s.trim()).filter(Boolean) : [];
+      const senseAnts = Array.isArray(sense.antonyms) ? sense.antonyms.map(String).map((s) => s.trim()).filter(Boolean) : [];
+
+      senseSyns.forEach(collectSynonym);
+      senseAnts.forEach(collectAntonym);
+
+      if (senseSyns.length > 0) {
+        liHtml += `<div style="font-size: 12px; margin-top: 3px; color: #166534;"><span style="font-weight: 600;">Synonyms:</span> ${senseSyns.join(', ')}</div>`;
+      }
+      if (senseAnts.length > 0) {
+        liHtml += `<div style="font-size: 12px; margin-top: 2px; color: #9a3412;"><span style="font-weight: 600;">Antonyms:</span> ${senseAnts.join(', ')}</div>`;
+      }
+
       liHtml += `</li>`;
       lis.push(liHtml);
 
-      // Synonyms from definition
-      if (Array.isArray(sense.synonyms)) {
-        sense.synonyms.forEach((syn) => {
-          const s = String(syn).toLowerCase().trim();
-          if (s && s !== currentLower && !seenFamily.has(s)) {
-            seenFamily.add(s);
-            wordFamily.push({ word: s, type: 'synonym' });
-          }
-        });
-      }
-    });
-
-    // Synonyms from entry
-    if (Array.isArray(entry.synonyms)) {
-      entry.synonyms.forEach((syn) => {
-        const s = String(syn).toLowerCase().trim();
+      // Word Family fallback from synonyms
+      senseSyns.forEach((syn) => {
+        const s = syn.toLowerCase();
         if (s && s !== currentLower && !seenFamily.has(s)) {
           seenFamily.add(s);
           wordFamily.push({ word: s, type: 'synonym' });
         }
       });
-    }
+    });
 
     if (lis.length > 0) {
       const label = `${posCap} (${lis.length})`;
@@ -261,6 +293,8 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
     audio,
     definitions,
     wordFamily: wordFamily.slice(0, 20),
+    synonyms: synonymsList.slice(0, 30),
+    antonyms: antonymsList.slice(0, 30),
     hasCoreData: Boolean(headword && definitions.length > 0),
     source,
   };

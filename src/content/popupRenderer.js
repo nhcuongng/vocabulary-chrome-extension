@@ -55,6 +55,18 @@ export function renderSuccessContent(viewModel) {
     });
   }
 
+  const synonyms = Array.isArray(viewModel?.synonyms) ? viewModel.synonyms : [];
+  const antonyms = Array.isArray(viewModel?.antonyms) ? viewModel.antonyms : [];
+  if (synonyms.length > 0 || antonyms.length > 0) {
+    items.push({
+      type: 'synonyms-antonyms',
+      value: {
+        synonyms,
+        antonyms,
+      },
+    });
+  }
+
   items.push(...renderComplianceFooterContent(source));
 
   return items;

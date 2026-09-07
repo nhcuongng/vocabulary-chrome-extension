@@ -104,3 +104,37 @@ test('parser adapter: trích xuất audio.us từ thẻ audio/data-audio độc 
   assert.equal(parsed.pronunciation, '/ˈɪn.ə.veɪt/');
 });
 
+test('parser adapter: trích xuất synonyms và antonyms từ cụm Definitions of của Vocabulary.com', () => {
+  const html = `
+    <h1 class="dynamictext">fast</h1>
+    <div class="ipa-with-audio">
+      <div class="us-flag-icon"></div>
+      <span class="span-replace-h3">/fæst/</span>
+    </div>
+    <div class="word-definitions">
+      <ol>
+        <li>
+          <div class="definition">acting or moving or capable of acting or moving quickly</div>
+          <div class="defContent">
+            <dl class="instances synonyms">
+              <dt>Synonyms:</dt>
+              <dd><a class="word" href="/dictionary/quick">quick</a>, <a class="word" href="/dictionary/rapid">rapid</a></dd>
+            </dl>
+            <dl class="instances antonyms">
+              <dt>Antonyms:</dt>
+              <dd><a class="word" href="/dictionary/slow">slow</a></dd>
+            </dl>
+          </div>
+        </li>
+      </ol>
+    </div>
+  `;
+
+  const parsed = parseVocabularyHtml(html);
+  assert.equal(parsed.headword, 'fast');
+  assert.ok(parsed.synonyms.includes('quick'));
+  assert.ok(parsed.synonyms.includes('rapid'));
+  assert.ok(parsed.antonyms.includes('slow'));
+  assert.ok(parsed.definitions.some((d) => d.includes('Synonyms:') && d.includes('quick') && d.includes('Antonyms:') && d.includes('slow')));
+});
+
