@@ -451,7 +451,14 @@ test('bootstrapContentRuntime: ecosystem bridge accepts words array and sets up 
       className: '',
       tabIndex: -1,
       innerHTML: '',
-      textContent: '',
+      get textContent() {
+        if (this._textContent !== undefined) return this._textContent;
+        if (children.length === 0) return '';
+        return children.map((c) => (c.textContent != null ? c.textContent : '')).join('');
+      },
+      set textContent(val) {
+        this._textContent = String(val);
+      },
       value: '',
       addEventListener: (type, handler) => {
         const list = listeners.get(type) || [];
@@ -487,8 +494,28 @@ test('bootstrapContentRuntime: ecosystem bridge accepts words array and sets up 
       setAttribute: (k, v) => attrs.set(k, v),
       getAttribute: (k) => attrs.get(k),
       contains: (target) => target === el || children.some((c) => c.contains?.(target)),
-      querySelectorAll: () => [],
-      querySelector: () => null,
+      querySelector: (selector) => {
+        const cls = selector.replace(/^\./, '');
+        function find(node) {
+          if (typeof node.className === 'string' && node.className.split(/\s+/).includes(cls)) return node;
+          for (const c of node.childNodes || []) {
+            const res = find(c);
+            if (res) return res;
+          }
+          return null;
+        }
+        return find(el);
+      },
+      querySelectorAll: (selector) => {
+        const results = [];
+        const cls = selector.replace(/^\./, '');
+        function collect(node) {
+          if (typeof node.className === 'string' && node.className.split(/\s+/).includes(cls)) results.push(node);
+          for (const c of node.childNodes || []) collect(c);
+        }
+        for (const c of children) collect(c);
+        return results;
+      },
       classList: {
         add: (cls) => classListSet.add(cls),
         remove: (cls) => classListSet.delete(cls),
@@ -572,11 +599,27 @@ test('bootstrapContentRuntime: ecosystem bridge accepts words array and sets up 
   }
   collect(container);
 
-  // Check chips rendered on slide 0 (first 5 words)
-  const chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 5);
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'apple');
-  assert.equal(chips[4].childNodes[0]?.textContent || chips[4].textContent, 'elderberry');
+  // Check history menu badge and popover items (custom words)
+  const badge = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-badge'));
+  assert.ok(badge);
+  assert.equal(badge.childNodes[0]?.textContent || badge.textContent, '7');
+
+  const historyBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  assert.ok(historyBtn);
+  historyBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  const updatedAll = [];
+  function collectUpdated(node) {
+    if (!node) return;
+    updatedAll.push(node);
+    for (const c of node.childNodes || []) collectUpdated(c);
+  }
+  collectUpdated(container);
+
+  const popoverItems = updatedAll.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item'));
+  assert.equal(popoverItems.length, 7);
+  assert.equal(popoverItems[0].querySelector('.vocab-history-item-word')?.textContent || popoverItems[0].textContent, 'apple');
+  assert.equal(popoverItems[4].querySelector('.vocab-history-item-word')?.textContent || popoverItems[4].textContent, 'elderberry');
 
   // Allow background prefetching to process
   await new Promise((resolve) => setTimeout(resolve, 300));

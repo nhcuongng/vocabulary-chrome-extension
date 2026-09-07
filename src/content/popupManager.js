@@ -9,6 +9,7 @@ import {
 } from '../domain/audioPlaybackUtils.js';
 import {
   createHistorySliderElement,
+  createHistoryMenuElement,
   SOURCE_META,
   UI_COPY,
 } from './historySliderRenderer.js';
@@ -126,6 +127,7 @@ export function createPopupManager({
   let customWords = null;
   let lastRenderedWord = null;
   let activeSearchSource = null;
+  let isHistoryMenuOpen = false;
 
   function setCustomWords(words) {
     if (Array.isArray(words)) {
@@ -169,6 +171,7 @@ export function createPopupManager({
       currentSlideIndex = 0;
       isHistorySearching = false;
       historySearchQuery = '';
+      isHistoryMenuOpen = false;
       isAutoOrderOpen = false;
       activeSearchSource = null;
       customPosition = null;
@@ -210,10 +213,30 @@ export function createPopupManager({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        if (isHistoryMenuOpen) {
+          isHistoryMenuOpen = false;
+          if (lastState) {
+            renderPopupContent(lastState);
+          }
+          return;
+        }
         if (popupCtrl) {
           popupCtrl.close('escape');
         } else {
           removePopup({ clearSelection: true });
+        }
+      }
+    });
+    popupContainer.addEventListener('pointerdown', (e) => {
+      if (isHistoryMenuOpen) {
+        const menuContainer = popupContainer.querySelector('.vocab-history-menu-container');
+        if (menuContainer && typeof menuContainer.contains === 'function') {
+          if (!menuContainer.contains(e.target)) {
+            isHistoryMenuOpen = false;
+            if (lastState) {
+              renderPopupContent(lastState);
+            }
+          }
         }
       }
     });
@@ -398,13 +421,13 @@ export function createPopupManager({
         animation: vocabFadeSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
-      /* Header Bar & Slide Navigation */
+      /* Header Bar & Drag Handle */
       .vocab-popup-header-bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 6px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         padding-bottom: 6px;
         border-bottom: 1px solid #f3f4f6;
         cursor: grab;
@@ -414,113 +437,198 @@ export function createPopupManager({
         cursor: grabbing;
       }
 
-      .vocab-history-search-toggle-btn {
-        background: none;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        cursor: pointer;
-        padding: 3px 5px;
-        color: #6b7280;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: background-color 0.15s, color 0.15s;
-      }
-      .vocab-history-search-toggle-btn:hover {
-        background-color: #f3f4f6;
-        color: #111827;
-      }
-
-      .vocab-history-slider-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        flex: 1 1 0px;
-        min-width: 0;
-        width: 0;
-        max-width: 100%;
-        overflow: hidden;
-      }
-
-      .vocab-slide-nav-btn {
-        background: none;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        padding: 2px 4px;
-        color: #6b7280;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: background-color 0.15s, color 0.15s;
-      }
-      .vocab-slide-nav-btn:hover:not(:disabled) {
-        background-color: #f3f4f6;
-        color: #111827;
-      }
-      .vocab-slide-nav-btn:disabled {
-        opacity: 0.25;
-        cursor: not-allowed;
-      }
-
-      .vocab-history-slide {
+      .vocab-popup-drag-handle {
         display: flex;
         align-items: center;
         gap: 5px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-behavior: smooth;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        flex: 1 1 0px;
-        min-width: 0;
-        width: 0;
-        max-width: 100%;
-      }
-      .vocab-history-slide::-webkit-scrollbar {
-        display: none;
-      }
-
-      .vocab-history-chip {
-        font-family: inherit;
-        background: #f3f4f6;
-        color: #374151;
+        color: #6b7280;
         font-size: 11px;
-        font-weight: 500;
-        padding: 3px 8px;
-        border-radius: 12px;
-        white-space: nowrap;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-        flex-shrink: 0;
-        width: auto;
-        max-width: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        box-sizing: border-box;
-      }
-      .vocab-history-chip:hover {
-        background: #e0e7ff;
-        color: #3730a3;
-      }
-      .vocab-history-chip.active {
-        background: #dbeafe;
-        color: #1d4ed8;
-        border-color: #93c5fd;
         font-weight: 600;
+        cursor: grab;
+        padding: 2px 4px;
+        border-radius: 4px;
+        transition: color 0.15s;
+        letter-spacing: -0.01em;
+      }
+      .vocab-popup-drag-handle:hover {
+        color: #111827;
+      }
+      .vocab-popup-drag-icon {
+        display: flex;
+        align-items: center;
+        color: #9ca3af;
+        opacity: 0.8;
+      }
+      .vocab-popup-brand-icon {
+        display: flex;
+        align-items: center;
+        color: #3b82f6;
+      }
+      .vocab-popup-title-text {
+        white-space: nowrap;
       }
 
       .vocab-popup-header-actions {
         display: flex;
         align-items: center;
-        gap: 2px;
+        gap: 4px;
         flex-shrink: 0;
         position: relative;
+      }
+
+      /* History Menu Button & Popover */
+      .vocab-history-menu-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .vocab-history-menu-btn {
+        background: none;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        padding: 3px 6px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .vocab-history-menu-btn:hover {
+        background-color: #f3f4f6;
+        color: #111827;
+        border-color: #d1d5db;
+      }
+      .vocab-history-menu-btn.active {
+        background-color: #eff6ff;
+        color: #1d4ed8;
+        border-color: #93c5fd;
+      }
+      .vocab-history-menu-badge {
+        font-size: 10px;
+        font-weight: 600;
+        background: #e5e7eb;
+        color: #4b5563;
+        padding: 0 4px;
+        border-radius: 8px;
+        line-height: 1.3;
+      }
+      .vocab-history-menu-btn.active .vocab-history-menu-badge {
+        background: #bfdbfe;
+        color: #1e40af;
+      }
+
+      .vocab-history-menu-popover {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        width: 190px;
+        max-height: 240px;
+        z-index: 100;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .vocab-history-popover-header {
+        padding: 5px 8px;
+        background: #f9fafb;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .vocab-history-popover-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+      }
+      .vocab-history-popover-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .vocab-history-popover-close-btn:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+
+      .vocab-history-popover-list {
+        padding: 4px;
+        overflow-y: auto;
+        max-height: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .vocab-history-popover-item {
+        background: none;
+        border: none;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 12px;
+        color: #374151;
+        text-align: left;
+        transition: background-color 0.12s, color 0.12s;
+      }
+      .vocab-history-popover-item:hover {
+        background: #f3f4f6;
+        color: #111827;
+      }
+      .vocab-history-popover-item.active {
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-weight: 600;
+      }
+      .vocab-history-item-index {
+        font-size: 10px;
+        color: #9ca3af;
+        width: 16px;
+        flex-shrink: 0;
+      }
+      .vocab-history-item-word {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .vocab-history-popover-empty {
+        font-size: 11px;
+        color: #9ca3af;
+        padding: 8px 6px;
+        text-align: center;
+        font-style: italic;
+      }
+
+      .vocab-history-slider-wrapper {
+        display: none;
+      }
+
+      .vocab-history-chip {
+        display: none;
       }
 
       .vocab-simple-learn-toggle-wrapper {
@@ -1426,33 +1534,69 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-popup-header-bar {
         border-bottom-color: #374151;
       }
-      .vocab-popup.dark-mode .vocab-history-search-toggle-btn {
-        border-color: #4b5563;
+      .vocab-popup.dark-mode .vocab-popup-drag-handle {
         color: #9ca3af;
       }
-      .vocab-popup.dark-mode .vocab-history-search-toggle-btn:hover {
+      .vocab-popup.dark-mode .vocab-popup-drag-handle:hover {
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-popup-brand-icon {
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-history-menu-btn {
+        border-color: #374151;
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-history-menu-btn:hover {
+        background-color: #374151;
+        color: #f3f4f6;
+        border-color: #4b5563;
+      }
+      .vocab-popup.dark-mode .vocab-history-menu-btn.active {
+        background-color: #1e3a8a;
+        color: #93c5fd;
+        border-color: #3b82f6;
+      }
+      .vocab-popup.dark-mode .vocab-history-menu-badge {
+        background: #374151;
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-history-menu-btn.active .vocab-history-menu-badge {
+        background: #1e40af;
+        color: #bfdbfe;
+      }
+      .vocab-popup.dark-mode .vocab-history-menu-popover {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+      }
+      .vocab-popup.dark-mode .vocab-history-popover-header {
+        background: #111827;
+        border-bottom-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-history-popover-title {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-history-popover-close-btn {
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-history-popover-close-btn:hover {
         background-color: #374151;
         color: #f3f4f6;
       }
-      .vocab-popup.dark-mode .vocab-slide-nav-btn {
-        color: #9ca3af;
-      }
-      .vocab-popup.dark-mode .vocab-slide-nav-btn:hover:not(:disabled) {
-        background-color: #374151;
-        color: #fff;
-      }
-      .vocab-popup.dark-mode .vocab-history-chip {
-        background: #374151;
+      .vocab-popup.dark-mode .vocab-history-popover-item {
         color: #d1d5db;
       }
-      .vocab-popup.dark-mode .vocab-history-chip:hover {
-        background: #1e3a8a;
-        color: #bfdbfe;
+      .vocab-popup.dark-mode .vocab-history-popover-item:hover {
+        background: #374151;
+        color: #f3f4f6;
       }
-      .vocab-popup.dark-mode .vocab-history-chip.active {
+      .vocab-popup.dark-mode .vocab-history-popover-item.active {
         background: #1e3a8a;
         color: #93c5fd;
-        border-color: #3b82f6;
+      }
+      .vocab-popup.dark-mode .vocab-history-popover-empty {
+        color: #6b7280;
       }
       .vocab-popup.dark-mode .vocab-source-menu-btn:hover {
         background-color: #374151;
@@ -2018,50 +2162,61 @@ export function createPopupManager({
     const headerBar = h('div', { className: 'vocab-popup-header-bar', title: 'Drag to move popup' });
     initHeaderBarDragging(headerBar);
 
-    let currentSliderWrapper = null;
-    const renderSlider = () => {
-      const newSlider = createHistorySliderElement({
+    // Left: Drag Handle (Brand & Quick Lookup)
+    const dragHandle = h(
+      'div',
+      { className: 'vocab-popup-drag-handle', title: 'Drag to move popup' },
+      h('span', { className: 'vocab-popup-drag-icon', innerHTML: dragDotsSVG }),
+      h('span', { className: 'vocab-popup-brand-icon', innerHTML: dictionarySVG }),
+      h('span', { className: 'vocab-popup-title-text' }, 'Quick Lookup')
+    );
+    headerBar.appendChild(dragHandle);
+
+    // Right: Header Actions (History Dropdown + Simple Learn Toggle + Close Button)
+    const headerActions = h('div', { className: 'vocab-popup-header-actions' });
+
+    // 1. History Menu Button & Popover
+    let currentHistoryMenuWrapper = null;
+    const renderHistoryMenu = () => {
+      const newMenu = createHistoryMenuElement({
         documentObj,
         allWords: allHistoryWords,
         currentWord,
-        currentSlideIndex,
-        itemsPerPage: 5,
+        isOpen: isHistoryMenuOpen,
         h,
+        onToggleOpen: (open) => {
+          isHistoryMenuOpen = open;
+          renderHistoryMenu();
+        },
         onSelectWord: (word) => {
           navigateToWord(word, { fromHistory: true });
         },
-        onSlideChange: (newIndex) => {
-          currentSlideIndex = newIndex;
-          renderSlider();
-        },
       });
 
-      if (currentSliderWrapper && currentSliderWrapper.parentNode === headerBar) {
-        if (typeof headerBar.replaceChild === 'function') {
-          headerBar.replaceChild(newSlider, currentSliderWrapper);
-        } else if (typeof headerBar.removeChild === 'function') {
-          headerBar.removeChild(currentSliderWrapper);
-          if (headerBar.childNodes && headerBar.childNodes.length > 0 && typeof headerBar.insertBefore === 'function') {
-            headerBar.insertBefore(newSlider, headerBar.childNodes[0]);
+      if (currentHistoryMenuWrapper && currentHistoryMenuWrapper.parentNode === headerActions) {
+        if (typeof headerActions.replaceChild === 'function') {
+          headerActions.replaceChild(newMenu, currentHistoryMenuWrapper);
+        } else if (typeof headerActions.removeChild === 'function') {
+          headerActions.removeChild(currentHistoryMenuWrapper);
+          if (headerActions.childNodes && headerActions.childNodes.length > 0 && typeof headerActions.insertBefore === 'function') {
+            headerActions.insertBefore(newMenu, headerActions.childNodes[0]);
           } else {
-            headerBar.appendChild(newSlider);
+            headerActions.appendChild(newMenu);
           }
         }
       } else {
-        if (headerBar.childNodes && headerBar.childNodes.length > 0 && typeof headerBar.insertBefore === 'function') {
-          headerBar.insertBefore(newSlider, headerBar.childNodes[0]);
+        if (headerActions.childNodes && headerActions.childNodes.length > 0 && typeof headerActions.insertBefore === 'function') {
+          headerActions.insertBefore(newMenu, headerActions.childNodes[0]);
         } else {
-          headerBar.appendChild(newSlider);
+          headerActions.appendChild(newMenu);
         }
       }
-      currentSliderWrapper = newSlider;
+      currentHistoryMenuWrapper = newMenu;
     };
 
-    renderSlider();
+    renderHistoryMenu();
 
-    // 2. Header Actions: Simple Learn Toggle + Close Button
-    const headerActions = h('div', { className: 'vocab-popup-header-actions' });
-
+    // 2. Simple Learn Toggle
     let isSimpleLearn = false;
     if (activeSearchSource) {
       isSimpleLearn = activeSearchSource === 'freedictionary';
@@ -2105,6 +2260,7 @@ export function createPopupManager({
 
     headerActions.appendChild(simpleLearnToggle);
 
+    // 3. Close Button
     const closeBtn = h('button', {
       type: 'button',
       className: 'vocab-popup-close-btn',
@@ -2188,7 +2344,7 @@ export function createPopupManager({
 
         // Render mini history stepper [ ‹ 2/8 › ] if history has items
         if (allHistoryWords.length > 1) {
-          const rawIdx = allHistoryWords.indexOf(currentWord);
+          const rawIdx = allHistoryWords.findIndex((w) => (w || '').trim().toLowerCase() === currentWord);
           const currentIdx = rawIdx !== -1 ? rawIdx : 0;
           const totalCount = allHistoryWords.length;
 

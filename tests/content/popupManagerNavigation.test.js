@@ -21,7 +21,14 @@ function createMockDocument() {
       className: '',
       tabIndex: -1,
       innerHTML: '',
-      textContent: '',
+      get textContent() {
+        if (this._textContent !== undefined) return this._textContent;
+        if (children.length === 0) return '';
+        return children.map((c) => (c.textContent != null ? c.textContent : '')).join('');
+      },
+      set textContent(val) {
+        this._textContent = String(val);
+      },
       value: '',
       addEventListener: (type, handler) => {
         const list = listeners.get(type) || [];
@@ -244,7 +251,7 @@ test('popupManager: clicking word family chip triggers onLookupWord', () => {
   assert.deepEqual(lookedUpWords, ['creative']);
 });
 
-test('popupManager: history slide displays 5 words per page and paginates with prev/next buttons', async () => {
+test('popupManager: history menu button toggles popover with recent words and navigates on select', async () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   const lookedUpCalls = [];
@@ -294,24 +301,63 @@ test('popupManager: history slide displays 5 words per page and paginates with p
   }
 
   let elements = getAllElements();
-  let chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 5); // 5 words in first slide
+  // Find history menu button
+  const historyBtn = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  assert.ok(historyBtn, 'History menu button should exist');
 
-  // Click on chip 'w2' -> passes fromHistory: true
-  chips[1].dispatchEvent('click');
-  assert.deepEqual(lookedUpCalls, [{ word: 'w2', opts: { fromHistory: true } }]);
+  // Badge should show 8
+  const badge = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-badge'));
+  assert.ok(badge);
+  assert.equal(badge.childNodes[0]?.textContent || badge.textContent, '8');
 
-  // Find next slide button
-  const slideNavBtns = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-slide-nav-btn'));
-  assert.equal(slideNavBtns.length, 2);
-  const nextBtn = slideNavBtns[1];
-
-  // Click next slide button
-  nextBtn.dispatchEvent('click');
+  // Click history button to open popover
+  historyBtn.dispatchEvent('click');
 
   elements = getAllElements();
-  chips = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
+  let popoverItems = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item'));
+  assert.equal(popoverItems.length, 8); // All 8 words in popover list
+
+  // Test closing via header close button [✕]
+  const popoverCloseBtn = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-close-btn'));
+  assert.ok(popoverCloseBtn, 'Popover close button should exist');
+
+  popoverCloseBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  elements = getAllElements();
+  assert.equal(elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item')).length, 0);
+
+  // Re-open popover
+  historyBtn.dispatchEvent('click');
+  elements = getAllElements();
+  assert.equal(elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item')).length, 8);
+
+  // Test click-outside: click on popup body
+  const bodyEl = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-body'));
+  assert.ok(bodyEl);
+  container.dispatchEvent('pointerdown', { target: bodyEl });
+  elements = getAllElements();
+  assert.equal(elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item')).length, 0);
+
+  // Re-open popover
+  elements = getAllElements();
+  const historyBtn2 = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  historyBtn2.dispatchEvent('click');
+  elements = getAllElements();
+  assert.equal(elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item')).length, 8);
+
+  // Test Escape key closes popover first
+  container.dispatchEvent('keydown', { key: 'Escape', preventDefault: () => {}, stopPropagation: () => {} });
+  elements = getAllElements();
+  assert.equal(elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item')).length, 0);
+  assert.ok(documentObj.body.childNodes.length > 0, 'Popup should remain open after closing popover with Escape');
+
+  // Re-open and select item 'w2' -> passes fromHistory: true
+  elements = getAllElements();
+  const historyBtn3 = elements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  historyBtn3.dispatchEvent('click');
+  elements = getAllElements();
+  popoverItems = elements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item'));
+  popoverItems[1].dispatchEvent('click');
+  assert.deepEqual(lookedUpCalls, [{ word: 'w2', opts: { fromHistory: true } }]);
 });
 
 test('popupManager: header bar contains Simple Learn toggle and clicking triggers re-lookup', () => {
@@ -686,7 +732,7 @@ test('popupManager: render Headword mini history stepper [ ‹ 2/3 › ] và nav
   popupManager.removePopup();
 });
 
-test('popupManager: replaces history slide bar and stepper when customWords are provided', () => {
+test('popupManager: replaces history menu items and stepper when customWords are provided', () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   const lookedUpCalls = [];
@@ -735,28 +781,26 @@ test('popupManager: replaces history slide bar and stepper when customWords are 
     return list;
   }
 
-  // 2. Slide 0 contains first 5 custom words
+  // 2. History menu badge shows 7 custom words
   let all = getAll();
-  let chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 5);
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word1');
-  assert.equal(chips[4].childNodes[0]?.textContent || chips[4].textContent, 'word5');
+  const badge = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-badge'));
+  assert.ok(badge);
+  assert.equal(badge.childNodes[0]?.textContent || badge.textContent, '7');
 
-  // 3. Next slide navigation
-  const slideNavBtns = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-slide-nav-btn'));
-  assert.equal(slideNavBtns.length, 2);
-  const nextSlideBtn = slideNavBtns[1];
-  nextSlideBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  // 3. Open history popover
+  const historyBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  assert.ok(historyBtn);
+  historyBtn.dispatchEvent('click', { stopPropagation: () => {} });
 
-  // 4. Slide 1 contains remaining 2 custom words ('word6', 'word7')
+  // 4. Popover contains 7 custom words
   all = getAll();
-  chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 2);
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word6');
-  assert.equal(chips[1].childNodes[0]?.textContent || chips[1].textContent, 'word7');
+  let popoverItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-popover-item'));
+  assert.equal(popoverItems.length, 7);
+  assert.equal(popoverItems[0].querySelector('.vocab-history-item-word')?.textContent || popoverItems[0].textContent, 'word1');
+  assert.equal(popoverItems[6].querySelector('.vocab-history-item-word')?.textContent || popoverItems[6].textContent, 'word7');
 
-  // 5. Click chip 'word6'
-  chips[0].dispatchEvent('click', { stopPropagation: () => {} });
+  // 5. Click item 'word6'
+  popoverItems[5].dispatchEvent('click', { stopPropagation: () => {} });
   assert.equal(lookedUpCalls.length, 1);
   assert.equal(lookedUpCalls[0].word, 'word6');
   assert.equal(lookedUpCalls[0].opts?.fromHistory, true);
@@ -782,14 +826,14 @@ test('popupManager: replaces history slide bar and stepper when customWords are 
   }
   collectNew(newContainer);
 
-  const defaultChips = newAll.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(defaultChips.length, 3);
-  assert.equal(defaultChips[0].childNodes[0]?.textContent || defaultChips[0].textContent, 'hist1');
+  const defaultBadge = newAll.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-badge'));
+  assert.ok(defaultBadge);
+  assert.equal(defaultBadge.childNodes[0]?.textContent || defaultBadge.textContent, '3');
 
   popupManager.removePopup();
 });
 
-test('popupManager: stepper next/prev across slide boundary automatically updates currentSlideIndex', async () => {
+test('popupManager: stepper next/prev navigates sequentially through history words', async () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   let popupManagerInstance = null;
@@ -818,7 +862,7 @@ test('popupManager: stepper next/prev across slide boundary automatically update
     },
   });
 
-  // Start with word5 (index 4 -> Slide 0)
+  // Start with word5 (index 4)
   popupManagerInstance.showPopup({
     status: 'success',
     headword: 'word5',
@@ -844,44 +888,40 @@ test('popupManager: stepper next/prev across slide boundary automatically update
     return list;
   }
 
-  // Verify slide 0 is displayed (words 1 to 5)
+  // Stepper shows 5/8 for word5
   let all = getAll();
-  let chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 5);
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word1');
-  assert.equal(chips[4].childNodes[0]?.textContent || chips[4].textContent, 'word5');
+  const stepperCounter = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stepper-counter'));
+  assert.ok(stepperCounter);
+  assert.equal(stepperCounter.childNodes[0]?.textContent || stepperCounter.textContent, '5/8');
 
   // Find Stepper Next Button (›)
   const nextBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('next-btn'));
   assert.ok(nextBtn);
 
-  // Click Next Button: moves from word5 (index 4) to word6 (index 5 -> Slide 1)
+  // Click Next Button: moves from word5 (index 4) to word6 (index 5)
   nextBtn.dispatchEvent('click', { stopPropagation: () => {} });
 
-  // Verify slide automatically switched to Slide 1 (words 6 to 8)
+  // Verify stepper counter updated to 6/8
   all = getAll();
-  chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 3);
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word6');
-  assert.equal(chips[2].childNodes[0]?.textContent || chips[2].textContent, 'word8');
+  const nextCounter = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stepper-counter'));
+  assert.equal(nextCounter.childNodes[0]?.textContent || nextCounter.textContent, '6/8');
 
   // Find Stepper Prev Button (‹)
   const prevBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('prev-btn'));
   assert.ok(prevBtn);
 
-  // Click Prev Button: moves back from word6 (index 5) to word5 (index 4 -> Slide 0)
+  // Click Prev Button: moves back from word6 (index 5) to word5 (index 4)
   prevBtn.dispatchEvent('click', { stopPropagation: () => {} });
 
-  // Verify slide automatically switched back to Slide 0 (words 1 to 5)
+  // Verify stepper counter updated back to 5/8
   all = getAll();
-  chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 5);
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'word1');
+  const prevCounter = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stepper-counter'));
+  assert.equal(prevCounter.childNodes[0]?.textContent || prevCounter.textContent, '5/8');
 
   popupManagerInstance.removePopup();
 });
 
-test('popupManager: selecting chip on another slide or with mixed casing correctly syncs slide', () => {
+test('popupManager: selecting item from history popover with mixed casing correctly updates active word and stepper', () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   let popupManagerInstance = null;
@@ -909,7 +949,7 @@ test('popupManager: selecting chip on another slide or with mixed casing correct
     },
   });
 
-  // Start with 'Alpha' (Slide 0)
+  // Start with 'Alpha'
   popupManagerInstance.showPopup({
     status: 'success',
     headword: 'Alpha',
@@ -935,7 +975,13 @@ test('popupManager: selecting chip on another slide or with mixed casing correct
     return list;
   }
 
-  // Navigate directly to 'zeta' (which is on slide 1, index 5)
+  // Open history popover
+  let all = getAll();
+  const historyBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  assert.ok(historyBtn);
+  historyBtn.dispatchEvent('click', { stopPropagation: () => {} });
+
+  // Navigate directly to 'zeta'
   popupManagerInstance.showPopup({
     status: 'success',
     headword: 'zeta',
@@ -947,10 +993,10 @@ test('popupManager: selecting chip on another slide or with mixed casing correct
     },
   }, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
 
-  let all = getAll();
-  let chips = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-history-chip'));
-  assert.equal(chips.length, 2); // Slide 1 contains 'Zeta', 'Eta'
-  assert.equal(chips[0].childNodes[0]?.textContent || chips[0].textContent, 'Zeta');
+  all = getAll();
+  const stepperCounter = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-stepper-counter'));
+  assert.ok(stepperCounter);
+  assert.equal(stepperCounter.childNodes[0]?.textContent || stepperCounter.textContent, '6/7');
 
   popupManagerInstance.removePopup();
 });
@@ -1020,7 +1066,7 @@ test('calculateResponsivePopupDimensions: tính toán width và height responsiv
   assert.equal(desktop.maxHeight, 520); // capped at 520
 });
 
-test('popupManager: chuyển slide history cập nhật cục bộ và giữ nguyên body không bị reset', async () => {
+test('popupManager: toggling history menu popover updates in-place and preserves bodyContainer', async () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
 
@@ -1060,7 +1106,7 @@ test('popupManager: chuyển slide history cập nhật cục bộ và giữ ngu
   const bodyContainer = container.childNodes.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-body'));
   assert.ok(bodyContainer, 'Body container should exist');
 
-  // Tìm nút next slide
+  // Tìm nút history menu
   function getAllElements() {
     const all = [];
     function collect(node) {
@@ -1072,11 +1118,11 @@ test('popupManager: chuyển slide history cập nhật cục bộ và giữ ngu
     return all;
   }
 
-  const slideNavBtns = getAllElements().filter((el) => typeof el.className === 'string' && el.className.includes('vocab-slide-nav-btn'));
-  const nextBtn = slideNavBtns[1];
+  const historyBtn = getAllElements().find((el) => typeof el.className === 'string' && el.className.includes('vocab-history-menu-btn'));
+  assert.ok(historyBtn);
 
-  // Click next slide
-  nextBtn.dispatchEvent('click', { stopPropagation: () => {} });
+  // Click history button to open popover
+  historyBtn.dispatchEvent('click', { stopPropagation: () => {} });
 
   // Kiểm tra bodyContainer vẫn là instance cũ (không bị replaceChildren phá hủy)
   const currentBodyContainer = container.childNodes.find((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-body'));

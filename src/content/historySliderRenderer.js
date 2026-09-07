@@ -26,11 +26,25 @@ export const SOURCE_META = Object.freeze({
   },
 });
 
+export const miniCloseSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="18" y1="6" x2="6" y2="18"></line>
+  <line x1="6" y1="6" x2="18" y2="18"></line>
+</svg>`;
+
+export const clockSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="10"></circle>
+  <polyline points="12 6 12 12 16 14"></polyline>
+</svg>`;
+
 export const UI_COPY = {
   PREV_SLIDE: 'Previous slide',
   NEXT_SLIDE: 'Next slide',
   LOOKUP_WORD: (word) => `Look up "${word}"`,
   SEARCH_WORD: (word) => `Search ${word}`,
+  HISTORY_TITLE: 'Recent searches',
+  NO_RECENT_SEARCHES: 'No recent searches',
+  SEARCH_HISTORY_PLACEHOLDER: 'Filter history...',
+  CLOSE_HISTORY: 'Close history',
   SIMPLE_LEARN_TITLE: 'Simple Learn Mode: ON (FreeDictionary) / OFF (Vocabulary.com)',
   SIMPLE_LEARN_LABEL: 'Simple Learn',
   CLOSE_POPUP: 'Close popup',
@@ -190,3 +204,146 @@ export function createHistorySliderElement({
 
   return sliderWrapper;
 }
+
+/**
+ * Creates and returns a History Dropdown/Popover DOM element.
+ *
+ * @param {Object} options
+ * @param {Document} options.documentObj
+ * @param {string[]} options.allWords
+ * @param {string} [options.currentWord]
+ * @param {boolean} [options.isOpen=false]
+ * @param {Function} options.onToggleOpen
+ * @param {Function} options.onSelectWord
+ * @param {Function} [options.h]
+ * @returns {HTMLElement}
+ */
+export function createHistoryMenuElement({
+  documentObj = globalThis.document,
+  allWords = [],
+  currentWord = '',
+  isOpen = false,
+  onToggleOpen,
+  onSelectWord,
+  h,
+}) {
+  const normalizedCurrentWord = (currentWord || '').trim().toLowerCase();
+  const validWords = Array.isArray(allWords) ? allWords : [];
+
+  const defaultH = (tag, props, ...children) => {
+    const el = documentObj.createElement(tag);
+    if (props) {
+      for (const [key, value] of Object.entries(props)) {
+        if (key.startsWith('on') && typeof value === 'function') {
+          el.addEventListener(key.slice(2).toLowerCase(), value);
+        } else if (key === 'className') {
+          el.className = value;
+        } else if (key === 'innerHTML') {
+          el.innerHTML = value;
+        } else if (key === 'disabled') {
+          if (value) el.setAttribute('disabled', '');
+        } else if (key === 'style' && typeof value === 'object') {
+          Object.assign(el.style, value);
+        } else {
+          el.setAttribute(key, value);
+        }
+      }
+    }
+    for (const child of children) {
+      if (child == null) continue;
+      if (typeof child === 'string' || typeof child === 'number') {
+        if (typeof documentObj.createTextNode === 'function') {
+          el.appendChild(documentObj.createTextNode(String(child)));
+        } else {
+          el.textContent = String(child);
+        }
+      } else if (typeof child === 'object') {
+        el.appendChild(child);
+      }
+    }
+    return el;
+  };
+
+  const createEl = typeof h === 'function' ? h : defaultH;
+
+  const container = createEl('div', { className: 'vocab-history-menu-container' });
+
+  const btn = createEl('button', {
+    type: 'button',
+    className: `vocab-history-menu-btn ${isOpen ? 'active' : ''}`,
+    title: `${UI_COPY.HISTORY_TITLE} (${validWords.length})`,
+    ariaLabel: `${UI_COPY.HISTORY_TITLE} (${validWords.length})`,
+    innerHTML: clockSVG,
+    onClick: (e) => {
+      e?.stopPropagation?.();
+      onToggleOpen?.(!isOpen);
+    },
+  });
+
+  if (validWords.length > 0) {
+    const countBadge = createEl('span', { className: 'vocab-history-menu-badge' }, String(validWords.length));
+    btn.appendChild(countBadge);
+  }
+
+  container.appendChild(btn);
+
+  if (isOpen) {
+    const popover = createEl('div', {
+      className: 'vocab-history-menu-popover vocab-content-fade-in',
+      onClick: (e) => e?.stopPropagation?.(),
+    });
+
+    const popoverCloseBtn = createEl('button', {
+      type: 'button',
+      className: 'vocab-history-popover-close-btn',
+      title: UI_COPY.CLOSE_HISTORY,
+      ariaLabel: UI_COPY.CLOSE_HISTORY,
+      innerHTML: miniCloseSVG,
+      onClick: (e) => {
+        e?.stopPropagation?.();
+        onToggleOpen?.(false);
+      },
+    });
+
+    const popoverHeader = createEl(
+      'div',
+      { className: 'vocab-history-popover-header' },
+      createEl('span', { className: 'vocab-history-popover-title' }, UI_COPY.HISTORY_TITLE),
+      popoverCloseBtn
+    );
+    popover.appendChild(popoverHeader);
+
+    const listContainer = createEl('div', { className: 'vocab-history-popover-list' });
+
+    if (validWords.length === 0) {
+      const emptyItem = createEl('div', { className: 'vocab-history-popover-empty' }, UI_COPY.NO_RECENT_SEARCHES);
+      listContainer.appendChild(emptyItem);
+    } else {
+      validWords.forEach((word, idx) => {
+        const isActive = word.toLowerCase() === normalizedCurrentWord;
+        const item = createEl(
+          'button',
+          {
+            type: 'button',
+            className: `vocab-history-popover-item ${isActive ? 'active' : ''}`,
+            title: UI_COPY.LOOKUP_WORD(word),
+            onClick: (e) => {
+              e?.stopPropagation?.();
+              onToggleOpen?.(false);
+              onSelectWord?.(word);
+            },
+          },
+          createEl('span', { className: 'vocab-history-item-index' }, `${idx + 1}.`),
+          createEl('span', { className: 'vocab-history-item-word' }, word)
+        );
+        listContainer.appendChild(item);
+      });
+    }
+
+    popover.appendChild(listContainer);
+    container.appendChild(popover);
+  }
+
+  return container;
+}
+
