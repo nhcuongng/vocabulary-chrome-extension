@@ -1001,6 +1001,86 @@ export function createPopupManager({
         margin: 0;
       }
 
+      /* Tabbed Interface styles - Connected Underline & Subtle Card Surface */
+      .vocab-tabs-container {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 6px 10px;
+        box-sizing: border-box;
+      }
+      .vocab-tab-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border-bottom: 1px solid #e5e7eb;
+        margin: 0;
+        padding: 0 0 2px 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .vocab-tab-bar::-webkit-scrollbar {
+        display: none;
+      }
+      .vocab-tab-btn {
+        background: transparent;
+        border: none;
+        border-bottom: 2.5px solid transparent;
+        margin-bottom: -1px;
+        outline: none;
+        padding: 5px 8px;
+        border-radius: 4px 4px 0 0;
+        font-size: 12px;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        white-space: nowrap;
+        user-select: none;
+      }
+      .vocab-tab-btn:hover {
+        color: #1f2937;
+      }
+      .vocab-tab-btn.active {
+        color: #0b5ea8;
+        border-bottom-color: #0b5ea8;
+        font-weight: 600;
+      }
+      .vocab-tab-badge {
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 10px;
+        background: #e5e7eb;
+        color: #4b5563;
+      }
+      .vocab-tab-btn.active .vocab-tab-badge {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .vocab-tab-panels {
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 8px 2px 4px 2px;
+        scrollbar-width: thin;
+      }
+      .vocab-tab-panel {
+        display: none;
+      }
+      .vocab-tab-panel.active {
+        display: block;
+        animation: fadeInTab 0.15s ease-out;
+      }
+      @keyframes fadeInTab {
+        from { opacity: 0; transform: translateY(2px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
       /* Word Family Section */
       .vocab-word-family-group {
         display: flex;
@@ -1231,6 +1311,31 @@ export function createPopupManager({
       .vocab-popup.dark-mode details.vocab-details .vocab-details-label {
         background: #1e3a8a;
         color: #bfdbfe;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-container {
+        background: #111827;
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-tab-bar {
+        border-bottom-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-tab-btn {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-tab-btn:hover {
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-tab-btn.active {
+        color: #60a5fa;
+        border-bottom-color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-tab-badge {
+        background: #374151;
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-tab-btn.active .vocab-tab-badge {
+        background: #1e3a8a;
+        color: #93c5fd;
       }
       .vocab-popup.dark-mode .vocab-popup-search-suggestions a,
       .vocab-popup.dark-mode .search-suggestion-link {
@@ -1954,30 +2059,75 @@ export function createPopupManager({
         }
       } else if (item.type === 'definition') {
         const defs = Array.isArray(item.value) ? item.value : [item.value];
+        const primaryDefHtmls = [];
+        const secondaryTabs = [];
+
         defs.forEach((defHtml) => {
-          if (defHtml) {
-            const defContainer = h('div', { className: 'vocab-popup-definition', innerHTML: defHtml });
-            const detailsElements = defContainer.querySelectorAll('details.vocab-details');
-            detailsElements.forEach((details) => {
-              details.addEventListener('toggle', () => {
-                updatePopupPosition();
+          if (!defHtml) return;
+          // Check if this is a quick definition (Primary Meaning)
+          if (defHtml.includes('vocab-quick-def') && !defHtml.includes('vocab-details')) {
+            primaryDefHtmls.push(defHtml);
+          } else {
+            // Parse details to create a tab item
+            let tabLabel = 'Explanation';
+            let badge = '';
+
+            // 1. Extract label from vocab-details-label if present
+            const labelMatch = defHtml.match(/<span[^>]*class=["'][^"']*vocab-details-label[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
+            const rawLabel = labelMatch ? labelMatch[1].replace(/<[^>]*>/g, '').replace(/[✭]/g, '').trim() : '';
+
+            if (rawLabel.toLowerCase().includes('long definition') || defHtml.includes('Long Definition')) {
+              tabLabel = 'Explanation';
+            } else if (rawLabel) {
+              const parenMatch = rawLabel.match(/^(.*?)\s*\((\d+)\)$/);
+              if (parenMatch) {
+                tabLabel = parenMatch[1].trim();
+                badge = parenMatch[2];
+              } else if (rawLabel.toLowerCase().includes('definition of')) {
+                tabLabel = 'Definitions';
+              } else {
+                tabLabel = rawLabel;
+              }
+            } else if (defHtml.includes('custom-definition-list')) {
+              tabLabel = 'Definitions';
+              const countMatch = defHtml.match(/\((\d+)\)/);
+              if (countMatch) badge = countMatch[1];
+            }
+
+            // Extract content inside .details-content or entire html
+            const contentMatch = defHtml.match(/<div[^>]*class=["'][^"']*details-content[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/details>/i);
+            const panelContent = contentMatch ? contentMatch[1].trim() : defHtml;
+
+            // Merge with existing tab if label matches to avoid duplicate tabs
+            const existingTab = secondaryTabs.find((t) => t.label.toLowerCase() === tabLabel.toLowerCase());
+            if (existingTab) {
+              existingTab.contentHtml = `${existingTab.contentHtml}<div style="margin-top: 10px; border-top: 1px solid #f3f4f6; padding-top: 8px;"></div>${panelContent}`;
+              if (badge && !existingTab.badge) {
+                existingTab.badge = badge;
+              }
+            } else {
+              secondaryTabs.push({
+                id: `tab-def-${secondaryTabs.length}`,
+                label: tabLabel,
+                badge,
+                contentHtml: panelContent,
               });
-            });
-            bodyContainer.appendChild(defContainer);
+            }
           }
         });
+
+        // 1. Render Primary Meaning directly (Always visible, core reading stream)
+        primaryDefHtmls.forEach((quickHtml) => {
+          const quickDefEl = h('div', { className: 'vocab-popup-definition', innerHTML: quickHtml });
+          bodyContainer.appendChild(quickDefEl);
+        });
+
+        // Store secondary tabs for later tab bar assembly with Word Family
+        bodyContainer._pendingTabs = secondaryTabs;
       } else if (item.type === 'word-family') {
         const familyList = Array.isArray(item.value) ? item.value : [];
         if (familyList.length > 0) {
           const currentHw = (viewModel?.headword || state.headword || '').toLowerCase();
-          const details = h('details', { className: 'vocab-details' });
-          const summary = h(
-            'summary',
-            {},
-            h('span', { className: 'vocab-details-label' }, `✭ Word Family (${familyList.length})`),
-            h('span', { className: 'collapse-icon' }, '▶')
-          );
-          const contentDiv = h('div', { className: 'details-content' });
           const group = h('div', { className: 'vocab-word-family-group' });
 
           familyList.forEach((fam) => {
@@ -2001,11 +2151,14 @@ export function createPopupManager({
             group.appendChild(chip);
           });
 
-          contentDiv.appendChild(group);
-          details.appendChild(summary);
-          details.appendChild(contentDiv);
-          details.addEventListener('toggle', () => updatePopupPosition());
-          bodyContainer.appendChild(details);
+          const pendingTabs = bodyContainer._pendingTabs || [];
+          pendingTabs.push({
+            id: 'tab-word-family',
+            label: 'Word Family',
+            badge: String(familyList.length),
+            contentElement: group,
+          });
+          bodyContainer._pendingTabs = pendingTabs;
         }
       } else if (item.type === 'title') {
         bodyContainer.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
@@ -2030,6 +2183,90 @@ export function createPopupManager({
         );
       }
     });
+
+    // Render Tabs Container if we have any pending secondary tabs (e.g. Details, Definitions, Word Family)
+    const allTabs = bodyContainer._pendingTabs || [];
+    if (allTabs.length > 0) {
+      const tabsContainer = h('div', { className: 'vocab-tabs-container' });
+      const tabBar = h('div', { className: 'vocab-tab-bar', role: 'tablist', ariaLabel: 'Word details tabs' });
+      const tabPanels = h('div', { className: 'vocab-tab-panels' });
+
+      const tabBtns = [];
+      const panelEls = [];
+
+      allTabs.forEach((tabInfo, idx) => {
+        const isActive = idx === 0;
+        const badgeEl = tabInfo.badge ? h('span', { className: 'vocab-tab-badge' }, tabInfo.badge) : null;
+        const btn = h(
+          'button',
+          {
+            type: 'button',
+            className: isActive ? 'vocab-tab-btn active' : 'vocab-tab-btn',
+            role: 'tab',
+            ariaSelected: isActive ? 'true' : 'false',
+            tabIndex: isActive ? 0 : -1,
+            onClick: (e) => {
+              e?.stopPropagation?.();
+              switchTab(idx);
+            },
+          },
+          tabInfo.label,
+          badgeEl
+        );
+
+        const panel = h('div', {
+          className: isActive ? 'vocab-tab-panel active' : 'vocab-tab-panel',
+          role: 'tabpanel',
+        });
+
+        if (tabInfo.contentElement) {
+          panel.appendChild(tabInfo.contentElement);
+        } else if (tabInfo.contentHtml) {
+          panel.innerHTML = tabInfo.contentHtml;
+        }
+
+        tabBtns.push(btn);
+        panelEls.push(panel);
+        tabBar.appendChild(btn);
+        tabPanels.appendChild(panel);
+      });
+
+      function switchTab(index) {
+        tabBtns.forEach((b, i) => {
+          const active = i === index;
+          b.className = active ? 'vocab-tab-btn active' : 'vocab-tab-btn';
+          b.setAttribute('aria-selected', active ? 'true' : 'false');
+          b.tabIndex = active ? 0 : -1;
+        });
+        panelEls.forEach((p, i) => {
+          p.className = i === index ? 'vocab-tab-panel active' : 'vocab-tab-panel';
+        });
+        updatePopupPosition();
+      }
+
+      // Keyboard support for tabs
+      tabBar.addEventListener('keydown', (e) => {
+        const activeIdx = tabBtns.findIndex((b) => b.classList.contains('active'));
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          e.stopPropagation();
+          const nextIdx = (activeIdx + 1) % tabBtns.length;
+          switchTab(nextIdx);
+          tabBtns[nextIdx]?.focus();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          const prevIdx = (activeIdx - 1 + tabBtns.length) % tabBtns.length;
+          switchTab(prevIdx);
+          tabBtns[prevIdx]?.focus();
+        }
+      });
+
+      tabsContainer.appendChild(tabBar);
+      tabsContainer.appendChild(tabPanels);
+      bodyContainer.appendChild(tabsContainer);
+      bodyContainer._pendingTabs = null;
+    }
 
     popupContainer.appendChild(bodyContainer);
     if (footerEl) {

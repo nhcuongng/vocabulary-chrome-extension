@@ -1148,5 +1148,76 @@ test('popupManager: popup container giữ cố định chiều cao height và h�
   popupManager.removePopup();
 });
 
+test('popupManager: Hybrid Tabbed Interface renders Primary Meaning directly and secondary content in Tabs', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
+
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+  });
+
+  popupManager.showPopup(
+    {
+      status: 'success',
+      data: {
+        token: 'resilient',
+        headword: 'resilient',
+        pronunciation: 'US /rɪˈzɪl.jənt/',
+        definitions: [
+          '<div class="vocab-quick-def">Able to recover quickly from difficult conditions.</div>',
+          '<details class="vocab-details"><summary><span class="vocab-details-label">Long Definition</span></summary><div class="details-content"><p>Deep dive into resilient history.</p></div></details>',
+          '<details class="vocab-details"><summary><span class="vocab-details-label">Adjective (2)</span></summary><div class="details-content"><ol class="custom-definition-list"><li>Springing back</li><li>Rebounding</li></ol></div></details>',
+        ],
+        wordFamily: [{ word: 'resilience' }, { word: 'resiliently' }],
+      },
+    },
+    { left: 100, top: 100, bottom: 120, right: 150 }
+  );
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+  assert.ok(container, 'Popup container should exist');
+
+  function getAllElements(root) {
+    const all = [];
+    function collect(node) {
+      if (!node) return;
+      all.push(node);
+      for (const c of node.childNodes || []) collect(c);
+    }
+    collect(root);
+    return all;
+  }
+
+  const allElements = getAllElements(container);
+
+  // 1. Verify Primary Meaning is rendered directly
+  const quickDefEls = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-popup-definition'));
+  assert.ok(quickDefEls.length >= 1, 'Quick def container should be rendered directly');
+  const quickDefHtml = quickDefEls.map((el) => el.innerHTML).join(' ');
+  assert.ok(quickDefHtml.includes('Able to recover quickly'), 'Quick def text should be present in top stream');
+
+  // 2. Verify Tab Bar and Tab Buttons exist
+  const tabBars = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-tab-bar'));
+  assert.equal(tabBars.length, 1, 'Should have exactly 1 tab bar');
+
+  const tabBtns = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-tab-btn'));
+  assert.ok(tabBtns.length >= 3, 'Should have at least 3 tabs: Explanation, Adjective, Word Family');
+
+  const tabLabels = tabBtns.map((b) => (b.childNodes[0]?.textContent || b.textContent || '')).filter(Boolean);
+  assert.ok(tabLabels.some((l) => l.includes('Explanation')), 'Should contain Explanation tab');
+  assert.ok(tabLabels.some((l) => l.includes('Adjective')), 'Should contain Adjective tab');
+  assert.ok(tabLabels.some((l) => l.includes('Word Family')), 'Should contain Word Family tab');
+
+  // 3. Verify Active Tab Panel switching
+  const tabPanels = allElements.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-tab-panel'));
+  assert.equal(tabPanels.length, tabBtns.length, 'Panel count must match button count');
+  assert.ok(tabPanels[0].className.includes('active'), 'First tab panel should be active by default');
+
+  popupManager.removePopup();
+});
+
+
 
 

@@ -357,3 +357,37 @@ Defining experience của sản phẩm là: **“Highlight một từ tiếng An
   - Shadow: `0 2px 6px rgba(0, 0, 0, 0.04)`.
   - Shuffle icon button: Hover chuyển nền xám nhạt/xanh nhẹ, xoay nhẹ 45 độ khi click.
 
+### 5. Content-First Hybrid Tabbed Interface (Tối ưu luồng đọc tự nhiên & Connected Card UI)
+
+- **UX Goal:** Thay thế mô hình Accordion/Collapse xếp chồng trải dài cũ bằng cấu trúc **Hybrid Content-First Tabbed Layout** kết hợp phong cách **Connected Underline & Subtle Card Surface**, vừa bảo toàn luồng đọc lướt tự nhiên (F-pattern reading flow) từ trên xuống dưới, vừa xóa bỏ hoàn toàn cảm giác "tab nhìn như nút bấm rời rạc" và tạo sự liền mạch thị giác tuyệt đối giữa Tab Header và Content Panel.
+- **Hierarchy & Layout Structure (Phân tầng thông tin 2 lớp):**
+  1. **Tầng 1: Always-Visible Core Stream (Luồng đọc chính - Không đưa vào Tab)**:
+     - **Headword & Action Controls**: Từ khóa, nút audio (US/UK), nút tra cứu chi tiết, nút đóng popup.
+     - **Phonetics & Stress Contour**: Phiên âm IPA và biểu đồ trọng âm tương tác.
+     - **Primary Core Meaning (Quick Definition)**: Định nghĩa ngắn gọn súc tích nhất của từ luôn hiển thị trực diện ngay lập tức. Người dùng nắm bắt nghĩa từ vựng trong vòng 0ms - 500ms mà không cần click bất kỳ tab nào.
+  2. **Tầng 2: Deep-Dive Secondary Tabs (Thanh Tab bổ trợ dạng Connected Card)**:
+     - Toàn bộ Tab Bar và Tab Content Panels được bao bọc trong một **Subtle Card Surface** liền khối (`background: #F8FAFC`, `border: 1px solid #E5E7EB`, `border-radius: 10px`).
+     - **Cấu trúc Tab Bar linh hoạt (Conditional Rendering)**:
+       - **Tab `Explanation`**: Giải thích sâu & câu chuyện từ vựng (Long Definition / Word Story) từ chuyên gia/từ điển.
+       - **Tab `Definitions (N)`**: Danh sách nghĩa chi tiết phân rã theo từ loại (Noun, Verb, Adjective...) kèm ví dụ minh họa và từ đồng nghĩa ngữ cảnh.
+       - **Tab `Word Family (N)`**: Danh sách họ từ / từ đồng nghĩa dạng Interactive Chips clickable để tra cứu chéo.
+       *(Nếu mục nào không có dữ liệu, Tab tương ứng sẽ tự động ẩn để giữ tab bar gọn gàng)*.
+  3. **Connected Underline & Panel Styling**:
+     - Tab Header sử dụng dạng **Text + Connected Underline Bar** (không dùng nút bấm bo tròn rời rạc):
+       - Active Tab: Chữ xanh đậm `primary-600` (`#0B5EA8`), font-weight 600, kèm đường gạch chân indicator dày 2.5px màu `#0B5EA8` dính liền xuống đường phân cách đáy của tab bar.
+       - Inactive Tab: Màu `text-secondary` (`#6B7280`), font-weight 500, hover chuyển màu mượt mà.
+     - Tab Panel nằm trực tiếp bên dưới trong cùng một Card, có `max-height: 200px - 240px` kèm thanh cuộn mềm mỏng (`overflow-y: auto`).
+- **Visual Design Tokens & Accessibility:**
+  - **Card Surface**:
+    - Light: Background `#F8FAFC`, Border `#E5E7EB`, Radius `10px`, Padding `8px 12px`.
+    - Dark: Background `#111827`, Border `#374151`, Radius `10px`.
+  - **Tab Underline Style**:
+    - Height: `32px`, font-size `12px - 13px`.
+    - Active Indicator: `border-bottom: 2.5px solid #0B5EA8` (Light) / `#60A5FA` (Dark).
+  - **Keyboard & Navigation**:
+    - Hỗ trợ phím mũi tên `Left` / `Right` để duyệt giữa các Tab khi focus.
+    - Hỗ trợ phím số `1`, `2`, `3` để chuyển nhanh sang các tab khi popup đang active.
+    - Tất cả nhãn tab tuân thủ 100% tiếng Anh: `Explanation`, `Definitions`, `Word Family`.
+
+
+
