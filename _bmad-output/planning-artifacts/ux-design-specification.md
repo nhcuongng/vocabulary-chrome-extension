@@ -389,5 +389,29 @@ Defining experience của sản phẩm là: **“Highlight một từ tiếng An
     - Hỗ trợ phím số `1`, `2`, `3` để chuyển nhanh sang các tab khi popup đang active.
     - Tất cả nhãn tab tuân thủ 100% tiếng Anh: `Explanation`, `Definitions`, `Word Family`.
 
+### 6. Tab Reordering & Customization Interaction (Tùy chỉnh thứ tự Tab & Kéo thả)
 
-
+- **UX Goal:** Trao quyền cá nhân hóa thứ tự hiển thị của các Tab phụ (`Explanation`, `Definitions`, `Word Family`, POS Tabs) theo thói quen học từ vựng riêng của từng người dùng; lưu trữ thứ tự bền vững (persistent) trên trình duyệt.
+- **Problem Context:** Một số người dùng muốn xem họ từ (`Word Family`) trước để mở rộng vốn từ ngay, trong khi người khác muốn đọc câu chuyện từ vựng (`Explanation`) hoặc ngữ nghĩa phân loại (`Definitions`). Thứ tự cố định gây bất tiện cho các luồng học tập chuyên biệt.
+- **Interaction Architecture & States:**
+  1. **Nút Cấu hình (Settings / Customize Trigger):**
+     - Đặt tại góc phải cùng của `.vocab-tab-bar` (kèm đường phân cách hoặc căn lề phải).
+     - Icon: Bánh răng cấu hình ⚙️ (`gearSVG`) nhỏ gọn (14x14px), tooltip `Customize tab order`.
+     - Nhấn vào để chuyển đổi giữa **Normal Mode** và **Reorder Mode**.
+  2. **Trạng thái Reorder Mode (Chế độ sắp xếp):**
+     - Nút cấu hình đổi thành biểu tượng `✓ Done` (`checkSVG`) hoặc nút chốt thứ tự.
+     - Mỗi Tab Header hiển thị thêm biểu tượng **Drag Handle** `⠿` (6 dots) ở đầu tab.
+     - Toàn bộ tab button có trạng thái `draggable="true"`, con trỏ chuột đổi thành `grab` / `grabbing`.
+     - Tab có hiệu ứng viền nhẹ / dashed border để người dùng nhận diện ngay tính năng kéo thả.
+  3. **Thao tác Kéo thả (Drag & Drop & Reorder Mechanics):**
+     - Khi kéo một tab lướt qua tab khác, hiển thị **Drop Indicator** (vạch chỉ thị vị trí thả màu xanh `#0B5EA8`).
+     - Khi thả (Drop), các tab hoán đổi vị trí mượt mà, tab đang active vẫn duy trì trạng thái active chính xác.
+     - **Keyboard Accessibility (A11y):** Trong chế độ Reorder Mode, người dùng có thể focus vào tab và nhấn `Space` để kích hoạt di chuyển, dùng phím `Left` / `Right` để hoán đổi vị trí và `Enter` để xác nhận.
+  4. **Persistence & Synchronization:**
+     - Thứ tự tab tùy biến được tự động lưu vào `chrome.storage.local` thông qua `settingsAdapter` (khóa `tabOrderPreferences`).
+     - Các lần tra từ tiếp theo sẽ tự động đọc cấu hình ưu tiên này để sắp xếp các tab hiển thị.
+- **Visual Design Tokens & Dark Mode Compatibility:**
+  - Drag handle icon `⠿`: `#9CA3AF` (Light) / `#6B7280` (Dark), hover `#4B5563`.
+  - Reorder toggle button: Nền trong suốt, hover `#F3F4F6` (Light) / `#374151` (Dark), bo tròn 4px.
+  - Drop indicator marker: `2px solid #0B5EA8` (Light) / `#60A5FA` (Dark).
+  - Dragging state opacity: `0.5` với shadow nổi nhẹ `0 4px 10px rgba(0, 0, 0, 0.12)`.

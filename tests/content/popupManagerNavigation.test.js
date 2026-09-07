@@ -1205,10 +1205,14 @@ test('popupManager: Hybrid Tabbed Interface renders Primary Meaning directly and
   const tabBtns = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-tab-btn'));
   assert.ok(tabBtns.length >= 3, 'Should have at least 3 tabs: Explanation, Adjective, Word Family');
 
-  const tabLabels = tabBtns.map((b) => (b.childNodes[0]?.textContent || b.textContent || '')).filter(Boolean);
+  const tabLabels = tabBtns.map((b) => b.childNodes.map((c) => c?.textContent || '').join(' '));
   assert.ok(tabLabels.some((l) => l.includes('Explanation')), 'Should contain Explanation tab');
   assert.ok(tabLabels.some((l) => l.includes('Adjective')), 'Should contain Adjective tab');
   assert.ok(tabLabels.some((l) => l.includes('Word Family')), 'Should contain Word Family tab');
+
+  // Verify reorder button exists
+  const reorderBtns = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-tab-reorder-btn'));
+  assert.equal(reorderBtns.length, 1, 'Should have 1 tab reorder button');
 
   // 3. Verify Active Tab Panel switching
   const tabPanels = allElements.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-tab-panel'));
@@ -1218,6 +1222,70 @@ test('popupManager: Hybrid Tabbed Interface renders Primary Meaning directly and
   popupManager.removePopup();
 });
 
+test('popupManager: clicking reorder button toggles reorder-mode and drag handles', () => {
+  const documentObj = createMockDocument();
+  const windowObj = createMockWindow();
 
+  let savedSettings = null;
+  const mockSettingsAdapter = {
+    getSnapshot: () => ({ tabOrderPreference: [] }),
+    update: async (patch) => {
+      savedSettings = patch;
+    },
+  };
 
+  const popupManager = createPopupManager({
+    documentObj,
+    windowObj,
+    settingsAdapter: mockSettingsAdapter,
+  });
 
+  popupManager.showPopup(
+    {
+      status: 'success',
+      data: {
+        token: 'resilient',
+        headword: 'resilient',
+        definitions: [
+          '<details class="vocab-details"><summary><span class="vocab-details-label">Long Definition</span></summary><div class="details-content">Explanation text</div></details>',
+          '<details class="vocab-details"><summary><span class="vocab-details-label">Adjective (2)</span></summary><div class="details-content">Adjective defs</div></details>',
+        ],
+        wordFamily: [{ word: 'resilience' }],
+      },
+    },
+    { left: 100, top: 100, bottom: 120, right: 150 }
+  );
+
+  const popupEl = documentObj.body.childNodes[0];
+  const container = popupEl._vocabContainer;
+
+  function getAllElements(root) {
+    const all = [];
+    function collect(node) {
+      if (!node) return;
+      all.push(node);
+      for (const c of node.childNodes || []) collect(c);
+    }
+    collect(root);
+    return all;
+  }
+
+  let allElements = getAllElements(container);
+  const reorderBtn = allElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tab-reorder-btn'));
+  assert.ok(reorderBtn, 'Reorder button should be present');
+
+  // Trigger click on reorder button
+  reorderBtn.dispatchEvent('click');
+
+  allElements = getAllElements(container);
+  const reorderTabs = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('reorder-mode'));
+  assert.ok(reorderTabs.length >= 3, 'Tabs should enter reorder-mode');
+
+  // Trigger click again to exit reorder-mode
+  reorderBtn.dispatchEvent('click');
+  allElements = getAllElements(container);
+  const normalTabs = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('reorder-mode'));
+  assert.equal(normalTabs.length, 0, 'Tabs should exit reorder-mode');
+
+  popupManager.removePopup();
+});

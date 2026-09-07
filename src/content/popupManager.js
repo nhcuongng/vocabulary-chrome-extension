@@ -75,6 +75,19 @@ const gearSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" 
   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
 </svg>`;
 
+const checkSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="20 6 9 17 4 12"></polyline>
+</svg>`;
+
+const dragDotsSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="12" viewBox="0 0 10 16" fill="currentColor">
+  <circle cx="2" cy="2" r="1.5"></circle>
+  <circle cx="8" cy="2" r="1.5"></circle>
+  <circle cx="2" cy="8" r="1.5"></circle>
+  <circle cx="8" cy="8" r="1.5"></circle>
+  <circle cx="2" cy="14" r="1.5"></circle>
+  <circle cx="8" cy="14" r="1.5"></circle>
+</svg>`;
+
 const starSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
 </svg>`;
@@ -1025,6 +1038,17 @@ export function createPopupManager({
       .vocab-tab-bar::-webkit-scrollbar {
         display: none;
       }
+      .vocab-tab-list {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .vocab-tab-list::-webkit-scrollbar {
+        display: none;
+      }
       .vocab-tab-btn {
         background: transparent;
         border: none;
@@ -1040,7 +1064,7 @@ export function createPopupManager({
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        transition: color 0.15s ease, border-color 0.15s ease;
+        transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
         white-space: nowrap;
         user-select: none;
       }
@@ -1062,6 +1086,53 @@ export function createPopupManager({
       .vocab-tab-btn.active .vocab-tab-badge {
         background: #dbeafe;
         color: #1e40af;
+      }
+      .vocab-tab-reorder-btn {
+        background: transparent;
+        border: none;
+        outline: none;
+        padding: 4px 6px;
+        border-radius: 4px;
+        color: #9ca3af;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+      }
+      .vocab-tab-reorder-btn:hover {
+        background: #f3f4f6;
+        color: #4b5563;
+      }
+      .vocab-tab-reorder-btn.active {
+        background: #e0f2fe;
+        color: #0284c7;
+      }
+      .vocab-tab-drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        cursor: grab;
+        margin-right: 2px;
+      }
+      .vocab-tab-btn.reorder-mode {
+        cursor: grab;
+        border: 1px dashed #cbd5e1;
+        border-radius: 6px;
+        padding: 4px 6px;
+        margin-bottom: 0;
+      }
+      .vocab-tab-btn.reorder-mode.dragging {
+        opacity: 0.4;
+        cursor: grabbing;
+      }
+      .vocab-tab-btn.reorder-mode.drag-over {
+        border-color: #0b5ea8;
+        background: #f0f9ff;
+        transform: scale(1.02);
       }
       .vocab-tab-panels {
         max-height: 220px;
@@ -1336,6 +1407,27 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-tab-btn.active .vocab-tab-badge {
         background: #1e3a8a;
         color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-tab-reorder-btn {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-tab-reorder-btn:hover {
+        background: #374151;
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-tab-reorder-btn.active {
+        background: #1e3a8a;
+        color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-tab-drag-handle {
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-tab-btn.reorder-mode {
+        border-color: #4b5563;
+      }
+      .vocab-popup.dark-mode .vocab-tab-btn.reorder-mode.drag-over {
+        border-color: #60a5fa;
+        background: #1e293b;
       }
       .vocab-popup.dark-mode .vocab-popup-search-suggestions a,
       .vocab-popup.dark-mode .search-suggestion-link {
@@ -2184,36 +2276,129 @@ export function createPopupManager({
       }
     });
 
-    // Render Tabs Container if we have any pending secondary tabs (e.g. Details, Definitions, Word Family)
-    const allTabs = bodyContainer._pendingTabs || [];
-    if (allTabs.length > 0) {
+    // Render Tabs Container if we have any pending secondary tabs (e.g. Explanation, Definitions, Word Family)
+    const allTabsRaw = bodyContainer._pendingTabs || [];
+    if (allTabsRaw.length > 0) {
+      // 1. Sort tabs by user's saved tabOrderPreference if available
+      const currentSettings = settingsAdapter?.getSnapshot ? settingsAdapter.getSnapshot() : null;
+      const tabOrderPref = Array.isArray(currentSettings?.tabOrderPreference) ? currentSettings.tabOrderPreference : [];
+      
+      let allTabs = [...allTabsRaw];
+      if (tabOrderPref.length > 0) {
+        allTabs.sort((a, b) => {
+          const idxA = tabOrderPref.findIndex((pref) => a.label.toLowerCase().includes(pref.toLowerCase()) || pref.toLowerCase().includes(a.label.toLowerCase()));
+          const idxB = tabOrderPref.findIndex((pref) => b.label.toLowerCase().includes(pref.toLowerCase()) || pref.toLowerCase().includes(b.label.toLowerCase()));
+          const posA = idxA === -1 ? 999 : idxA;
+          const posB = idxB === -1 ? 999 : idxB;
+          return posA - posB;
+        });
+      }
+
       const tabsContainer = h('div', { className: 'vocab-tabs-container' });
       const tabBar = h('div', { className: 'vocab-tab-bar', role: 'tablist', ariaLabel: 'Word details tabs' });
+      const tabList = h('div', { className: 'vocab-tab-list' });
       const tabPanels = h('div', { className: 'vocab-tab-panels' });
+
+      let isReorderMode = false;
+      let draggedTabIdx = null;
 
       const tabBtns = [];
       const panelEls = [];
+      const dragHandles = [];
+
+      function renderTabsList() {
+        tabList.replaceChildren();
+        tabBtns.length = 0;
+        dragHandles.length = 0;
+
+        allTabs.forEach((tabInfo, idx) => {
+          const isActive = idx === 0;
+          const badgeEl = tabInfo.badge ? h('span', { className: 'vocab-tab-badge' }, tabInfo.badge) : null;
+          
+          const dragHandle = h('span', {
+            className: 'vocab-tab-drag-handle',
+            innerHTML: dragDotsSVG,
+            style: { display: isReorderMode ? 'inline-flex' : 'none' },
+          });
+          dragHandles.push(dragHandle);
+
+          const btn = h(
+            'button',
+            {
+              type: 'button',
+              className: `${isActive ? 'vocab-tab-btn active' : 'vocab-tab-btn'}${isReorderMode ? ' reorder-mode' : ''}`,
+              role: 'tab',
+              ariaSelected: isActive ? 'true' : 'false',
+              tabIndex: isActive ? 0 : -1,
+              draggable: isReorderMode ? 'true' : 'false',
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                if (isReorderMode) return;
+                switchTab(idx);
+              },
+            },
+            dragHandle,
+            tabInfo.label,
+            badgeEl
+          );
+
+          // Drag and drop events for reorder mode
+          btn.addEventListener('dragstart', (e) => {
+            if (!isReorderMode) return;
+            draggedTabIdx = idx;
+            btn.classList.add('dragging');
+            e.dataTransfer?.setData('text/plain', String(idx));
+          });
+
+          btn.addEventListener('dragend', () => {
+            btn.classList.remove('dragging');
+            tabBtns.forEach((b) => b.classList.remove('drag-over'));
+            draggedTabIdx = null;
+          });
+
+          btn.addEventListener('dragover', (e) => {
+            if (!isReorderMode) return;
+            e.preventDefault();
+            btn.classList.add('drag-over');
+          });
+
+          btn.addEventListener('dragleave', () => {
+            btn.classList.remove('drag-over');
+          });
+
+          btn.addEventListener('drop', (e) => {
+            if (!isReorderMode) return;
+            e.preventDefault();
+            btn.classList.remove('drag-over');
+            const fromIdx = draggedTabIdx !== null ? draggedTabIdx : Number(e.dataTransfer?.getData('text/plain'));
+            const toIdx = idx;
+            if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== toIdx) {
+              const movedTab = allTabs.splice(fromIdx, 1)[0];
+              allTabs.splice(toIdx, 0, movedTab);
+              const movedPanel = panelEls.splice(fromIdx, 1)[0];
+              panelEls.splice(toIdx, 0, movedPanel);
+
+              // Update storage preferences
+              saveTabOrderPreference();
+              renderTabsList();
+              switchTab(toIdx);
+            }
+          });
+
+          tabBtns.push(btn);
+          tabList.appendChild(btn);
+        });
+      }
+
+      function saveTabOrderPreference() {
+        const newOrder = allTabs.map((t) => t.label);
+        if (settingsAdapter?.update) {
+          settingsAdapter.update({ tabOrderPreference: newOrder }).catch(() => {});
+        }
+      }
 
       allTabs.forEach((tabInfo, idx) => {
         const isActive = idx === 0;
-        const badgeEl = tabInfo.badge ? h('span', { className: 'vocab-tab-badge' }, tabInfo.badge) : null;
-        const btn = h(
-          'button',
-          {
-            type: 'button',
-            className: isActive ? 'vocab-tab-btn active' : 'vocab-tab-btn',
-            role: 'tab',
-            ariaSelected: isActive ? 'true' : 'false',
-            tabIndex: isActive ? 0 : -1,
-            onClick: (e) => {
-              e?.stopPropagation?.();
-              switchTab(idx);
-            },
-          },
-          tabInfo.label,
-          badgeEl
-        );
-
         const panel = h('div', {
           className: isActive ? 'vocab-tab-panel active' : 'vocab-tab-panel',
           role: 'tabpanel',
@@ -2225,16 +2410,39 @@ export function createPopupManager({
           panel.innerHTML = tabInfo.contentHtml;
         }
 
-        tabBtns.push(btn);
         panelEls.push(panel);
-        tabBar.appendChild(btn);
         tabPanels.appendChild(panel);
       });
+
+      renderTabsList();
+
+      // Customize/Reorder toggle button
+      const reorderBtn = h(
+        'button',
+        {
+          type: 'button',
+          className: 'vocab-tab-reorder-btn',
+          title: 'Customize tab order',
+          ariaLabel: 'Customize tab order',
+          innerHTML: gearSVG,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            isReorderMode = !isReorderMode;
+            reorderBtn.className = isReorderMode ? 'vocab-tab-reorder-btn active' : 'vocab-tab-reorder-btn';
+            reorderBtn.innerHTML = isReorderMode ? checkSVG : gearSVG;
+            reorderBtn.title = isReorderMode ? 'Done customizing tab order' : 'Customize tab order';
+            reorderBtn.setAttribute('aria-label', isReorderMode ? 'Done customizing tab order' : 'Customize tab order');
+
+            renderTabsList();
+            updatePopupPosition();
+          },
+        }
+      );
 
       function switchTab(index) {
         tabBtns.forEach((b, i) => {
           const active = i === index;
-          b.className = active ? 'vocab-tab-btn active' : 'vocab-tab-btn';
+          b.className = `${active ? 'vocab-tab-btn active' : 'vocab-tab-btn'}${isReorderMode ? ' reorder-mode' : ''}`;
           b.setAttribute('aria-selected', active ? 'true' : 'false');
           b.tabIndex = active ? 0 : -1;
         });
@@ -2262,6 +2470,10 @@ export function createPopupManager({
         }
       });
 
+      tabBar.appendChild(tabList);
+      if (allTabs.length > 1) {
+        tabBar.appendChild(reorderBtn);
+      }
       tabsContainer.appendChild(tabBar);
       tabsContainer.appendChild(tabPanels);
       bodyContainer.appendChild(tabsContainer);

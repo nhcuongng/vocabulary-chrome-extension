@@ -10,12 +10,15 @@ function isPromiseLike(value) {
 }
 
 function isSameSettings(left, right) {
+  const leftOrder = Array.isArray(left?.tabOrderPreference) ? left.tabOrderPreference.join(',') : '';
+  const rightOrder = Array.isArray(right?.tabOrderPreference) ? right.tabOrderPreference.join(',') : '';
   return (
     left?.schemaVersion === right?.schemaVersion &&
     left?.autoPopupEnabled === right?.autoPopupEnabled &&
     left?.darkMode === right?.darkMode &&
     left?.simpleLearn === right?.simpleLearn &&
-    left?.rememberLastLookup === right?.rememberLastLookup
+    left?.rememberLastLookup === right?.rememberLastLookup &&
+    leftOrder === rightOrder
   );
 }
 

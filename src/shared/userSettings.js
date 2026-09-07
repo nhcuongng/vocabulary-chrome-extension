@@ -12,6 +12,7 @@ export const DEFAULT_USER_SETTINGS = Object.freeze({
   darkMode: false,
   simpleLearn: false,
   rememberLastLookup: true,
+  tabOrderPreference: Object.freeze([]),
 });
 
 function toBooleanOrNull(value) {
@@ -68,12 +69,21 @@ export function normalizeUserSettings(rawValue) {
     }
   }
 
+  let normalizedTabOrderPreference = [];
+  if (Array.isArray(rawValue.tabOrderPreference)) {
+    normalizedTabOrderPreference = rawValue.tabOrderPreference
+      .filter((item) => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   return {
     schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
     autoPopupEnabled: normalizedAutoPopupEnabled,
     darkMode: normalizedDarkMode,
     simpleLearn: normalizedSimpleLearn,
     rememberLastLookup: normalizedRememberLastLookup,
+    tabOrderPreference: normalizedTabOrderPreference,
   };
 }
 
