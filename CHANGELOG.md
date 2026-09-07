@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.0] - 2026-09-07
+
+### 🚀 Added & Improved (Hybrid Tabbed Interface, Custom Reordering & Thesaurus)
+- **Hybrid Tabbed Interface**:
+  - Replaced collapsible accordion cards with an intuitive **Connected Underline Tab Bar** in the in-page popup modal.
+  - Keeps Primary Meaning / Short Definition prominently visible at the top stream while secondary details (**Explanation**, Part-of-Speech definitions, **Thesaurus**, and **Word Family**) are organized into dedicated tabs with counts.
+  - Added full keyboard navigation support (`ArrowLeft`, `ArrowRight`, `ArrowDown`, `ArrowUp`) for instant tab switching.
+- **Tab Customization & Drag-and-Drop Reordering**:
+  - Added interactive tab customization popover allowing users to reorder tabs via drag-and-drop handles.
+  - Persists custom tab order (`tabOrder`) into user settings storage with automatic application across sessions.
+- **Thesaurus & Synonyms / Antonyms Support**:
+  - Parsed and rendered contextual **Synonyms** and **Antonyms** inline within part-of-speech definition senses for both **Vocabulary.com** and **FreeDictionary API**.
+  - Added a dedicated **Thesaurus** tab consolidating all word-level and sense-level synonyms and antonyms with distinct color coding and click-to-lookup interactivity.
+  - Added comprehensive 100-words test suite in `tests/e2e/multiSource100WordsDisplay.test.js` validating synonym and antonym extraction across diverse vocabulary profiles.
+
+### 🔧 Fixed
+- **Source-Specific Rate Limiting for FreeDictionary History Navigation**:
+  - Resolved "Too many requests" rate-limiting errors when navigating rapidly through search history using next/back buttons on FreeDictionary mode.
+  - Increased FreeDictionary rate limit bucket to **30 requests / 10s** while maintaining strict **6 requests / 10s** bot-protection limits for Vocabulary.com.
+  - Partitioned rate limiter buckets by dictionary source (`lookup:freedictionary` vs `lookup:vocabulary`).
+
+---
+
 ## [0.9.0] - 2026-09-07
 
 ### 🚀 Added & Changed (Simple Learn Mode & Source Selector Simplification)

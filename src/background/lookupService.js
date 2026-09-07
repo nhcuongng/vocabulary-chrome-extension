@@ -10,10 +10,18 @@ import { parseFreeDictionaryApiResponse } from '../infrastructure/adapters/freeD
 export const DEFAULT_LOOKUP_TIMEOUT_MS = 3000;
 export const DEFAULT_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-const DEFAULT_RATE_LIMIT_POLICY = {
-  windowMs: 10_000,
-  maxRequests: 6,
+const DEFAULT_RATE_LIMIT_POLICY_BY_SOURCE = {
+  vocabulary: {
+    windowMs: 10_000,
+    maxRequests: 6,
+  },
+  freedictionary: {
+    windowMs: 10_000,
+    maxRequests: 30,
+  },
 };
+
+const DEFAULT_RATE_LIMIT_POLICY = DEFAULT_RATE_LIMIT_POLICY_BY_SOURCE.vocabulary;
 
 const DEFAULT_RETRY_POLICY = {
   maxAttempts: 2,
@@ -23,15 +31,16 @@ const DEFAULT_RETRY_POLICY = {
   retryableStatusCodes: [408, 425, 429, 500, 502, 503, 504],
 };
 
-function normalizeRateLimitPolicy(rateLimitPolicy = {}) {
+function normalizeRateLimitPolicy(rateLimitPolicy = {}, source = 'vocabulary') {
+  const fallbackPolicy = DEFAULT_RATE_LIMIT_POLICY_BY_SOURCE[source] || DEFAULT_RATE_LIMIT_POLICY;
   const policy = {
-    ...DEFAULT_RATE_LIMIT_POLICY,
+    ...fallbackPolicy,
     ...(rateLimitPolicy ?? {}),
   };
 
   return {
-    windowMs: Math.max(1000, Math.floor(Number(policy.windowMs) || DEFAULT_RATE_LIMIT_POLICY.windowMs)),
-    maxRequests: Math.max(1, Math.floor(Number(policy.maxRequests) || DEFAULT_RATE_LIMIT_POLICY.maxRequests)),
+    windowMs: Math.max(1000, Math.floor(Number(policy.windowMs) || fallbackPolicy.windowMs)),
+    maxRequests: Math.max(1, Math.floor(Number(policy.maxRequests) || fallbackPolicy.maxRequests)),
   };
 }
 
@@ -285,7 +294,7 @@ export async function performDictionaryLookup({
   delayImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 } = {}) {
   const resolvedRetryPolicy = resolveRetryPolicy(retryPolicy);
-  const resolvedRateLimitPolicy = normalizeRateLimitPolicy(rateLimitPolicy);
+  const resolvedRateLimitPolicy = normalizeRateLimitPolicy(rateLimitPolicy, source);
   const resolvedCacheTtlMs = normalizeCacheTtlMs(cacheTtlMs);
   const safeTimeoutMs = normalizeTimeoutMs(timeoutMs);
   const startedAtMs = now();
@@ -366,7 +375,7 @@ export async function performDictionaryLookup({
 
   if (rateLimiter && typeof rateLimiter.consume === 'function') {
     const rateLimitDecision = rateLimiter.consume({
-      key: 'lookup:global',
+      key: `lookup:${source || 'vocabulary'}`,
       nowMs: startedAtMs,
       policy: resolvedRateLimitPolicy,
     });

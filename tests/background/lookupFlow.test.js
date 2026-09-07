@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildDictionaryLookupUrl } from '../../src/background/lookupRequestBuilder.js';
-import { performDictionaryLookup } from '../../src/background/lookupService.js';
+import { performDictionaryLookup, createSlidingWindowRateLimiter } from '../../src/background/lookupService.js';
 import { createLookupTelemetryRecorder } from '../../src/application/lookupTelemetryRecorder.js';
 import { createLookupFlowOrchestrator } from '../../src/content/lookupFlowOrchestrator.js';
 import { createInMemoryTelemetryStore } from '../../src/infrastructure/adapters/inMemoryTelemetryStore.js';
@@ -390,3 +390,44 @@ test('lookup orchestrator: bỏ qua kết quả stale khi request cũ về muộ
   assert.equal(orchestrator.getState().data.headword, 'second');
   assert.notEqual(states.at(-1).data?.headword, 'first');
 });
+
+test('performDictionaryLookup: áp dụng rate limit riêng biệt cho freedictionary vs vocabulary', async () => {
+  const limiter = createSlidingWindowRateLimiter();
+  let freedictCalls = 0;
+  const words = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon'];
+
+  // FreeDictionary cho phép nhiều request liên tiếp (mặc định 30 req / 10s)
+  for (const w of words) {
+    const res = await performDictionaryLookup({
+      headword: w,
+      source: 'freedictionary',
+      now: () => 1_000,
+      fetchImpl: async () => {
+        freedictCalls += 1;
+        return {
+          ok: true,
+          text: async () => JSON.stringify([{ word: w, meanings: [{ definitions: [{ definition: 'test' }] }] }]),
+        };
+      },
+      rateLimiter: limiter,
+      cacheStore: null,
+    });
+    assert.equal(res.status, 'success');
+  }
+  assert.equal(freedictCalls, 10);
+
+  // Vocabulary bucket không bị ảnh hưởng bởi FreeDictionary bucket
+  const vocabRes = await performDictionaryLookup({
+    headword: 'mango',
+    source: 'vocabulary',
+    now: () => 1_000,
+    fetchImpl: async () => ({
+      ok: true,
+      text: async () => '<h1 class="dynamictext">mango</h1>',
+    }),
+    rateLimiter: limiter,
+    cacheStore: null,
+  });
+  assert.equal(vocabRes.status, 'success');
+});
+
