@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.11.0] - 2026-09-07
+
+### 🚀 Added & Improved (Tabs Customization Modal & Modularization)
+- **Interactive Tab Customization Modal**:
+  - Added a dedicated modal dialog accessible directly via the gear icon on the tab bar.
+  - Implemented mouse and touch-friendly drag-and-drop reordering with visual drop indicators and smooth auto-scroll.
+  - Added visibility toggle (eye icon button) for each tab to let users hide rarely used sections, with an automatic safety guardrail enforcing at least one visible tab.
+  - Added a **Reset to default** button to instantly restore the default tab order and visibility.
+  - Seamlessly persisted `tabOrderPreference` and `hiddenTabsPreference` into Chrome local storage with backward-compatible fallback.
+- **Architecture & Code Modularization**:
+  - Extracted tab lifecycle management into [`src/content/tabs/tabManager.js`](file:///home/nhcuong/Projects/personal/vocabulary-chrome-extension/src/content/tabs/tabManager.js).
+  - Extracted modal rendering and interaction logic into [`src/content/tabs/tabCustomizeModal.js`](file:///home/nhcuong/Projects/personal/vocabulary-chrome-extension/src/content/tabs/tabCustomizeModal.js).
+  - Cleaned up and reduced [`src/content/popupManager.js`](file:///home/nhcuong/Projects/personal/vocabulary-chrome-extension/src/content/popupManager.js) by over 330 lines of code.
+
+---
+
 ## [0.10.0] - 2026-09-07
 
 ### 🚀 Added & Improved (Hybrid Tabbed Interface, Custom Reordering & Thesaurus)
