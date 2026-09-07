@@ -92,6 +92,16 @@ const starSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" 
   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
 </svg>`;
 
+const eyeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+  <circle cx="12" cy="12" r="3"></circle>
+</svg>`;
+
+const eyeOffSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+  <line x1="1" y1="1" x2="23" y2="23"></line>
+</svg>`;
+
 export function createPopupManager({
   documentObj,
   windowObj,
@@ -1110,29 +1120,183 @@ export function createPopupManager({
         background: #e0f2fe;
         color: #0284c7;
       }
-      .vocab-tab-drag-handle {
+      .vocab-tabs-modal-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        backdrop-filter: blur(1px);
+        animation: fadeInTab 0.15s ease-out;
+      }
+      .vocab-tabs-modal {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 320px;
+        padding: 12px 14px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow: hidden;
+      }
+      .vocab-tabs-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 6px;
+      }
+      .vocab-tabs-modal-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .vocab-tabs-modal-close-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 4px;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .vocab-tabs-modal-close-btn:hover {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .vocab-tabs-modal-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 180px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+        padding: 2px 0;
+        box-sizing: border-box;
+      }
+      .vocab-tabs-modal-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 6px 8px;
+        user-select: none;
+        box-sizing: border-box;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .vocab-tabs-modal-item.dragging {
+        opacity: 0.4;
+        background: #f1f5f9;
+      }
+      .vocab-tabs-modal-item.drag-over {
+        border-color: #0284c7;
+        background: #e0f2fe;
+        outline: 1.5px dashed #0284c7;
+        outline-offset: -1px;
+      }
+      .vocab-tabs-modal-item-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+      }
+      .vocab-tabs-modal-drag-handle {
+        color: #94a3b8;
+        cursor: grab;
+        display: inline-flex;
+        align-items: center;
+      }
+      .vocab-tabs-modal-drag-handle:active {
+        cursor: grabbing;
+      }
+      .vocab-tabs-modal-item-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #334155;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .vocab-tabs-modal-item.hidden-tab .vocab-tabs-modal-item-label {
+        color: #94a3b8;
+        text-decoration: line-through;
+      }
+      .vocab-tabs-modal-eye-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        color: #0284c7;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        color: #9ca3af;
-        cursor: grab;
-        margin-right: 2px;
+        transition: all 0.15s ease;
       }
-      .vocab-tab-btn.reorder-mode {
-        cursor: grab;
-        border: 1px dashed #cbd5e1;
+      .vocab-tabs-modal-eye-btn:hover {
+        background: #e2e8f0;
+      }
+      .vocab-tabs-modal-eye-btn.tab-hidden {
+        color: #94a3b8;
+      }
+      .vocab-tabs-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 8px;
+        margin-top: 2px;
+      }
+      .vocab-tabs-modal-reset-btn {
+        background: transparent;
+        border: 1px solid #cbd5e1;
         border-radius: 6px;
-        padding: 4px 6px;
-        margin-bottom: 0;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s ease;
       }
-      .vocab-tab-btn.reorder-mode.dragging {
-        opacity: 0.4;
-        cursor: grabbing;
+      .vocab-tabs-modal-reset-btn:hover {
+        background: #f1f5f9;
+        color: #334155;
+        border-color: #94a3b8;
       }
-      .vocab-tab-btn.reorder-mode.drag-over {
-        border-color: #0b5ea8;
-        background: #f0f9ff;
-        transform: scale(1.02);
+      .vocab-tabs-modal-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .vocab-tabs-modal-save-btn {
+        background: #0284c7;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #ffffff;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+      .vocab-tabs-modal-save-btn:hover {
+        background: #0369a1;
       }
       .vocab-tab-panels {
         max-height: 220px;
@@ -1494,15 +1658,75 @@ export function createPopupManager({
         background: #1e3a8a;
         color: #93c5fd;
       }
-      .vocab-popup.dark-mode .vocab-tab-drag-handle {
-        color: #6b7280;
+      .vocab-popup.dark-mode .vocab-tabs-modal-backdrop {
+        background: rgba(0, 0, 0, 0.6);
       }
-      .vocab-popup.dark-mode .vocab-tab-btn.reorder-mode {
-        border-color: #4b5563;
+      .vocab-popup.dark-mode .vocab-tabs-modal {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
       }
-      .vocab-popup.dark-mode .vocab-tab-btn.reorder-mode.drag-over {
+      .vocab-popup.dark-mode .vocab-tabs-modal-header {
+        border-bottom-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-title {
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-close-btn {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-close-btn:hover {
+        background: #374151;
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-item {
+        background: #111827;
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-item.dragging {
+        background: #1f2937;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-item.drag-over {
         border-color: #60a5fa;
         background: #1e293b;
+        outline: 1.5px dashed #60a5fa;
+        outline-offset: -1px;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-drag-handle {
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-item-label {
+        color: #e5e7eb;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-item.hidden-tab .vocab-tabs-modal-item-label {
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-eye-btn {
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-eye-btn:hover {
+        background: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-eye-btn.tab-hidden {
+        color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-footer {
+        border-top-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-reset-btn {
+        border-color: #4b5563;
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-reset-btn:hover {
+        background: #374151;
+        color: #f3f4f6;
+        border-color: #6b7280;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-save-btn {
+        background: #2563eb;
+      }
+      .vocab-popup.dark-mode .vocab-tabs-modal-save-btn:hover {
+        background: #1d4ed8;
       }
       .vocab-popup.dark-mode .vocab-popup-search-suggestions a,
       .vocab-popup.dark-mode .search-suggestion-link {
@@ -2430,10 +2654,11 @@ export function createPopupManager({
       // 1. Sort tabs by user's saved tabOrderPreference if available
       const currentSettings = settingsAdapter?.getSnapshot ? settingsAdapter.getSnapshot() : null;
       const tabOrderPref = Array.isArray(currentSettings?.tabOrderPreference) ? currentSettings.tabOrderPreference : [];
+      const hiddenTabsPref = Array.isArray(currentSettings?.hiddenTabsPreference) ? currentSettings.hiddenTabsPreference : [];
       
-      let allTabs = [...allTabsRaw];
+      let allTabsMaster = [...allTabsRaw];
       if (tabOrderPref.length > 0) {
-        allTabs.sort((a, b) => {
+        allTabsMaster.sort((a, b) => {
           const idxA = tabOrderPref.findIndex((pref) => a.label.toLowerCase().includes(pref.toLowerCase()) || pref.toLowerCase().includes(a.label.toLowerCase()));
           const idxB = tabOrderPref.findIndex((pref) => b.label.toLowerCase().includes(pref.toLowerCase()) || pref.toLowerCase().includes(b.label.toLowerCase()));
           const posA = idxA === -1 ? 999 : idxA;
@@ -2442,155 +2667,77 @@ export function createPopupManager({
         });
       }
 
+      let activeHiddenTabs = [...hiddenTabsPref];
+
       const tabsContainer = h('div', { className: 'vocab-tabs-container' });
       const tabBar = h('div', { className: 'vocab-tab-bar', role: 'tablist', ariaLabel: 'Word details tabs' });
       const tabList = h('div', { className: 'vocab-tab-list' });
       const tabPanels = h('div', { className: 'vocab-tab-panels' });
 
-      let isReorderMode = false;
-      let draggedTabIdx = null;
+      let modalEl = null;
+
+      function getVisibleTabs() {
+        const filtered = allTabsMaster.filter((t) => !activeHiddenTabs.some((hidden) => t.label.toLowerCase().includes(hidden.toLowerCase()) || hidden.toLowerCase().includes(t.label.toLowerCase())));
+        // Fallback: If all tabs are hidden by error, show at least the first tab
+        return filtered.length > 0 ? filtered : [allTabsMaster[0]];
+      }
 
       const tabBtns = [];
       const panelEls = [];
-      const dragHandles = [];
 
-      function renderTabsList() {
+      function renderMainTabs() {
         tabList.replaceChildren();
+        tabPanels.replaceChildren();
         tabBtns.length = 0;
-        dragHandles.length = 0;
+        panelEls.length = 0;
 
-        allTabs.forEach((tabInfo, idx) => {
+        const visibleTabs = getVisibleTabs();
+
+        visibleTabs.forEach((tabInfo, idx) => {
           const isActive = idx === 0;
           const badgeEl = tabInfo.badge ? h('span', { className: 'vocab-tab-badge' }, tabInfo.badge) : null;
-          
-          const dragHandle = h('span', {
-            className: 'vocab-tab-drag-handle',
-            innerHTML: dragDotsSVG,
-            style: { display: isReorderMode ? 'inline-flex' : 'none' },
-          });
-          dragHandles.push(dragHandle);
 
           const btn = h(
             'button',
             {
               type: 'button',
-              className: `${isActive ? 'vocab-tab-btn active' : 'vocab-tab-btn'}${isReorderMode ? ' reorder-mode' : ''}`,
+              className: isActive ? 'vocab-tab-btn active' : 'vocab-tab-btn',
               role: 'tab',
               ariaSelected: isActive ? 'true' : 'false',
               tabIndex: isActive ? 0 : -1,
-              draggable: isReorderMode ? 'true' : 'false',
               onClick: (e) => {
                 e?.stopPropagation?.();
-                if (isReorderMode) return;
                 switchTab(idx);
               },
             },
-            dragHandle,
             tabInfo.label,
             badgeEl
           );
 
-          // Drag and drop events for reorder mode
-          btn.addEventListener('dragstart', (e) => {
-            if (!isReorderMode) return;
-            draggedTabIdx = idx;
-            btn.classList.add('dragging');
-            e.dataTransfer?.setData('text/plain', String(idx));
+          const panel = h('div', {
+            className: isActive ? 'vocab-tab-panel active' : 'vocab-tab-panel',
+            role: 'tabpanel',
           });
 
-          btn.addEventListener('dragend', () => {
-            btn.classList.remove('dragging');
-            tabBtns.forEach((b) => b.classList.remove('drag-over'));
-            draggedTabIdx = null;
-          });
-
-          btn.addEventListener('dragover', (e) => {
-            if (!isReorderMode) return;
-            e.preventDefault();
-            btn.classList.add('drag-over');
-          });
-
-          btn.addEventListener('dragleave', () => {
-            btn.classList.remove('drag-over');
-          });
-
-          btn.addEventListener('drop', (e) => {
-            if (!isReorderMode) return;
-            e.preventDefault();
-            btn.classList.remove('drag-over');
-            const fromIdx = draggedTabIdx !== null ? draggedTabIdx : Number(e.dataTransfer?.getData('text/plain'));
-            const toIdx = idx;
-            if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== toIdx) {
-              const movedTab = allTabs.splice(fromIdx, 1)[0];
-              allTabs.splice(toIdx, 0, movedTab);
-              const movedPanel = panelEls.splice(fromIdx, 1)[0];
-              panelEls.splice(toIdx, 0, movedPanel);
-
-              // Update storage preferences
-              saveTabOrderPreference();
-              renderTabsList();
-              switchTab(toIdx);
-            }
-          });
+          if (tabInfo.contentElement) {
+            panel.appendChild(tabInfo.contentElement);
+          } else if (tabInfo.contentHtml) {
+            panel.innerHTML = tabInfo.contentHtml;
+          }
 
           tabBtns.push(btn);
+          panelEls.push(panel);
           tabList.appendChild(btn);
-        });
-      }
-
-      function saveTabOrderPreference() {
-        const newOrder = allTabs.map((t) => t.label);
-        if (settingsAdapter?.update) {
-          settingsAdapter.update({ tabOrderPreference: newOrder }).catch(() => {});
-        }
-      }
-
-      allTabs.forEach((tabInfo, idx) => {
-        const isActive = idx === 0;
-        const panel = h('div', {
-          className: isActive ? 'vocab-tab-panel active' : 'vocab-tab-panel',
-          role: 'tabpanel',
+          tabPanels.appendChild(panel);
         });
 
-        if (tabInfo.contentElement) {
-          panel.appendChild(tabInfo.contentElement);
-        } else if (tabInfo.contentHtml) {
-          panel.innerHTML = tabInfo.contentHtml;
-        }
-
-        panelEls.push(panel);
-        tabPanels.appendChild(panel);
-      });
-
-      renderTabsList();
-
-      // Customize/Reorder toggle button
-      const reorderBtn = h(
-        'button',
-        {
-          type: 'button',
-          className: 'vocab-tab-reorder-btn',
-          title: 'Customize tab order',
-          ariaLabel: 'Customize tab order',
-          innerHTML: gearSVG,
-          onClick: (e) => {
-            e?.stopPropagation?.();
-            isReorderMode = !isReorderMode;
-            reorderBtn.className = isReorderMode ? 'vocab-tab-reorder-btn active' : 'vocab-tab-reorder-btn';
-            reorderBtn.innerHTML = isReorderMode ? checkSVG : gearSVG;
-            reorderBtn.title = isReorderMode ? 'Done customizing tab order' : 'Customize tab order';
-            reorderBtn.setAttribute('aria-label', isReorderMode ? 'Done customizing tab order' : 'Customize tab order');
-
-            renderTabsList();
-            updatePopupPosition();
-          },
-        }
-      );
+        updatePopupPosition();
+      }
 
       function switchTab(index) {
         tabBtns.forEach((b, i) => {
           const active = i === index;
-          b.className = `${active ? 'vocab-tab-btn active' : 'vocab-tab-btn'}${isReorderMode ? ' reorder-mode' : ''}`;
+          b.className = active ? 'vocab-tab-btn active' : 'vocab-tab-btn';
           b.setAttribute('aria-selected', active ? 'true' : 'false');
           b.tabIndex = active ? 0 : -1;
         });
@@ -2603,6 +2750,7 @@ export function createPopupManager({
       // Keyboard support for tabs
       tabBar.addEventListener('keydown', (e) => {
         const activeIdx = tabBtns.findIndex((b) => b.classList.contains('active'));
+        if (activeIdx === -1) return;
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault();
           e.stopPropagation();
@@ -2618,8 +2766,227 @@ export function createPopupManager({
         }
       });
 
+      function closeCustomizeModal() {
+        if (modalEl && modalEl.parentNode) {
+          modalEl.parentNode.removeChild(modalEl);
+          modalEl = null;
+        }
+      }
+
+      function openCustomizeModal() {
+        if (modalEl) {
+          closeCustomizeModal();
+          return;
+        }
+
+        let draftOrder = [...allTabsMaster];
+        let draftHidden = [...activeHiddenTabs];
+        let draggedItemIdx = null;
+
+        const backdrop = h('div', {
+          className: 'vocab-tabs-modal-backdrop',
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            closeCustomizeModal();
+          },
+        });
+
+        const modal = h('div', {
+          className: 'vocab-tabs-modal',
+          role: 'dialog',
+          ariaLabel: 'Customize tabs',
+          onClick: (e) => {
+            e?.stopPropagation?.();
+          },
+        });
+
+        const header = h(
+          'div',
+          { className: 'vocab-tabs-modal-header' },
+          h('span', { className: 'vocab-tabs-modal-title' }, 'Customize Tabs'),
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'vocab-tabs-modal-close-btn',
+              title: 'Close',
+              ariaLabel: 'Close',
+              innerHTML: closeSVG,
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                closeCustomizeModal();
+              },
+            }
+          )
+        );
+
+        const listContainer = h('div', { className: 'vocab-tabs-modal-list' });
+
+        function renderModalList() {
+          listContainer.replaceChildren();
+
+          draftOrder.forEach((tabInfo, idx) => {
+            const isHidden = draftHidden.some((h) => tabInfo.label.toLowerCase().includes(h.toLowerCase()) || h.toLowerCase().includes(tabInfo.label.toLowerCase()));
+
+            const itemRow = h('div', {
+              className: `vocab-tabs-modal-item${isHidden ? ' hidden-tab' : ''}`,
+              draggable: 'true',
+            });
+
+            // Drag and Drop handlers
+            itemRow.addEventListener('dragstart', (e) => {
+              draggedItemIdx = idx;
+              itemRow.classList.add('dragging');
+              e.dataTransfer?.setData('text/plain', String(idx));
+            });
+
+            itemRow.addEventListener('dragend', () => {
+              itemRow.classList.remove('dragging');
+              listContainer.querySelectorAll('.vocab-tabs-modal-item').forEach((row) => row.classList.remove('drag-over'));
+              draggedItemIdx = null;
+            });
+
+            itemRow.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              itemRow.classList.add('drag-over');
+            });
+
+            itemRow.addEventListener('dragleave', () => {
+              itemRow.classList.remove('drag-over');
+            });
+
+            itemRow.addEventListener('drop', (e) => {
+              e.preventDefault();
+              itemRow.classList.remove('drag-over');
+              const fromIdx = draggedItemIdx !== null ? draggedItemIdx : Number(e.dataTransfer?.getData('text/plain'));
+              const toIdx = idx;
+              if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== toIdx) {
+                const moved = draftOrder.splice(fromIdx, 1)[0];
+                draftOrder.splice(toIdx, 0, moved);
+                renderModalList();
+              }
+            });
+
+            const leftSide = h(
+              'div',
+              { className: 'vocab-tabs-modal-item-left' },
+              h('span', {
+                className: 'vocab-tabs-modal-drag-handle',
+                innerHTML: dragDotsSVG,
+                title: 'Drag to reorder',
+              }),
+              h('span', { className: 'vocab-tabs-modal-item-label' }, tabInfo.label)
+            );
+
+            const eyeBtn = h(
+              'button',
+              {
+                type: 'button',
+                className: `vocab-tabs-modal-eye-btn${isHidden ? ' tab-hidden' : ''}`,
+                title: isHidden ? `Show ${tabInfo.label}` : `Hide ${tabInfo.label}`,
+                ariaLabel: isHidden ? `Show ${tabInfo.label}` : `Hide ${tabInfo.label}`,
+                innerHTML: isHidden ? eyeOffSVG : eyeSVG,
+                onClick: (e) => {
+                  e?.stopPropagation?.();
+                  if (isHidden) {
+                    draftHidden = draftHidden.filter((h) => !tabInfo.label.toLowerCase().includes(h.toLowerCase()) && !h.toLowerCase().includes(tabInfo.label.toLowerCase()));
+                  } else {
+                    const visibleCount = draftOrder.filter((t) => !draftHidden.some((h) => t.label.toLowerCase().includes(h.toLowerCase()) || h.toLowerCase().includes(t.label.toLowerCase()))).length;
+                    if (visibleCount <= 1) {
+                      return; // Always keep at least 1 tab visible
+                    }
+                    draftHidden.push(tabInfo.label);
+                  }
+                  renderModalList();
+                },
+              }
+            );
+
+            itemRow.appendChild(leftSide);
+            itemRow.appendChild(eyeBtn);
+            listContainer.appendChild(itemRow);
+          });
+        }
+
+        renderModalList();
+
+        const footer = h(
+          'div',
+          { className: 'vocab-tabs-modal-footer' },
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'vocab-tabs-modal-reset-btn',
+              title: 'Reset to default tab order and visibility',
+              onClick: (e) => {
+                e?.stopPropagation?.();
+                allTabsMaster = [...allTabsRaw];
+                activeHiddenTabs = [];
+                if (settingsAdapter?.update) {
+                  settingsAdapter.update({ tabOrderPreference: [], hiddenTabsPreference: [] }).catch(() => {});
+                }
+                renderMainTabs();
+                closeCustomizeModal();
+              },
+            },
+            'Reset to default'
+          ),
+          h(
+            'div',
+            { className: 'vocab-tabs-modal-actions' },
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'vocab-tabs-modal-save-btn',
+                title: 'Save tab preferences',
+                onClick: (e) => {
+                  e?.stopPropagation?.();
+                  allTabsMaster = [...draftOrder];
+                  activeHiddenTabs = [...draftHidden];
+                  const newOrder = allTabsMaster.map((t) => t.label);
+                  if (settingsAdapter?.update) {
+                    settingsAdapter.update({ tabOrderPreference: newOrder, hiddenTabsPreference: activeHiddenTabs }).catch(() => {});
+                  }
+                  renderMainTabs();
+                  closeCustomizeModal();
+                },
+              },
+              'Save'
+            )
+          )
+        );
+
+        modal.appendChild(header);
+        modal.appendChild(listContainer);
+        modal.appendChild(footer);
+        backdrop.appendChild(modal);
+
+        modalEl = backdrop;
+        popupContainer.appendChild(backdrop);
+      }
+
+      // Customize settings button on tab bar
+      const reorderBtn = h(
+        'button',
+        {
+          type: 'button',
+          className: 'vocab-tab-reorder-btn',
+          title: 'Customize tabs',
+          ariaLabel: 'Customize tabs',
+          innerHTML: gearSVG,
+          onClick: (e) => {
+            e?.stopPropagation?.();
+            openCustomizeModal();
+          },
+        }
+      );
+
+      renderMainTabs();
+
       tabBar.appendChild(tabList);
-      if (allTabs.length > 1) {
+      if (allTabsMaster.length > 1) {
         tabBar.appendChild(reorderBtn);
       }
       tabsContainer.appendChild(tabBar);

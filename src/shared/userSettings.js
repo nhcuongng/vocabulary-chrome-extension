@@ -13,6 +13,7 @@ export const DEFAULT_USER_SETTINGS = Object.freeze({
   simpleLearn: false,
   rememberLastLookup: true,
   tabOrderPreference: Object.freeze([]),
+  hiddenTabsPreference: Object.freeze([]),
 });
 
 function toBooleanOrNull(value) {
@@ -43,6 +44,8 @@ export function normalizeUserSettings(rawValue) {
       darkMode: DEFAULT_USER_SETTINGS.darkMode,
       simpleLearn: DEFAULT_USER_SETTINGS.simpleLearn,
       rememberLastLookup: DEFAULT_USER_SETTINGS.rememberLastLookup,
+      tabOrderPreference: DEFAULT_USER_SETTINGS.tabOrderPreference,
+      hiddenTabsPreference: DEFAULT_USER_SETTINGS.hiddenTabsPreference,
     };
   }
 
@@ -77,6 +80,14 @@ export function normalizeUserSettings(rawValue) {
       .filter(Boolean);
   }
 
+  let normalizedHiddenTabsPreference = [];
+  if (Array.isArray(rawValue.hiddenTabsPreference)) {
+    normalizedHiddenTabsPreference = rawValue.hiddenTabsPreference
+      .filter((item) => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   return {
     schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
     autoPopupEnabled: normalizedAutoPopupEnabled,
@@ -84,6 +95,7 @@ export function normalizeUserSettings(rawValue) {
     simpleLearn: normalizedSimpleLearn,
     rememberLastLookup: normalizedRememberLastLookup,
     tabOrderPreference: normalizedTabOrderPreference,
+    hiddenTabsPreference: normalizedHiddenTabsPreference,
   };
 }
 

@@ -77,7 +77,28 @@ function createMockDocument() {
       setAttribute: (k, v) => attrs.set(k, v),
       getAttribute: (k) => attrs.get(k),
       contains: (target) => target === el || children.some((c) => c.contains?.(target)),
-      querySelectorAll: () => [],
+      querySelector: (selector) => {
+        const cls = selector.replace(/^\./, '');
+        function find(node) {
+          if (typeof node.className === 'string' && node.className.split(/\s+/).includes(cls)) return node;
+          for (const c of node.childNodes || []) {
+            const res = find(c);
+            if (res) return res;
+          }
+          return null;
+        }
+        return find(el);
+      },
+      querySelectorAll: (selector) => {
+        const results = [];
+        const cls = selector.replace(/^\./, '');
+        function collect(node) {
+          if (typeof node.className === 'string' && node.className.split(/\s+/).includes(cls)) results.push(node);
+          for (const c of node.childNodes || []) collect(c);
+        }
+        for (const c of children) collect(c);
+        return results;
+      },
       classList: {
         add: (cls) => classListSet.add(cls),
         remove: (cls) => classListSet.delete(cls),
@@ -1222,13 +1243,13 @@ test('popupManager: Hybrid Tabbed Interface renders Primary Meaning directly and
   popupManager.removePopup();
 });
 
-test('popupManager: clicking reorder button toggles reorder-mode and drag handles', () => {
+test('popupManager: clicking customize button opens modal with drag handles, eye toggles, save and reset buttons', () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
 
   let savedSettings = null;
   const mockSettingsAdapter = {
-    getSnapshot: () => ({ tabOrderPreference: [] }),
+    getSnapshot: () => ({ tabOrderPreference: [], hiddenTabsPreference: [] }),
     update: async (patch) => {
       savedSettings = patch;
     },
@@ -1272,20 +1293,54 @@ test('popupManager: clicking reorder button toggles reorder-mode and drag handle
 
   let allElements = getAllElements(container);
   const reorderBtn = allElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tab-reorder-btn'));
-  assert.ok(reorderBtn, 'Reorder button should be present');
+  assert.ok(reorderBtn, 'Customize tab button should be present');
 
-  // Trigger click on reorder button
+  // Trigger click on customize button to open modal
   reorderBtn.dispatchEvent('click');
 
   allElements = getAllElements(container);
-  const reorderTabs = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('reorder-mode'));
-  assert.ok(reorderTabs.length >= 3, 'Tabs should enter reorder-mode');
+  const modal = allElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal'));
+  assert.ok(modal, 'Modal should be opened');
 
-  // Trigger click again to exit reorder-mode
+  const modalAllElements = getAllElements(modal);
+  const modalItems = modalAllElements.filter((el) => typeof el.className === 'string' && el.className.split(/\s+/).includes('vocab-tabs-modal-item'));
+  assert.ok(modalItems.length >= 3, 'Modal should list all tabs');
+
+  const eyeBtns = modalAllElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal-eye-btn'));
+  assert.equal(eyeBtns.length, modalItems.length, 'Each modal item should have an eye button');
+
+  const resetBtn = modalAllElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal-reset-btn'));
+  assert.ok(resetBtn, 'Reset to default button should be present');
+
+  const saveBtn = modalAllElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal-save-btn'));
+  assert.ok(saveBtn, 'Save button should be present');
+
+  // Click eye button on the second item to hide it
+  allElements = getAllElements(container);
+  const currentEyeBtns = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal-eye-btn'));
+  currentEyeBtns[1].dispatchEvent('click');
+
+  // Save changes
+  allElements = getAllElements(container);
+  const currentSaveBtn = allElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal-save-btn'));
+  currentSaveBtn.dispatchEvent('click');
+
+  assert.ok(savedSettings, 'Settings should be saved');
+  assert.ok(savedSettings.hiddenTabsPreference.length > 0, 'Hidden tabs preference should be saved');
+
+  // Modal should be closed
+  allElements = getAllElements(container);
+  const closedModal = allElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal'));
+  assert.equal(closedModal, undefined, 'Modal should be closed after saving');
+
+  // Open modal again and test reset to default
   reorderBtn.dispatchEvent('click');
   allElements = getAllElements(container);
-  const normalTabs = allElements.filter((el) => typeof el.className === 'string' && el.className.includes('reorder-mode'));
-  assert.equal(normalTabs.length, 0, 'Tabs should exit reorder-mode');
+  const resetBtn2 = allElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-tabs-modal-reset-btn'));
+  resetBtn2.dispatchEvent('click');
+
+  assert.deepEqual(savedSettings.hiddenTabsPreference, [], 'Reset button should clear hidden tabs');
+  assert.deepEqual(savedSettings.tabOrderPreference, [], 'Reset button should clear custom tab order');
 
   popupManager.removePopup();
 });
