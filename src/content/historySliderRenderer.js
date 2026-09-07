@@ -9,7 +9,6 @@ export const nextSlideSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" 
 export const SOURCE_SHORT_NAMES = Object.freeze({
   vocabulary: 'Vocab.com',
   freedictionary: 'FreeDict',
-  cambridge: 'Cambridge',
 });
 
 export const SOURCE_META = Object.freeze({
@@ -17,46 +16,27 @@ export const SOURCE_META = Object.freeze({
     id: 'vocabulary',
     name: '📘 Vocabulary.com',
     shortName: 'Vocab.com',
-    hint: 'Explanations & word family',
+    hint: 'Detailed explanations & word family',
   },
   freedictionary: {
     id: 'freedictionary',
-    name: '🆓 Free Dictionary API',
+    name: '⚡ Simple Learn (FreeDict)',
     shortName: 'FreeDict',
-    hint: 'Free dictionary with audio',
-  },
-  cambridge: {
-    id: 'cambridge',
-    name: '🏛 Cambridge Dictionary',
-    shortName: 'Cambridge',
-    hint: 'Native UK/US audio & IPA',
-    badge: '🧪',
+    hint: 'Quick, concise definitions with audio',
   },
 });
-
-export function buildAutoSourceHint(order = []) {
-  const list = Array.isArray(order) && order.length > 0 ? order : ['vocabulary', 'freedictionary', 'cambridge'];
-  return list.map((id) => SOURCE_SHORT_NAMES[id] || id).join(' → ');
-}
 
 export const UI_COPY = {
   PREV_SLIDE: 'Previous slide',
   NEXT_SLIDE: 'Next slide',
   LOOKUP_WORD: (word) => `Look up "${word}"`,
   SEARCH_WORD: (word) => `Search ${word}`,
-  SOURCE_MENU_TITLE: 'Dictionary Source',
-  AUTO_ORDER_TITLE: 'Auto Priority (Drag to reorder):',
-  SELECT_SOURCE_TITLE: 'Select dictionary source',
+  SIMPLE_LEARN_TITLE: 'Simple Learn Mode: ON (FreeDictionary) / OFF (Vocabulary.com)',
+  SIMPLE_LEARN_LABEL: 'Simple Learn',
   CLOSE_POPUP: 'Close popup',
   SOURCE_LABEL: 'Source:',
   INFLECTED_FORM_TOOLTIP: (word) => `${word} (inflected form)`,
   LOOKUP_FAMILY_TOOLTIP: (word) => `Look up ${word}`,
-  DICTIONARY_SOURCE_OPTIONS: [
-    { id: 'auto', name: '⚡ Auto', hint: 'Vocab.com → FreeDict → Cambridge' },
-    { id: 'vocabulary', name: '📘 Vocabulary.com', hint: 'Explanations & word family' },
-    { id: 'freedictionary', name: '🆓 Free Dictionary API', hint: 'Free dictionary with audio' },
-    { id: 'cambridge', name: '🏛 Cambridge Dictionary', hint: 'Native UK/US audio & IPA', badge: '🧪' },
-  ],
 };
 
 /**

@@ -3,16 +3,14 @@ import test from 'node:test';
 
 import { createLookupRequest } from '../../src/shared/lookupContract.js';
 import { createServiceWorkerLookupHandler } from '../../src/background/serviceWorkerLookupHandler.js';
-import { buildDictionaryLookupUrl, buildCambridgeLookupUrl, buildVocabularyLookupUrl } from '../../src/background/lookupRequestBuilder.js';
+import { buildDictionaryLookupUrl, buildVocabularyLookupUrl } from '../../src/background/lookupRequestBuilder.js';
 
 test('lookupRequestBuilder: xây dựng URL chính xác theo từng nguồn', () => {
   assert.equal(buildVocabularyLookupUrl('test'), 'https://www.vocabulary.com/dictionary/test');
-  assert.equal(buildCambridgeLookupUrl('test'), 'https://dictionary.cambridge.org/dictionary/english/test');
   assert.equal(buildDictionaryLookupUrl('test', 'vocabulary'), 'https://www.vocabulary.com/dictionary/test');
-  assert.equal(buildDictionaryLookupUrl('test', 'cambridge'), 'https://dictionary.cambridge.org/dictionary/english/test');
 });
 
-test('service worker handler: auto mode ưu tiên Vocabulary.com khi tìm thấy', async () => {
+test('service worker handler: default mode (simpleLearn = false) tra cứu Vocabulary.com', async () => {
   const lookups = [];
   const handleMessage = createServiceWorkerLookupHandler({
     lookupExecutor: async ({ headword, source }) => {
@@ -48,16 +46,10 @@ test('service worker handler: auto mode ưu tiên Vocabulary.com khi tìm thấy
   assert.equal(lookups[0].source, 'vocabulary');
 });
 
-test('service worker handler: auto mode fallback sang Free Dictionary API khi Vocabulary.com trả not-found', async () => {
+test('service worker handler: Simple Learn mode (simpleLearn = true) tra cứu Free Dictionary API', async () => {
   const lookups = [];
   const handleMessage = createServiceWorkerLookupHandler({
-    lookupExecutor: async ({ headword, source }) => {
-      lookups.push({ headword, source });
-      return {
-        status: 'not-found',
-        data: { token: headword, reason: 'empty-core-data' },
-      };
-    },
+    lookupExecutor: async () => null,
     freeDictionaryApiExecutor: async ({ headword, requestedSource }) => {
       lookups.push({ headword, source: requestedSource });
       return {
@@ -81,42 +73,43 @@ test('service worker handler: auto mode fallback sang Free Dictionary API khi Vo
     selectionRect: { x: 0, y: 0, width: 10, height: 10 },
     sourceEvent: 'mouseup',
     requestId: 'req-2',
+    source: 'freedictionary',
+    simpleLearn: true,
   });
 
   const result = await handleMessage(message);
 
   assert.equal(result.status, 'success');
   assert.equal(result.data.parsedPayload.source, 'freedictionary');
-  assert.equal(lookups.length, 2);
-  assert.equal(lookups[0].source, 'vocabulary');
-  assert.equal(lookups[1].source, 'freedictionary');
+  assert.equal(lookups.length, 1);
+  assert.equal(lookups[0].source, 'freedictionary');
 });
 
-test('service worker handler: auto mode fallback sang Cambridge Dictionary khi cả Vocabulary.com và Free Dictionary API đều thất bại', async () => {
+test('service worker handler: fallback sang Free Dictionary API khi Vocabulary.com trả not-found', async () => {
   const lookups = [];
   const handleMessage = createServiceWorkerLookupHandler({
     lookupExecutor: async ({ headword, source }) => {
       lookups.push({ headword, source });
-      if (source === 'vocabulary' || source === 'freedictionary') {
-        return {
-          status: 'not-found',
-          data: { token: headword, reason: 'empty-core-data' },
-        };
-      }
+      return {
+        status: 'not-found',
+        data: { token: headword, reason: 'empty-core-data' },
+      };
+    },
+    freeDictionaryApiExecutor: async ({ headword, requestedSource }) => {
+      lookups.push({ headword, source: requestedSource });
       return {
         status: 'success',
         data: {
           headword,
-          source: 'cambridge',
+          source: 'freedictionary',
           parsedPayload: {
             headword,
-            definitions: ['Definition from Cambridge Dictionary'],
-            source: 'cambridge',
+            definitions: ['Fallback definition from Free Dictionary API'],
+            source: 'freedictionary',
           },
         },
       };
     },
-    freeDictionaryApiExecutor: async () => null,
   });
 
   const message = createLookupRequest({
@@ -130,135 +123,9 @@ test('service worker handler: auto mode fallback sang Cambridge Dictionary khi c
   const result = await handleMessage(message);
 
   assert.equal(result.status, 'success');
-  assert.equal(result.data.parsedPayload.source, 'cambridge');
-  assert.equal(lookups.length, 3);
+  assert.equal(result.data.parsedPayload.source, 'freedictionary');
+  assert.equal(lookups.length, 2);
   assert.equal(lookups[0].source, 'vocabulary');
   assert.equal(lookups[1].source, 'freedictionary');
-  assert.equal(lookups[2].source, 'cambridge');
-});
-
-test('service worker handler: người dùng chọn trực tiếp Cambridge Dictionary', async () => {
-  const lookups = [];
-  const handleMessage = createServiceWorkerLookupHandler({
-    lookupExecutor: async ({ headword, source }) => {
-      lookups.push({ headword, source });
-      return {
-        status: 'success',
-        data: {
-          headword,
-          source,
-          parsedPayload: {
-            headword,
-            definitions: ['Direct Cambridge definition'],
-            source: 'cambridge',
-          },
-        },
-      };
-    },
-  });
-
-  const message = {
-    type: 'LOOKUP_REQUEST',
-    payload: {
-      token: 'test',
-      source: 'cambridge',
-    },
-  };
-
-  const result = await handleMessage(message);
-
-  assert.equal(result.status, 'success');
-  assert.equal(result.data.parsedPayload.source, 'cambridge');
-  assert.equal(lookups.length, 1);
-  assert.equal(lookups[0].source, 'cambridge');
-});
-
-test('service worker handler: fallback sang Free Dictionary API khi Cambridge HTML gặp lỗi hoặc bị Cloudflare chặn', async () => {
-  const handleMessage = createServiceWorkerLookupHandler({
-    lookupExecutor: async () => ({
-      status: 'error',
-      error: { type: 'network', statusCode: 403 },
-    }),
-    freeDictionaryApiExecutor: async ({ headword }) => ({
-      status: 'success',
-      data: {
-        headword,
-        source: 'cambridge',
-        parsedPayload: {
-          headword,
-          definitions: ['Fallback definition from Free Dictionary API'],
-          source: 'cambridge',
-        },
-      },
-    }),
-  });
-
-  const message = {
-    type: 'LOOKUP_REQUEST',
-    payload: {
-      token: 'test',
-      source: 'cambridge',
-    },
-  };
-
-  const result = await handleMessage(message);
-
-  assert.equal(result.status, 'success');
-  assert.equal(result.data.parsedPayload.source, 'cambridge');
-  assert.equal(result.data.parsedPayload.definitions[0], 'Fallback definition from Free Dictionary API');
-});
-
-test('service worker handler: auto mode ưu tiên theo custom autoSourceOrder', async () => {
-  const lookups = [];
-  const handleMessage = createServiceWorkerLookupHandler({
-    lookupExecutor: async ({ headword, source }) => {
-      lookups.push({ headword, source });
-      if (source === 'cambridge') {
-        return {
-          status: 'success',
-          data: {
-            headword,
-            source: 'cambridge',
-            parsedPayload: {
-              headword,
-              definitions: ['Cambridge first definition'],
-              source: 'cambridge',
-            },
-          },
-        };
-      }
-      return {
-        status: 'success',
-        data: {
-          headword,
-          source,
-          parsedPayload: {
-            headword,
-            definitions: [`Definition from ${source}`],
-            source,
-          },
-        },
-      };
-    },
-  });
-
-  const message = createLookupRequest({
-    token: 'custom',
-    rawText: 'custom',
-    selectionRect: { x: 0, y: 0, width: 10, height: 10 },
-    sourceEvent: 'mouseup',
-    requestId: 'req-custom',
-    autoSourceOrder: ['cambridge', 'vocabulary', 'freedictionary'],
-  });
-
-  // Gắn autoSourceOrder vào payload
-  message.payload.autoSourceOrder = ['cambridge', 'vocabulary', 'freedictionary'];
-
-  const result = await handleMessage(message);
-
-  assert.equal(result.status, 'success');
-  assert.equal(result.data.parsedPayload.source, 'cambridge');
-  assert.equal(lookups.length, 1);
-  assert.equal(lookups[0].source, 'cambridge');
 });
 

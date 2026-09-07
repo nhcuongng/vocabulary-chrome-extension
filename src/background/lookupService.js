@@ -447,7 +447,7 @@ export async function performDictionaryLookup({
       const finishedAtMs = now();
 
       let successPayload;
-      if (source === 'cambridge' || source === 'freedictionary') {
+      if (source === 'freedictionary') {
         let jsonData = null;
         try {
           jsonData = JSON.parse(rawText);

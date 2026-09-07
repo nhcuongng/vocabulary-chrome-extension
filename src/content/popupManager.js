@@ -9,11 +9,9 @@ import {
 } from '../domain/audioPlaybackUtils.js';
 import {
   createHistorySliderElement,
-  buildAutoSourceHint,
   SOURCE_META,
   UI_COPY,
 } from './historySliderRenderer.js';
-import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 import {
   generateStressSvg,
   generateEqualizerBarsSvg,
@@ -501,242 +499,53 @@ export function createPopupManager({
         position: relative;
       }
 
-      .vocab-source-menu-wrapper {
-        position: relative;
-      }
-
-      .vocab-source-menu-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        color: #9ca3af;
+      .vocab-simple-learn-toggle-wrapper {
         display: flex;
         align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: background-color 0.2s, color 0.2s;
-        flex-shrink: 0;
-      }
-      .vocab-source-menu-btn:hover {
-        background-color: #f3f4f6;
-        color: #1677C9;
-      }
-
-      .vocab-source-menu-popover {
-        position: absolute;
-        top: calc(100% + 6px);
-        right: 0;
-        z-index: 1000;
-        min-width: 230px;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0,0,0,0.06);
-        padding: 6px;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-      }
-
-      .vocab-source-menu-title {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: #9ca3af;
-        padding: 4px 8px 2px 8px;
-        user-select: none;
-      }
-
-      .vocab-source-menu-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px;
-        border-radius: 6px;
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        text-align: left;
-        width: 100%;
-        box-sizing: border-box;
-        transition: background-color 0.15s ease;
-      }
-      .vocab-source-menu-item:hover {
-        background-color: #f3f4f6;
-      }
-      .vocab-source-menu-item.active {
-        background-color: #e0e7ff;
-      }
-      .vocab-source-menu-item .source-item-text {
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-        flex: 1;
-        min-width: 0;
-      }
-      .vocab-source-menu-item .source-item-name {
-        font-size: 12px;
-        font-weight: 600;
-        color: #374151;
-      }
-      .vocab-source-menu-item.active .source-item-name {
-        color: #3730a3;
-      }
-      .vocab-source-menu-item .source-item-hint {
-        font-size: 10px;
-        color: #6b7280;
-      }
-      .vocab-source-menu-item.active .source-item-hint {
-        color: #4f46e5;
-      }
-      .vocab-source-menu-item .source-item-check {
-        font-size: 13px;
-        font-weight: 700;
-        color: #4f46e5;
-        opacity: 0;
-        margin-left: 8px;
-        flex-shrink: 0;
-      }
-      .vocab-source-menu-item.active .source-item-check {
-        opacity: 1;
-      }
-
-      .source-item-actions {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-      }
-
-      .vocab-auto-config-btn {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        color: #6b7280;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: background-color 0.15s, color 0.15s, transform 0.2s;
-        line-height: 1;
-      }
-
-      .vocab-auto-config-btn:hover {
-        background-color: #f3f4f6;
-        color: #1677C9;
-      }
-
-      .vocab-auto-config-btn.active {
-        color: #1677C9;
-        background-color: rgba(22, 119, 201, 0.12);
-        transform: rotate(45deg);
-      }
-
-      .vocab-source-star-btn {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 3px;
-        color: #9ca3af;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: color 0.15s, transform 0.15s, background-color 0.15s;
-        line-height: 1;
-      }
-      .vocab-source-star-btn:hover {
-        color: #f59e0b;
-        background-color: rgba(245, 158, 11, 0.12);
-        transform: scale(1.15);
-      }
-      .vocab-source-star-btn.is-default {
-        color: #f59e0b;
-      }
-      .vocab-source-star-btn.is-default svg {
-        fill: #f59e0b;
-      }
-
-      .vocab-auto-order-section {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin: 4px 0 6px 0;
-        padding: 6px;
-        background: rgba(0, 0, 0, 0.03);
-        border: 1px dashed #e5e7eb;
-        border-radius: 8px;
-      }
-
-      .vocab-auto-order-header {
-        font-size: 10px;
-        font-weight: 600;
-        color: #6b7280;
-        margin-bottom: 2px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .vocab-auto-order-list {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .vocab-auto-order-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 8px;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        font-size: 11px;
-        cursor: grab;
-        user-select: none;
-        transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
-      }
-
-      .vocab-auto-order-item:active {
-        cursor: grabbing;
-      }
-
-      .vocab-auto-order-item.dragging {
-        opacity: 0.4;
-        border-style: dashed;
-      }
-
-      .vocab-auto-order-item.drag-over {
-        border-color: #1677C9;
-        background: rgba(22, 119, 201, 0.08);
-      }
-
-      .vocab-drag-handle {
-        color: #9ca3af;
-        font-size: 11px;
-        cursor: grab;
-        flex-shrink: 0;
-        letter-spacing: -1px;
-      }
-
-      .vocab-auto-order-item-title {
-        flex: 1;
-        font-weight: 500;
-        font-size: 11px;
-        color: #374151;
-      }
-
-      .vocab-auto-order-item-rank {
-        font-size: 9px;
-        color: #6b7280;
-        font-weight: 600;
+        gap: 5px;
         background: #f3f4f6;
-        padding: 1px 4px;
-        border-radius: 4px;
+        padding: 2px 7px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #4b5563;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .vocab-simple-learn-toggle-wrapper:hover {
+        background: #e5e7eb;
+        color: #1f2937;
+      }
+      .vocab-simple-learn-toggle-wrapper.active {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .vocab-simple-learn-switch {
+        position: relative;
+        width: 24px;
+        height: 13px;
+        background: #d1d5db;
+        border-radius: 10px;
+        transition: background-color 0.15s;
+        display: inline-block;
+      }
+      .vocab-simple-learn-switch::after {
+        content: '';
+        position: absolute;
+        top: 1.5px;
+        left: 2px;
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.15s;
+      }
+      .vocab-simple-learn-toggle-wrapper.active .vocab-simple-learn-switch {
+        background: #2563eb;
+      }
+      .vocab-simple-learn-toggle-wrapper.active .vocab-simple-learn-switch::after {
+        transform: translateX(10px);
       }
 
       /* Stress Diagram & Syllable Rhythm Pill */
@@ -1292,53 +1101,23 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-name {
         color: #93c5fd;
       }
-      .vocab-popup.dark-mode .vocab-source-menu-item .source-item-hint {
-        color: #9ca3af;
+      .vocab-popup.dark-mode .vocab-simple-learn-toggle-wrapper {
+        background: #374151;
+        color: #d1d5db;
       }
-      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-hint {
-        color: #bfdbfe;
-      }
-      .vocab-popup.dark-mode .vocab-source-menu-item.active .source-item-check {
-        color: #60a5fa;
-      }
-      .vocab-popup.dark-mode .vocab-auto-config-btn {
-        color: #9ca3af;
-      }
-      .vocab-popup.dark-mode .vocab-auto-config-btn:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #60a5fa;
-      }
-      .vocab-popup.dark-mode .vocab-auto-config-btn.active {
-        color: #60a5fa;
-        background-color: rgba(96, 165, 250, 0.2);
-      }
-      .vocab-popup.dark-mode .vocab-source-star-btn {
-        color: #9ca3af;
-      }
-      .vocab-popup.dark-mode .vocab-source-star-btn:hover {
-        color: #fbbf24;
-        background-color: rgba(251, 191, 36, 0.15);
-      }
-      .vocab-popup.dark-mode .vocab-source-star-btn.is-default {
-        color: #fbbf24;
-      }
-      .vocab-popup.dark-mode .vocab-source-star-btn.is-default svg {
-        fill: #fbbf24;
-      }
-      .vocab-popup.dark-mode .vocab-auto-order-section {
-        background: rgba(255, 255, 255, 0.03);
-        border-color: #374151;
-      }
-      .vocab-popup.dark-mode .vocab-auto-order-item {
-        background: #1f2937;
-        border-color: #374151;
-      }
-      .vocab-popup.dark-mode .vocab-auto-order-item-title {
+      .vocab-popup.dark-mode .vocab-simple-learn-toggle-wrapper:hover {
+        background: #4b5563;
         color: #f3f4f6;
       }
-      .vocab-popup.dark-mode .vocab-auto-order-item-rank {
-        background: #374151;
-        color: #9ca3af;
+      .vocab-popup.dark-mode .vocab-simple-learn-toggle-wrapper.active {
+        background: #1e3a8a;
+        color: #93c5fd;
+      }
+      .vocab-popup.dark-mode .vocab-simple-learn-switch {
+        background: #4b5563;
+      }
+      .vocab-popup.dark-mode .vocab-simple-learn-toggle-wrapper.active .vocab-simple-learn-switch {
+        background: #3b82f6;
       }
       .vocab-popup.dark-mode .vocab-stress-pill {
         background: #1e293b;
@@ -1783,273 +1562,51 @@ export function createPopupManager({
 
     renderSlider();
 
-    // 2. Header Actions: Source Menu Button (Icon with vertical popover) + Close Button
+    // 2. Header Actions: Simple Learn Toggle + Close Button
     const headerActions = h('div', { className: 'vocab-popup-header-actions' });
-    const sourceWrapper = h('div', { className: 'vocab-source-menu-wrapper' });
 
-    const defaultDictSource =
-      settingsAdapter?.getSnapshot?.()?.dictionarySource || 'auto';
+    let isSimpleLearn = false;
+    if (activeSearchSource) {
+      isSimpleLearn = activeSearchSource === 'freedictionary';
+    } else if (state?.requestedSource) {
+      isSimpleLearn = state.requestedSource === 'freedictionary';
+    } else if (state?.source) {
+      isSimpleLearn = state.source === 'freedictionary';
+    } else {
+      isSimpleLearn = Boolean(settingsAdapter?.getSnapshot?.()?.simpleLearn);
+    }
 
-    const activeDictSource =
-      activeSearchSource ||
-      state?.requestedSource ||
-      (state?.source === 'auto' ? 'auto' : null) ||
-      defaultDictSource;
-
-    const autoSourceOrder =
-      settingsAdapter?.getSnapshot?.()?.autoSourceOrder ||
-      [...DEFAULT_AUTO_SOURCE_ORDER];
-
-    let isMenuOpen = false;
-    let draggedSourceId = null;
-    const popoverMenu = h('div', { className: 'vocab-source-menu-popover', style: { display: 'none' } });
-
-    const menuTitle = h('div', { className: 'vocab-source-menu-title' }, UI_COPY.SOURCE_MENU_TITLE);
-    popoverMenu.appendChild(menuTitle);
-
-    // 1. Auto Option with Config Gear Button and Star Button
-    const isAutoActive = activeDictSource === 'auto';
-    const isAutoDefault = defaultDictSource === 'auto';
-
-    const autoConfigBtn = h('button', {
-      type: 'button',
-      className: `vocab-auto-config-btn ${isAutoOrderOpen ? 'active' : ''}`,
-      id: 'vocab-auto-config-btn',
-      title: 'Configure auto priority order',
-      ariaLabel: 'Configure auto priority order',
-      innerHTML: gearSVG,
-      onClick: (e) => {
-        e?.stopPropagation?.();
-        isAutoOrderOpen = !isAutoOrderOpen;
-        autoOrderSection.style.display = isAutoOrderOpen ? 'flex' : 'none';
-        if (isAutoOrderOpen) {
-          autoConfigBtn.classList.add('active');
-        } else {
-          autoConfigBtn.classList.remove('active');
-        }
-      },
-    });
-
-    const autoStarBtn = h('button', {
-      type: 'button',
-      className: `vocab-source-star-btn ${isAutoDefault ? 'is-default' : ''}`,
-      title: isAutoDefault ? 'Current default source' : 'Set as default dictionary source',
-      ariaLabel: isAutoDefault ? 'Current default source' : 'Set as default dictionary source',
-      innerHTML: starSVG,
-      onClick: async (e) => {
-        e?.stopPropagation?.();
-        if (settingsAdapter?.update) {
-          await settingsAdapter.update({ dictionarySource: 'auto' });
-        }
-        renderPopupContent(lastState);
-      },
-    });
-
-    const autoItemBtn = h(
+    const simpleLearnToggle = h(
       'div',
       {
-        className: `vocab-source-menu-item ${isAutoActive ? 'active' : ''}`,
-        'data-source': 'auto',
+        className: `vocab-simple-learn-toggle-wrapper ${isSimpleLearn ? 'active' : ''}`,
         role: 'button',
         tabIndex: 0,
-        title: 'Select source: ⚡ Auto',
+        title: UI_COPY.SIMPLE_LEARN_TITLE,
+        ariaLabel: UI_COPY.SIMPLE_LEARN_TITLE,
         onClick: async (e) => {
-          if (e?.target && typeof e?.target?.closest === 'function' && (e.target.closest('#vocab-auto-config-btn') || e.target.closest('.vocab-source-star-btn'))) {
-            return;
-          }
           e?.stopPropagation?.();
-          popoverMenu.style.display = 'none';
-          isMenuOpen = false;
-          if (isAutoActive) return;
-          activeSearchSource = 'auto';
+          const nextSimpleLearn = !isSimpleLearn;
+          const nextSource = nextSimpleLearn ? 'freedictionary' : 'vocabulary';
+          activeSearchSource = nextSource;
+          if (settingsAdapter?.update) {
+            await settingsAdapter.update({ simpleLearn: nextSimpleLearn });
+          }
           if (typeof onSourceChange === 'function') {
-            onSourceChange('auto');
+            onSourceChange(nextSource);
           }
           if (currentWord) {
-            navigateToWord(currentWord, { source: 'auto' });
+            navigateToWord(currentWord, { source: nextSource });
+          } else {
+            renderPopupContent(lastState);
           }
         },
       },
-      h('span', { className: 'source-item-name' }, '⚡ Auto'),
-      h(
-        'div',
-        { className: 'source-item-actions' },
-        autoConfigBtn,
-        autoStarBtn,
-        h('span', { className: 'source-item-check' }, '✓')
-      )
+      h('span', { className: 'vocab-simple-learn-label' }, UI_COPY.SIMPLE_LEARN_LABEL),
+      h('span', { className: 'vocab-simple-learn-switch' })
     );
-    popoverMenu.appendChild(autoItemBtn);
 
-    // 2. Auto Priority Draggable Section
-    const autoOrderSection = h('div', {
-      className: 'vocab-auto-order-section',
-      style: { display: isAutoOrderOpen ? 'flex' : 'none' },
-    });
-    const autoOrderHeader = h('div', { className: 'vocab-auto-order-header' }, UI_COPY.AUTO_ORDER_TITLE);
-    const autoOrderList = h('div', { className: 'vocab-auto-order-list' });
-
-    autoSourceOrder.forEach((srcId, index) => {
-      const meta = SOURCE_META[srcId] || { id: srcId, name: srcId };
-      const orderItem = h(
-        'div',
-        {
-          className: 'vocab-auto-order-item',
-          draggable: 'true',
-          'data-source-id': srcId,
-          title: 'Drag to reorder priority',
-          onDragStart: (e) => {
-            e?.stopPropagation?.();
-            draggedSourceId = srcId;
-            orderItem.classList.add('dragging');
-            if (e.dataTransfer) {
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('text/plain', srcId);
-            }
-          },
-          onDragOver: (e) => {
-            e?.preventDefault?.();
-            e?.stopPropagation?.();
-            if (e.dataTransfer) {
-              e.dataTransfer.dropEffect = 'move';
-            }
-            orderItem.classList.add('drag-over');
-          },
-          onDragLeave: (e) => {
-            e?.stopPropagation?.();
-            orderItem.classList.remove('drag-over');
-          },
-          onDrop: async (e) => {
-            e?.preventDefault?.();
-            e?.stopPropagation?.();
-            orderItem.classList.remove('drag-over');
-            const fromId = draggedSourceId || e.dataTransfer?.getData('text/plain');
-            const toId = srcId;
-
-            if (!fromId || fromId === toId) return;
-
-            const nextOrder = [...autoSourceOrder];
-            const fromIndex = nextOrder.indexOf(fromId);
-            const toIndex = nextOrder.indexOf(toId);
-
-            if (fromIndex !== -1 && toIndex !== -1) {
-              const [movedItem] = nextOrder.splice(fromIndex, 1);
-              nextOrder.splice(toIndex, 0, movedItem);
-
-              if (settingsAdapter?.update) {
-                await settingsAdapter.update({ autoSourceOrder: nextOrder });
-              }
-
-              renderPopupContent(lastState);
-
-              if (activeDictSource === 'auto' && currentWord) {
-                navigateToWord(currentWord, { source: 'auto' });
-              }
-            }
-          },
-          onDragEnd: (e) => {
-            e?.stopPropagation?.();
-            orderItem.classList.remove('dragging');
-            draggedSourceId = null;
-          },
-        },
-        h('span', { className: 'vocab-drag-handle' }, '⋮⋮'),
-        h('span', { className: 'vocab-auto-order-item-title' }, meta.name),
-        h('span', { className: 'vocab-auto-order-item-rank' }, `#${index + 1}`)
-      );
-      autoOrderList.appendChild(orderItem);
-    });
-
-    autoOrderSection.appendChild(autoOrderHeader);
-    autoOrderSection.appendChild(autoOrderList);
-    popoverMenu.appendChild(autoOrderSection);
-
-    // 3. Single Sources
-    const singleSourcesTitle = h('div', { className: 'vocab-source-menu-title', style: { marginTop: '4px' } }, 'Single Source');
-    popoverMenu.appendChild(singleSourcesTitle);
-
-    const singleSources = [SOURCE_META.vocabulary, SOURCE_META.freedictionary, SOURCE_META.cambridge];
-
-    singleSources.forEach((s) => {
-      const isActive = activeDictSource === s.id;
-      const isDefault = defaultDictSource === s.id;
-
-      const starBtn = h('button', {
-        type: 'button',
-        className: `vocab-source-star-btn ${isDefault ? 'is-default' : ''}`,
-        title: isDefault ? 'Current default source' : 'Set as default dictionary source',
-        ariaLabel: isDefault ? 'Current default source' : 'Set as default dictionary source',
-        innerHTML: starSVG,
-        onClick: async (e) => {
-          e?.stopPropagation?.();
-          if (settingsAdapter?.update) {
-            await settingsAdapter.update({ dictionarySource: s.id });
-          }
-          renderPopupContent(lastState);
-        },
-      });
-
-      const itemBtn = h(
-        'button',
-        {
-          type: 'button',
-          className: `vocab-source-menu-item ${isActive ? 'active' : ''}`,
-          'data-source': s.id,
-          title: `Select source: ${s.name}`,
-          onClick: async (e) => {
-            if (e?.target && typeof e?.target?.closest === 'function' && e.target.closest('.vocab-source-star-btn')) {
-              return;
-            }
-            e?.stopPropagation?.();
-            popoverMenu.style.display = 'none';
-            isMenuOpen = false;
-            if (isActive) return;
-            activeSearchSource = s.id;
-            if (typeof onSourceChange === 'function') {
-              onSourceChange(s.id);
-            }
-            if (currentWord) {
-              navigateToWord(currentWord, { source: s.id });
-            }
-          },
-        },
-        h(
-          'div',
-          { className: 'source-item-text' },
-          h(
-            'span', 
-            { className: 'source-item-name', style: { display: 'flex', alignItems: 'center', gap: '4px' } }, 
-            s.name,
-            s.badge ? h('span', { className: 'source-badge-experimental', title: 'Experimental Feature', style: { fontSize: '10px', cursor: 'help' } }, s.badge) : null
-          ),
-          h('span', { className: 'source-item-hint' }, s.hint)
-        ),
-        h(
-          'div',
-          { className: 'source-item-actions' },
-          starBtn,
-          h('span', { className: 'source-item-check' }, '✓')
-        )
-      );
-      popoverMenu.appendChild(itemBtn);
-    });
-
-    const sourceBtn = h('button', {
-      type: 'button',
-      className: 'vocab-source-menu-btn',
-      title: UI_COPY.SELECT_SOURCE_TITLE,
-      ariaLabel: UI_COPY.SELECT_SOURCE_TITLE,
-      innerHTML: dictionarySVG,
-      onClick: (e) => {
-        e?.stopPropagation?.();
-        isMenuOpen = !isMenuOpen;
-        popoverMenu.style.display = isMenuOpen ? 'flex' : 'none';
-      },
-    });
-
-    sourceWrapper.appendChild(sourceBtn);
-    sourceWrapper.appendChild(popoverMenu);
-    headerActions.appendChild(sourceWrapper);
+    headerActions.appendChild(simpleLearnToggle);
 
     const closeBtn = h('button', {
       type: 'button',

@@ -66,7 +66,7 @@ test('settings adapter: load default nếu chưa có giá trị trong local stor
 
   const settings = await adapter.load();
 
-  assert.equal(settings.schemaVersion, 1);
+  assert.equal(settings.schemaVersion, 2);
   assert.equal(settings.autoPopupEnabled, true);
 
   adapter.destroy();
@@ -92,7 +92,7 @@ test('settings adapter: persistence qua các phiên (restart simulation)', async
   const restoredSettings = await secondSessionAdapter.load();
 
   assert.equal(restoredSettings.autoPopupEnabled, false);
-  assert.equal(restoredSettings.schemaVersion, 1);
+  assert.equal(restoredSettings.schemaVersion, 2);
 
   secondSessionAdapter.destroy();
 });
@@ -115,7 +115,7 @@ test('settings adapter: hỗ trợ dữ liệu legacy chưa có schemaVersion', 
 
   const settings = await adapter.load();
 
-  assert.equal(settings.schemaVersion, 1);
+  assert.equal(settings.schemaVersion, 2);
   assert.equal(settings.autoPopupEnabled, false);
 
   adapter.destroy();
@@ -140,8 +140,8 @@ test('settings adapter: runtime update khi storage thay đổi từ context khá
   storageChangeEvent.emit(
     {
       'user-settings': {
-        oldValue: { schemaVersion: 1, autoPopupEnabled: true },
-        newValue: { schemaVersion: 1, autoPopupEnabled: false },
+        oldValue: { schemaVersion: 2, autoPopupEnabled: true },
+        newValue: { schemaVersion: 2, autoPopupEnabled: false },
       },
     },
     'local',
@@ -150,26 +150,26 @@ test('settings adapter: runtime update khi storage thay đổi từ context khá
   assert.equal(observed.at(-1).nextSettings.autoPopupEnabled, false);
   assert.equal(observed.at(-1).meta.source, 'external-change');
 
-  // Test dictionarySource external change
+  // Test simpleLearn external change
   storageChangeEvent.emit(
     {
       'user-settings': {
-        oldValue: { schemaVersion: 1, autoPopupEnabled: false, dictionarySource: 'auto' },
-        newValue: { schemaVersion: 1, autoPopupEnabled: false, dictionarySource: 'cambridge' },
+        oldValue: { schemaVersion: 2, autoPopupEnabled: false, simpleLearn: false },
+        newValue: { schemaVersion: 2, autoPopupEnabled: false, simpleLearn: true },
       },
     },
     'local',
   );
 
-  assert.equal(observed.at(-1).nextSettings.dictionarySource, 'cambridge');
+  assert.equal(observed.at(-1).nextSettings.simpleLearn, true);
   assert.equal(observed.at(-1).meta.source, 'external-change');
 
   // Test rememberLastLookup external change
   storageChangeEvent.emit(
     {
       'user-settings': {
-        oldValue: { schemaVersion: 1, autoPopupEnabled: false, rememberLastLookup: true },
-        newValue: { schemaVersion: 1, autoPopupEnabled: false, rememberLastLookup: false },
+        oldValue: { schemaVersion: 2, autoPopupEnabled: false, rememberLastLookup: true },
+        newValue: { schemaVersion: 2, autoPopupEnabled: false, rememberLastLookup: false },
       },
     },
     'local',

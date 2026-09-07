@@ -27,7 +27,7 @@ export function normalizeLookupErrorType(errorType) {
   return knownTypes.has(errorType) ? errorType : LOOKUP_ERROR_TYPE.UNKNOWN;
 }
 
-export function createLookupRequest({ token, rawText, selectionRect, sourceEvent, requestId }) {
+export function createLookupRequest({ token, rawText, selectionRect, sourceEvent, requestId, source, simpleLearn }) {
   return {
     type: LOOKUP_MESSAGE_TYPE,
     requestId,
@@ -36,6 +36,8 @@ export function createLookupRequest({ token, rawText, selectionRect, sourceEvent
       rawText,
       selectionRect,
       sourceEvent,
+      ...(source ? { source } : {}),
+      ...(typeof simpleLearn === 'boolean' ? { simpleLearn } : {}),
     },
   };
 }

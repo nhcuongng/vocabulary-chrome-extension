@@ -293,7 +293,7 @@ test('popupManager: history slide displays 5 words per page and paginates with p
   assert.equal(chips.length, 3); // Remaining 3 words in second slide ('w6', 'w7', 'w8')
 });
 
-test('popupManager: header bar contains source menu icon button and clicking opens vertical popover to switch source', () => {
+test('popupManager: header bar contains Simple Learn toggle and clicking triggers re-lookup', () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   const lookedUpCalls = [];
@@ -313,7 +313,7 @@ test('popupManager: header bar contains source menu icon button and clicking ope
       parsedPayload: {
         headword: 'test',
         definitions: ['Def 1'],
-        source: 'auto',
+        source: 'vocabulary',
       },
     },
   };
@@ -331,25 +331,20 @@ test('popupManager: header bar contains source menu icon button and clicking ope
   }
   collect(container);
 
-  // 1. Verify source menu button exists next to close button
-  const sourceBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-btn'));
-  assert.ok(sourceBtn);
+  // 1. Verify Simple Learn toggle switch exists in header bar
+  const simpleLearnToggle = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-simple-learn-toggle-wrapper'));
+  const simpleLearnSwitch = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-simple-learn-switch'));
+  assert.ok(simpleLearnToggle);
+  assert.ok(simpleLearnSwitch);
 
-  // 2. Verify vertical popover menu items exist
-  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
-  assert.equal(menuItems.length, 4);
+  // 2. Click toggle wrapper to enable Simple Learn
+  simpleLearnToggle.dispatchEvent('click', { stopPropagation: () => {} });
 
-  // 3. Find Cambridge menu option and click it
-  const cambridgeOption = menuItems.find((el) => el.getAttribute('data-source') === 'cambridge');
-  assert.ok(cambridgeOption);
-
-  cambridgeOption.dispatchEvent('click');
-
-  assert.deepEqual(sourceChanges, ['cambridge']);
-  assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'cambridge' } }]);
+  assert.deepEqual(sourceChanges, ['freedictionary']);
+  assert.deepEqual(lookedUpCalls, [{ word: 'test', opts: { fromHistory: false, source: 'freedictionary' } }]);
 });
 
-test('popupManager: clicking source row does not change default settings, but clicking star button updates default dictionarySource', async () => {
+test('popupManager: toggling Simple Learn persists setting via settingsAdapter if provided', async () => {
   const documentObj = createMockDocument();
   const windowObj = createMockWindow();
   const lookedUpCalls = [];
@@ -357,7 +352,7 @@ test('popupManager: clicking source row does not change default settings, but cl
   const savedSettings = [];
 
   const settingsAdapter = {
-    getSnapshot: () => ({ dictionarySource: 'auto' }),
+    getSnapshot: () => ({ simpleLearn: false }),
     update: async (patch) => {
       savedSettings.push(patch);
       return patch;
@@ -372,76 +367,6 @@ test('popupManager: clicking source row does not change default settings, but cl
     onSourceChange: (source) => sourceChanges.push(source),
   });
 
-  const state = {
-    status: 'success',
-    headword: 'resilience',
-    data: {
-      parsedPayload: {
-        headword: 'resilience',
-        definitions: ['The capacity to recover quickly from difficulties.'],
-        source: 'auto',
-      },
-    },
-  };
-
-  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
-
-  const popupEl = documentObj.body.childNodes[0];
-  const container = popupEl._vocabContainer;
-
-  const all = [];
-  function collect(node) {
-    if (!node) return;
-    all.push(node);
-    for (const c of node.childNodes || []) collect(c);
-  }
-  collect(container);
-
-  // 1. Verify star buttons exist on all 4 items
-  const starBtns = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-star-btn'));
-  assert.equal(starBtns.length, 4);
-
-  // Auto is current default -> has is-default class and "Current default source" title
-  assert.ok(starBtns[0].className.includes('is-default'));
-  assert.equal(starBtns[0].getAttribute('title'), 'Current default source');
-
-  // Single sources are not default -> do not have is-default class and have "Set as default dictionary source" title
-  assert.equal(starBtns[1].className.includes('is-default'), false);
-  assert.equal(starBtns[1].getAttribute('title'), 'Set as default dictionary source');
-
-  // 2. Click on FreeDictionary row (not star) -> triggers sourceChange and lookup, but does NOT call settingsAdapter.update
-  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
-  const freeDictOption = menuItems.find((el) => el.getAttribute('data-source') === 'freedictionary');
-  assert.ok(freeDictOption);
-
-  freeDictOption.dispatchEvent('click', { stopPropagation: () => {} });
-  assert.deepEqual(sourceChanges, ['freedictionary']);
-  assert.deepEqual(lookedUpCalls, [{ word: 'resilience', opts: { fromHistory: false, source: 'freedictionary' } }]);
-  assert.equal(savedSettings.length, 0); // Not saved to default settings!
-
-  // 3. Click on Cambridge star button -> calls settingsAdapter.update({ dictionarySource: 'cambridge' })
-  const cambridgeStarBtn = starBtns[3]; // Index 3 is Cambridge (Auto=0, Vocab=1, FreeDict=2, Cambridge=3)
-  await cambridgeStarBtn.dispatchEvent('click', { stopPropagation: () => {} });
-
-  assert.equal(savedSettings.length, 1);
-  assert.deepEqual(savedSettings[0], { dictionarySource: 'cambridge' });
-});
-
-test('popupManager: source menu highlights Auto as active when dictionarySource is auto even if definition source is vocabulary', () => {
-  const documentObj = createMockDocument();
-  const windowObj = createMockWindow();
-
-  const settingsAdapter = {
-    getSnapshot: () => ({ dictionarySource: 'auto' }),
-  };
-
-  const popupManager = createPopupManager({
-    documentObj,
-    windowObj,
-    settingsAdapter,
-  });
-
-  // Backend returned a payload where source is 'vocabulary' (the resolver that found the definition)
   const state = {
     status: 'success',
     headword: 'resilience',
@@ -467,105 +392,17 @@ test('popupManager: source menu highlights Auto as active when dictionarySource 
   }
   collect(container);
 
-  const menuItems = all.filter((el) => typeof el.className === 'string' && el.className.includes('vocab-source-menu-item'));
-  const autoOption = menuItems.find((el) => el.getAttribute('data-source') === 'auto');
-  const vocabOption = menuItems.find((el) => el.getAttribute('data-source') === 'vocabulary');
+  const simpleLearnToggle = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-simple-learn-toggle-wrapper'));
+  assert.ok(simpleLearnToggle);
+  assert.equal(simpleLearnToggle.className.includes('active'), false);
 
-  assert.ok(autoOption);
-  assert.ok(vocabOption);
+  // Toggle on
+  await simpleLearnToggle.dispatchEvent('click', { stopPropagation: () => {} });
 
-  // Auto should be active (.active class), Vocabulary should NOT be active
-  assert.ok(autoOption.className.includes('active'));
-  assert.equal(vocabOption.className.includes('active'), false);
-});
-
-test('popupManager: popover hiển thị danh sách auto priority draggable và hỗ trợ kéo thả reorder', async () => {
-  const documentObj = createMockDocument();
-  const windowObj = createMockWindow();
-  const lookedUpCalls = [];
-  const savedSettings = [];
-
-  const settingsAdapter = {
-    getSnapshot: () => ({ dictionarySource: 'auto', autoSourceOrder: ['vocabulary', 'freedictionary', 'cambridge'] }),
-    update: async (patch) => {
-      savedSettings.push(patch);
-      return patch;
-    },
-  };
-
-  const popupManager = createPopupManager({
-    documentObj,
-    windowObj,
-    settingsAdapter,
-    onLookupWord: (word, opts) => lookedUpCalls.push({ word, opts }),
-  });
-
-  const state = {
-    status: 'success',
-    headword: 'test',
-    data: {
-      parsedPayload: {
-        headword: 'test',
-        definitions: ['Def 1'],
-        source: 'auto',
-      },
-    },
-  };
-
-  popupManager.showPopup(state, { left: 100, top: 100, width: 50, height: 20, bottom: 120, right: 150 });
-
-  const popupEl = documentObj.body.childNodes[0];
-  const container = popupEl._vocabContainer;
-
-  const all = [];
-  function collect(node) {
-    if (!node) return;
-    all.push(node);
-    for (const c of node.childNodes || []) collect(c);
-  }
-  collect(container);
-
-  // 1. Verify auto-order section is hidden by default and config button exists
-  const autoOrderSection = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-auto-order-section'));
-  const autoConfigBtn = all.find((el) => typeof el.className === 'string' && el.className.includes('vocab-auto-config-btn'));
-  assert.ok(autoOrderSection);
-  assert.ok(autoConfigBtn);
-  assert.equal(autoOrderSection.style.display, 'none');
-
-  // Toggle open auto order section via gear button
-  autoConfigBtn.dispatchEvent('click', { stopPropagation: () => {} });
-  assert.equal(autoOrderSection.style.display, 'flex');
-
-  // 2. Verify auto-order-item elements exist (3 sources)
-  const orderItems = all.filter((el) => typeof el.className === 'string' && el.className.split(' ').includes('vocab-auto-order-item'));
-  assert.equal(orderItems.length, 3);
-  assert.equal(orderItems[0].getAttribute('data-source-id'), 'vocabulary');
-  assert.equal(orderItems[1].getAttribute('data-source-id'), 'freedictionary');
-  assert.equal(orderItems[2].getAttribute('data-source-id'), 'cambridge');
-
-  // 3. Simulate dragstart on Cambridge (item 2)
-  const dragStartEvent = {
-    stopPropagation: () => {},
-    dataTransfer: {
-      setData: () => {},
-      effectAllowed: '',
-    },
-  };
-  orderItems[2].dispatchEvent('dragstart', dragStartEvent);
-
-  // 4. Simulate drop on Vocabulary (item 0)
-  const dropEvent = {
-    preventDefault: () => {},
-    stopPropagation: () => {},
-    dataTransfer: {
-      getData: () => 'cambridge',
-    },
-  };
-  await orderItems[0].dispatchEvent('drop', dropEvent);
-
-  // 5. Verify settings update called with reordered autoSourceOrder
   assert.equal(savedSettings.length, 1);
-  assert.deepEqual(savedSettings[0].autoSourceOrder, ['cambridge', 'vocabulary', 'freedictionary']);
+  assert.deepEqual(savedSettings[0], { simpleLearn: true });
+  assert.deepEqual(sourceChanges, ['freedictionary']);
+  assert.deepEqual(lookedUpCalls, [{ word: 'resilience', opts: { fromHistory: false, source: 'freedictionary' } }]);
 });
 
 test('popupManager: render Stress Diagram CTA và click toggle mở card sơ đồ', () => {

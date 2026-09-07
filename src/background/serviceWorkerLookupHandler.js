@@ -11,12 +11,11 @@ import {
   performDictionaryLookup,
 } from './lookupService.js';
 import { safeParseVocabularyHtml } from '../infrastructure/adapters/safeVocabularyHtmlParserAdapter.js';
-import { safeParseCambridgeHtml } from '../infrastructure/adapters/safeCambridgeHtmlParserAdapter.js';
 import {
   parseFreeDictionaryApiResponse,
   extractFreeDictionaryPronunciation,
 } from '../infrastructure/adapters/freeDictionaryApiAdapter.js';
-import { DICTIONARY_SOURCE, normalizeAutoSourceOrder, DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
+import { DICTIONARY_SOURCE } from '../shared/userSettings.js';
 
 const defaultLookupCache = createInMemoryLookupCache();
 const defaultRateLimiter = createSlidingWindowRateLimiter();
@@ -65,11 +64,8 @@ export async function defaultFreeDictionaryApiExecutor({
       headers: { Accept: 'application/json' },
     });
     
-    // For fallback cases we might pretend to be CAMBRIDGE, otherwise use requested source
     const effectiveSource = requestedSource;
-    const lookupUrl = effectiveSource === DICTIONARY_SOURCE.CAMBRIDGE
-      ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(headword)}`
-      : url;
+    const lookupUrl = url;
 
     if (res.status === 404) {
       return createLookupNotFoundResponse({
@@ -108,7 +104,6 @@ export async function defaultFreeDictionaryApiExecutor({
 export function createServiceWorkerLookupHandler({
   lookupExecutor = performDictionaryLookup,
   htmlParser = safeParseVocabularyHtml,
-  cambridgeHtmlParser = safeParseCambridgeHtml,
   freeDictionaryApiExecutor = defaultFreeDictionaryApiExecutor,
   freeDictionaryPronunciationFetcher = defaultFreeDictionaryPronunciationFetcher,
   rateLimiter = defaultRateLimiter,
@@ -129,7 +124,6 @@ export function createServiceWorkerLookupHandler({
       const currentAudioUs = payload.audio?.us;
       const currentAudioUk = payload.audio?.uk;
 
-      // If the source already provides pronunciation or audio, prioritize the corresponding source
       const hasAudio = Boolean(currentAudioUs || currentAudioUk);
       if (currentPron && hasAudio) {
         return result;
@@ -153,79 +147,94 @@ export function createServiceWorkerLookupHandler({
     return result;
   }
 
-  async function lookupFromSingleSource(source, headword) {
-    if (
-      source === DICTIONARY_SOURCE.FREEDICTIONARY &&
-      freeDictionaryApiExecutor !== defaultFreeDictionaryApiExecutor &&
-      typeof freeDictionaryApiExecutor === 'function'
-    ) {
-      const customRes = await freeDictionaryApiExecutor({
-        headword,
-        requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY,
-      });
-      if (customRes) return customRes;
+  async function lookupFromSingleSource(source, headword, { allowFallback = false } = {}) {
+    if (source === DICTIONARY_SOURCE.FREEDICTIONARY) {
+      if (typeof freeDictionaryApiExecutor === 'function' && freeDictionaryApiExecutor !== defaultFreeDictionaryApiExecutor) {
+        const customRes = await freeDictionaryApiExecutor({
+          headword,
+          requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY,
+        });
+        if (customRes) return customRes;
+      }
     }
 
-    const parser = source === DICTIONARY_SOURCE.CAMBRIDGE ? cambridgeHtmlParser : htmlParser;
+    if (typeof lookupExecutor === 'function') {
+      const lookupResult = await lookupExecutor({
+        headword,
+        source,
+        rateLimiter,
+        cacheStore,
+        cacheTtlMs,
+        rateLimitPolicy,
+        onGuardrailEvent,
+      });
 
-    const lookupResult = await lookupExecutor({
-      headword,
-      source,
-      rateLimiter,
-      cacheStore,
-      cacheTtlMs,
-      rateLimitPolicy,
-      onGuardrailEvent,
-    });
-
-    if (lookupResult?.status === 'success') {
-      if (lookupResult?.data?.parsedPayload) {
-        return enrichWithFreeDictionaryPronunciation(lookupResult, headword);
-      }
-
-      const html = lookupResult?.data?.html;
-      if (typeof html === 'string') {
-        const parsedResult = parser({ html });
-        if (parsedResult?.status === 'success') {
-          const successRes = createLookupSuccessResponse({
-            ...lookupResult.data,
-            ...parsedResult.data,
-            source: parsedResult?.data?.parsedPayload?.source || source,
-          });
-          return enrichWithFreeDictionaryPronunciation(successRes, headword);
+      if (lookupResult?.status === 'success') {
+        if (lookupResult?.data?.parsedPayload) {
+          return enrichWithFreeDictionaryPronunciation(lookupResult, headword);
         }
-        if (parsedResult?.status === 'not-found') {
-          return createLookupNotFoundResponse({
-            ...parsedResult.data,
-            token: headword,
+
+        const html = lookupResult?.data?.html;
+        if (typeof html === 'string') {
+          const parsedResult = htmlParser({ html });
+          if (parsedResult?.status === 'success') {
+            const successRes = createLookupSuccessResponse({
+              ...lookupResult.data,
+              ...parsedResult.data,
+              source: parsedResult?.data?.parsedPayload?.source || source,
+            });
+            return enrichWithFreeDictionaryPronunciation(successRes, headword);
+          }
+          if (parsedResult?.status === 'not-found') {
+            if (allowFallback && typeof freeDictionaryApiExecutor === 'function' && freeDictionaryApiExecutor !== defaultFreeDictionaryApiExecutor) {
+              const fallbackRes = await freeDictionaryApiExecutor({
+                headword,
+                requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY,
+              });
+              if (fallbackRes) return fallbackRes;
+            }
+            return createLookupNotFoundResponse({
+              ...parsedResult.data,
+              token: headword,
+              headword,
+              source,
+              lookupUrl: lookupResult?.data?.lookupUrl,
+            });
+          }
+          return createLookupErrorResponse(parsedResult?.error?.type ?? 'parse', {
+            ...parsedResult?.error,
             headword,
             source,
             lookupUrl: lookupResult?.data?.lookupUrl,
           });
         }
-        return createLookupErrorResponse(parsedResult?.error?.type ?? 'parse', {
-          ...parsedResult?.error,
-          headword,
-          source,
-          lookupUrl: lookupResult?.data?.lookupUrl,
-        });
+        return enrichWithFreeDictionaryPronunciation(lookupResult, headword);
       }
-      return enrichWithFreeDictionaryPronunciation(lookupResult, headword);
+
+      if (lookupResult?.status === 'not-found' && allowFallback) {
+        if (typeof freeDictionaryApiExecutor === 'function') {
+          const fallbackRes = await freeDictionaryApiExecutor({
+            headword,
+            requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY,
+          });
+          if (fallbackRes) return fallbackRes;
+        }
+      }
+
+      if (lookupResult) {
+        return lookupResult;
+      }
     }
 
-    // Fallback: If Cambridge source cannot be fetched (Cloudflare 403 or network error),
-    // fetch from Free Dictionary API for reliable standard definitions & audio:
-    if (source === DICTIONARY_SOURCE.CAMBRIDGE && typeof freeDictionaryApiExecutor === 'function') {
-      const fallbackResult = await freeDictionaryApiExecutor({
+    if (source === DICTIONARY_SOURCE.FREEDICTIONARY && typeof freeDictionaryApiExecutor === 'function') {
+      const apiRes = await freeDictionaryApiExecutor({
         headword,
-        requestedSource: DICTIONARY_SOURCE.CAMBRIDGE,
+        requestedSource: DICTIONARY_SOURCE.FREEDICTIONARY,
       });
-      if (fallbackResult) {
-        return fallbackResult;
-      }
+      if (apiRes) return apiRes;
     }
 
-    return lookupResult;
+    return null;
   }
 
   return async function handleLookupMessage(message) {
@@ -240,49 +249,29 @@ export function createServiceWorkerLookupHandler({
       });
     }
 
-    const sourcePreference = message?.payload?.source || DICTIONARY_SOURCE.AUTO;
+    let isSimpleLearn = message?.payload?.simpleLearn;
+    let sourcePreference = message?.payload?.source;
 
-    // 1. Direct source: vocabulary only
-    if (sourcePreference === DICTIONARY_SOURCE.VOCABULARY) {
-      return lookupFromSingleSource(DICTIONARY_SOURCE.VOCABULARY, headword);
+    if (sourcePreference) {
+      if (sourcePreference === DICTIONARY_SOURCE.FREEDICTIONARY) {
+        return lookupFromSingleSource(DICTIONARY_SOURCE.FREEDICTIONARY, headword, { allowFallback: false });
+      }
+      if (sourcePreference === DICTIONARY_SOURCE.VOCABULARY) {
+        return lookupFromSingleSource(DICTIONARY_SOURCE.VOCABULARY, headword, { allowFallback: false });
+      }
     }
 
-    // 2. Direct source: freedictionary only
-    if (sourcePreference === DICTIONARY_SOURCE.FREEDICTIONARY) {
-      return lookupFromSingleSource(DICTIONARY_SOURCE.FREEDICTIONARY, headword);
-    }
-
-    // 3. Direct source: cambridge only
-    if (sourcePreference === DICTIONARY_SOURCE.CAMBRIDGE) {
-      return lookupFromSingleSource(DICTIONARY_SOURCE.CAMBRIDGE, headword);
-    }
-
-    // 4. Auto source: Duyệt theo danh sách autoSourceOrder (mặc định hoặc người dùng tùy biến)
-    let customOrder = message?.payload?.autoSourceOrder;
-    if (!customOrder && settingsStore && typeof settingsStore.load === 'function') {
+    if (typeof isSimpleLearn !== 'boolean' && settingsStore && typeof settingsStore.load === 'function') {
       try {
         const loadedSettings = await settingsStore.load();
-        customOrder = loadedSettings?.autoSourceOrder;
+        isSimpleLearn = Boolean(loadedSettings?.simpleLearn);
       } catch {}
     }
 
-    const effectiveOrder = normalizeAutoSourceOrder(customOrder);
-    let firstFailResult = null;
+    const targetSource = isSimpleLearn
+      ? DICTIONARY_SOURCE.FREEDICTIONARY
+      : DICTIONARY_SOURCE.VOCABULARY;
 
-    for (const source of effectiveOrder) {
-      const result = await lookupFromSingleSource(source, headword);
-      if (result?.status === 'success') {
-        return result;
-      }
-      if (!firstFailResult && (result?.status === 'not-found' || result?.status === 'error')) {
-        firstFailResult = result;
-      }
-    }
-
-    return firstFailResult || createLookupNotFoundResponse({
-      token: headword,
-      headword,
-      source: DICTIONARY_SOURCE.AUTO,
-    });
+    return lookupFromSingleSource(targetSource, headword, { allowFallback: !isSimpleLearn });
   };
 }

@@ -68,8 +68,7 @@ export async function bootstrapContentRuntime({
   let pendingTriggerRequest = null;
   let isUserInitiated = false;
   let darkMode = false;
-  let dictionarySource = 'auto';
-  let autoSourceOrder = ['vocabulary', 'freedictionary', 'cambridge'];
+  let dictionarySource = 'vocabulary';
   let autoPopupController = null;
 
   const lookupExecutor = async ({ headword, source }) => {
@@ -80,8 +79,7 @@ export async function bootstrapContentRuntime({
         error: { type: 'invalid-token', message: 'headword token is required' },
       };
     }
-    const effectiveSource = source || dictionarySource || 'auto';
-    const effectiveAutoSourceOrder = autoPopupController?.getAutoSourceOrder?.() || autoSourceOrder;
+    const effectiveSource = source || dictionarySource || (autoPopupController?.isSimpleLearn?.() ? 'freedictionary' : 'vocabulary');
     return new Promise((resolve) => {
       chromeApi.runtime.sendMessage(
         {
@@ -89,7 +87,7 @@ export async function bootstrapContentRuntime({
           payload: {
             token: cleanWord,
             source: effectiveSource,
-            autoSourceOrder: effectiveAutoSourceOrder,
+            simpleLearn: effectiveSource === 'freedictionary',
           },
         },
         (response) => {
@@ -117,7 +115,7 @@ export async function bootstrapContentRuntime({
     historyAdapter: historyStore,
     settingsAdapter: settingsStore,
     onSourceChange: (newSource) => {
-      dictionarySource = newSource || 'auto';
+      dictionarySource = newSource || 'vocabulary';
     },
   });
 
@@ -201,7 +199,7 @@ export async function bootstrapContentRuntime({
       pendingTriggerRequest = null;
     }
     darkMode = Boolean(nextState.darkMode);
-    dictionarySource = nextState.dictionarySource || 'auto';
+    dictionarySource = nextState.simpleLearn ? 'freedictionary' : 'vocabulary';
   });
 
   await autoPopupController.start();
@@ -291,8 +289,7 @@ export async function bootstrapContentRuntime({
 
     if (validWords && validWords.length > 1) {
       const remainingWords = [...new Set(validWords)].filter((w) => w !== cleanWord);
-      const effectiveSource = dictionarySource || 'auto';
-      const effectiveAutoOrder = autoPopupController?.getAutoSourceOrder?.() || autoSourceOrder;
+      const effectiveSource = dictionarySource || 'vocabulary';
       (async () => {
         for (const wordToFetch of remainingWords) {
           await new Promise((resolve) => setTimeout(resolve, 250));

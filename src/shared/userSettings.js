@@ -1,25 +1,16 @@
-export const USER_SETTINGS_SCHEMA_VERSION = 1;
+export const USER_SETTINGS_SCHEMA_VERSION = 2;
 export const USER_SETTINGS_STORAGE_KEY = 'user-settings';
 
 export const DICTIONARY_SOURCE = Object.freeze({
-  AUTO: 'auto',
   VOCABULARY: 'vocabulary',
-  CAMBRIDGE: 'cambridge',
   FREEDICTIONARY: 'freedictionary',
 });
-
-export const DEFAULT_AUTO_SOURCE_ORDER = Object.freeze([
-  DICTIONARY_SOURCE.VOCABULARY,
-  DICTIONARY_SOURCE.FREEDICTIONARY,
-  DICTIONARY_SOURCE.CAMBRIDGE,
-]);
 
 export const DEFAULT_USER_SETTINGS = Object.freeze({
   schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
   autoPopupEnabled: true,
   darkMode: false,
-  dictionarySource: DICTIONARY_SOURCE.AUTO,
-  autoSourceOrder: DEFAULT_AUTO_SOURCE_ORDER,
+  simpleLearn: false,
   rememberLastLookup: true,
 });
 
@@ -39,61 +30,9 @@ function toBooleanOrNull(value) {
   return null;
 }
 
-const VALID_AUTO_SOURCES = new Set([
-  DICTIONARY_SOURCE.VOCABULARY,
-  DICTIONARY_SOURCE.FREEDICTIONARY,
-  DICTIONARY_SOURCE.CAMBRIDGE,
-]);
-
-export function normalizeAutoSourceOrder(order) {
-  if (!Array.isArray(order)) {
-    return [...DEFAULT_AUTO_SOURCE_ORDER];
-  }
-
-  const seen = new Set();
-  const normalized = [];
-
-  for (const item of order) {
-    if (typeof item === 'string') {
-      const trimmed = item.trim().toLowerCase();
-      if (VALID_AUTO_SOURCES.has(trimmed) && !seen.has(trimmed)) {
-        seen.add(trimmed);
-        normalized.push(trimmed);
-      }
-    }
-  }
-
-  for (const defaultSource of DEFAULT_AUTO_SOURCE_ORDER) {
-    if (!seen.has(defaultSource)) {
-      seen.add(defaultSource);
-      normalized.push(defaultSource);
-    }
-  }
-
-  return normalized;
-}
-
-function normalizeDictionarySource(source) {
-  if (typeof source !== 'string') {
-    return DEFAULT_USER_SETTINGS.dictionarySource;
-  }
-
-  const trimmed = source.trim().toLowerCase();
-  if (
-    trimmed === DICTIONARY_SOURCE.AUTO ||
-    trimmed === DICTIONARY_SOURCE.VOCABULARY ||
-    trimmed === DICTIONARY_SOURCE.CAMBRIDGE ||
-    trimmed === DICTIONARY_SOURCE.FREEDICTIONARY
-  ) {
-    return trimmed;
-  }
-
-  return DEFAULT_USER_SETTINGS.dictionarySource;
-}
-
 export function normalizeUserSettings(rawValue) {
   if (rawValue == null) {
-    return { ...DEFAULT_USER_SETTINGS, autoSourceOrder: [...DEFAULT_AUTO_SOURCE_ORDER] };
+    return { ...DEFAULT_USER_SETTINGS };
   }
 
   if (typeof rawValue === 'boolean') {
@@ -101,13 +40,13 @@ export function normalizeUserSettings(rawValue) {
       schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
       autoPopupEnabled: rawValue,
       darkMode: DEFAULT_USER_SETTINGS.darkMode,
-      dictionarySource: DEFAULT_USER_SETTINGS.dictionarySource,
-      autoSourceOrder: [...DEFAULT_AUTO_SOURCE_ORDER],
+      simpleLearn: DEFAULT_USER_SETTINGS.simpleLearn,
+      rememberLastLookup: DEFAULT_USER_SETTINGS.rememberLastLookup,
     };
   }
 
   if (typeof rawValue !== 'object') {
-    return { ...DEFAULT_USER_SETTINGS, autoSourceOrder: [...DEFAULT_AUTO_SOURCE_ORDER] };
+    return { ...DEFAULT_USER_SETTINGS };
   }
 
   const normalizedAutoPopupEnabled =
@@ -119,15 +58,21 @@ export function normalizeUserSettings(rawValue) {
   const normalizedRememberLastLookup =
     toBooleanOrNull(rawValue.rememberLastLookup) ?? DEFAULT_USER_SETTINGS.rememberLastLookup;
 
-  const normalizedDictionarySource = normalizeDictionarySource(rawValue.dictionarySource);
-  const normalizedAutoSourceOrder = normalizeAutoSourceOrder(rawValue.autoSourceOrder);
+  let normalizedSimpleLearn = toBooleanOrNull(rawValue.simpleLearn);
+  if (normalizedSimpleLearn === null) {
+    // Migration: If legacy dictionarySource was freedictionary, map to simpleLearn = true
+    if (rawValue.dictionarySource === 'freedictionary') {
+      normalizedSimpleLearn = true;
+    } else {
+      normalizedSimpleLearn = DEFAULT_USER_SETTINGS.simpleLearn;
+    }
+  }
 
   return {
     schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
     autoPopupEnabled: normalizedAutoPopupEnabled,
     darkMode: normalizedDarkMode,
-    dictionarySource: normalizedDictionarySource,
-    autoSourceOrder: normalizedAutoSourceOrder,
+    simpleLearn: normalizedSimpleLearn,
     rememberLastLookup: normalizedRememberLastLookup,
   };
 }
@@ -144,3 +89,4 @@ export function mergeUserSettings(currentSettings, patch) {
     ...patch,
   });
 }
+

@@ -1,5 +1,4 @@
 import { createSelectionDetectionController } from './selectionDetection.js';
-import { DEFAULT_AUTO_SOURCE_ORDER } from '../shared/userSettings.js';
 
 export function createAutoPopupLookupController({
   eventTarget,
@@ -22,8 +21,7 @@ export function createAutoPopupLookupController({
   let runtimeStarted = false;
   let autoPopupEnabled = true;
   let darkMode = false;
-  let dictionarySource = 'auto';
-  let autoSourceOrder = [...DEFAULT_AUTO_SOURCE_ORDER];
+  let simpleLearn = false;
   let unsubscribeSettingsStore = null;
   const listeners = new Set();
 
@@ -50,8 +48,7 @@ export function createAutoPopupLookupController({
     const payload = {
       autoPopupEnabled,
       darkMode,
-      dictionarySource,
-      autoSourceOrder,
+      simpleLearn,
     };
 
     for (const listener of listeners) {
@@ -62,8 +59,7 @@ export function createAutoPopupLookupController({
   const applySettings = (settings) => {
     autoPopupEnabled = Boolean(settings?.autoPopupEnabled ?? true);
     darkMode = Boolean(settings?.darkMode ?? false);
-    dictionarySource = settings?.dictionarySource || 'auto';
-    autoSourceOrder = settings?.autoSourceOrder || [...DEFAULT_AUTO_SOURCE_ORDER];
+    simpleLearn = Boolean(settings?.simpleLearn ?? false);
 
     if (runtimeStarted) {
       selectionController.start();
@@ -145,7 +141,7 @@ export function createAutoPopupLookupController({
     setAutoPopupEnabled,
     subscribe,
     isAutoPopupEnabled: () => autoPopupEnabled,
-    getAutoSourceOrder: () => autoSourceOrder,
+    isSimpleLearn: () => simpleLearn,
     getState: () => ({
       runtimeStarted,
       autoPopupEnabled,

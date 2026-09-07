@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-09-07
+
+### 🚀 Added & Changed (Simple Learn Mode & Source Selector Simplification)
+- **Simple Learn Mode**:
+  - Replaced the multi-source dictionary selector dropdown with an intuitive **Simple Learn** toggle switch.
+  - **Toggle OFF (Default)**: Deep learning mode using **Vocabulary.com** (detailed descriptions, word family relations, advanced phonetics) with automatic seamless fallback to **FreeDictionary API** when a word is not found.
+  - **Toggle ON**: Fast, concise learning mode directly querying **FreeDictionary API** for streamlined definitions, part-of-speech categorization, and native audio.
+- **In-Page & Toolbar UI Integration**:
+  - Embedded the Simple Learn toggle switch directly on the in-page popup header bar and the extension toolbar settings panel with instant re-lookup upon toggling.
+  - 100% compliant with English-only UI guidelines.
+- **Settings Schema Migration**:
+  - Upgraded user settings schema to `schemaVersion: 2` with persistent `simpleLearn: false` default and backwards compatibility migration for legacy `dictionarySource` values.
+
+### 🗑️ Removed
+- **Cambridge Dictionary Removal**:
+  - Completely removed Cambridge Dictionary HTML parsing adapters, endpoints, and background routing.
+  - Removed `https://dictionary.cambridge.org/*` from `host_permissions` in `manifest.json` to minimize extension permission footprint and streamline maintenance.
+
+---
+
 ## [0.8.1] - 2026-09-04
 
 ### 🔧 Fixed

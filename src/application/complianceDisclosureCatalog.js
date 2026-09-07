@@ -30,10 +30,6 @@ export const PERMISSION_DISCLOSURE_ITEMS = [
     rationale: 'Send lookup requests and retrieve definitions from Vocabulary.com.',
   },
   {
-    permission: 'host:https://dictionary.cambridge.org/*',
-    rationale: 'Send lookup requests and retrieve definitions from Cambridge Dictionary.',
-  },
-  {
     permission: 'host:https://api.dictionaryapi.dev/*',
     rationale: 'Lookup definitions and pronunciations from Free Dictionary API.',
   },
@@ -79,16 +75,12 @@ function dedupe(values) {
 
 // Attribution with icon and hover tooltip for full text
 export function buildAttributionText(source = 'vocabulary') {
-  const isCambridge = source === 'cambridge';
   const isFreeDictionary = source === 'freedictionary';
   
   let providerName = 'Vocabulary.com';
   let providerUrl = 'https://www.vocabulary.com/';
   
-  if (isCambridge) {
-    providerName = 'Cambridge Dictionary';
-    providerUrl = 'https://dictionary.cambridge.org/';
-  } else if (isFreeDictionary) {
+  if (isFreeDictionary) {
     providerName = 'Free Dictionary API';
     providerUrl = 'https://dictionaryapi.dev/';
   }

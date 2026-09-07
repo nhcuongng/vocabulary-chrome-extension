@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vocabulary Chrome Extension",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Highlight một từ tiếng Anh để tra cứu định nghĩa nhanh ngay trên trang.",
   "action": {
     "default_title": "Vocabulary Lookup",
@@ -36,7 +36,6 @@
   },
   "host_permissions": [
     "https://www.vocabulary.com/*",
-    "https://dictionary.cambridge.org/*",
     "https://api.dictionaryapi.dev/*",
     "https://translate.google.com/*"
   ]

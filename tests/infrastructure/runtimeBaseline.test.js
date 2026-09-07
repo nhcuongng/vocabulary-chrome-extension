@@ -32,7 +32,6 @@ test('runtime baseline: manifest MV3 + permission disclosure alignment tối thi
 
   assert.ok(Array.isArray(manifest.host_permissions));
   assert.ok(manifest.host_permissions.includes('https://www.vocabulary.com/*'));
-  assert.ok(manifest.host_permissions.includes('https://dictionary.cambridge.org/*'));
   assert.ok(manifest.host_permissions.includes('https://api.dictionaryapi.dev/*'));
   assert.ok(manifest.host_permissions.includes('https://translate.google.com/*'));
   assert.ok(Array.isArray(manifest.content_scripts));

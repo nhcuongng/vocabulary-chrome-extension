@@ -36,9 +36,9 @@ function createMockElement(tag = 'div') {
       const list = listeners.get(type) || [];
       listeners.set(type, list.filter((h) => h !== handler));
     },
-    dispatchEvent: (type, event = {}) => {
+    dispatchEvent: async (type, event = {}) => {
       const list = listeners.get(type) || [];
-      for (const h of list) h(event);
+      for (const h of list) await h(event);
     },
     appendChild: (child) => {
       children.push(child);
@@ -343,49 +343,19 @@ test('popup debounce: clearing input clears debounce timer and resets results', 
   runtime.destroy();
 });
 
-test('popup: clicking source item performs search for current word without changing default setting; clicking star button updates default setting', async () => {
+test('popup: toggling Simple Learn updates settings and triggers immediate lookup', async () => {
   const doc = createMockDocument();
+  const toggle = doc.getElementById('auto-popup-toggle');
+  toggle.type = 'checkbox';
+  const darkModeToggle = doc.getElementById('dark-mode-toggle');
+  darkModeToggle.type = 'checkbox';
   const searchInput = doc.getElementById('vocab-search-input');
-  searchInput.value = 'galaxy';
 
-  const sourceMenuPopover = doc.getElementById('vocab-source-menu-popover');
-  const starBtnAuto = createMockElement('button');
-  starBtnAuto.className = 'vocab-source-star-btn is-default';
-  starBtnAuto.setAttribute('data-source', 'auto');
+  const simpleLearnToggle = doc.getElementById('simple-learn-toggle');
+  simpleLearnToggle.type = 'checkbox';
+  simpleLearnToggle.checked = false;
 
-  const starBtnCambridge = createMockElement('button');
-  starBtnCambridge.className = 'vocab-source-star-btn';
-  starBtnCambridge.setAttribute('data-source', 'cambridge');
-
-  const itemAuto = createMockElement('div');
-  itemAuto.className = 'vocab-source-menu-item active';
-  itemAuto.setAttribute('data-source', 'auto');
-
-  const itemCambridge = createMockElement('button');
-  itemCambridge.className = 'vocab-source-menu-item';
-  itemCambridge.setAttribute('data-source', 'cambridge');
-
-  sourceMenuPopover.querySelectorAll = (selector) => {
-    if (selector.includes('.vocab-source-star-btn')) {
-      return [starBtnAuto, starBtnCambridge];
-    }
-    if (selector.includes('.vocab-source-menu-item')) {
-      return [itemAuto, itemCambridge];
-    }
-    return [];
-  };
-
-  doc.querySelectorAll = (selector) => {
-    if (selector.includes('.vocab-source-star-btn')) {
-      return [starBtnAuto, starBtnCambridge];
-    }
-    if (selector.includes('.vocab-source-menu-item')) {
-      return [itemAuto, itemCambridge];
-    }
-    return [];
-  };
-
-  const storedSettings = { dictionarySource: 'auto', rememberLastLookup: false };
+  const storedSettings = { simpleLearn: false, rememberLastLookup: false };
   const savedSettings = [];
   const sentMessages = [];
 
@@ -430,17 +400,17 @@ test('popup: clicking source item performs search for current word without chang
     documentObj: doc,
   });
 
-  // 1. Click Cambridge source row -> runs search with source 'cambridge', but does NOT save to settings store
-  await itemCambridge.dispatchEvent('click', { stopPropagation: () => {} });
-  assert.equal(sentMessages.length, 1);
-  assert.equal(sentMessages[0].payload.source, 'cambridge');
-  assert.equal(sentMessages[0].payload.token, 'galaxy');
-  assert.equal(savedSettings.length, 0); // Not saved to persistent settings!
+  // Set input after bootstrap (since bootstrap resets when rememberLastLookup is false)
+  searchInput.value = 'galaxy';
 
-  // 2. Click Cambridge star button -> saves { dictionarySource: 'cambridge' } to settings store
-  await starBtnCambridge.dispatchEvent('click', { stopPropagation: () => {} });
+  // Toggle simple learn on
+  simpleLearnToggle.checked = true;
+  await simpleLearnToggle.dispatchEvent('change');
+
   assert.equal(savedSettings.length, 1);
-  assert.equal(savedSettings[0]['user-settings']?.dictionarySource, 'cambridge');
+  assert.equal(savedSettings[0]['user-settings']?.simpleLearn, true);
+  assert.equal(sentMessages.length, 1);
+  assert.equal(sentMessages[0].payload.token, 'galaxy');
 
   runtime.destroy();
 });

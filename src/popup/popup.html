@@ -1568,89 +1568,6 @@
             </svg>
           </button>
           <div class="vocab-toolbar-actions">
-            <!-- Dictionary Source Menu -->
-            <div class="vocab-source-menu-wrapper">
-              <button id="vocab-source-menu-btn" class="vocab-source-menu-btn" type="button" title="Select dictionary source" aria-label="Select dictionary source">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
-              </button>
-              <div id="vocab-source-menu-popover" class="vocab-source-menu-popover" style="display: none;">
-                <div class="vocab-source-menu-title">Dictionary Source</div>
-                <div class="vocab-source-menu-item active" data-source="auto" role="button" tabindex="0">
-                  <div class="source-item-text">
-                    <span class="source-item-name">⚡ Auto</span>
-                    <span class="source-item-hint">Fallback in priority order</span>
-                  </div>
-                  <div class="source-item-actions">
-                    <button type="button" class="vocab-auto-config-btn" id="vocab-auto-config-btn" title="Configure auto priority order" aria-label="Configure auto priority order">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                      </svg>
-                    </button>
-                    <button type="button" class="vocab-source-star-btn is-default" data-source="auto" title="Current default source" aria-label="Current default source">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                      </svg>
-                    </button>
-                    <span class="source-item-check">✓</span>
-                  </div>
-                </div>
-                <div class="vocab-auto-order-section" id="vocab-auto-order-section" style="display: none;">
-                  <div class="vocab-auto-order-header">Auto Priority (Drag to reorder):</div>
-                  <div class="vocab-auto-order-list" id="vocab-auto-order-list"></div>
-                </div>
-                <div class="vocab-source-menu-title" style="margin-top: 4px;">Single Source</div>
-                <div class="vocab-source-menu-item" data-source="vocabulary" role="button" tabindex="0">
-                  <div class="source-item-text">
-                    <span class="source-item-name">📘 Vocabulary.com</span>
-                    <span class="source-item-hint">Explanations & word family</span>
-                  </div>
-                  <div class="source-item-actions">
-                    <button type="button" class="vocab-source-star-btn" data-source="vocabulary" title="Set as default dictionary source" aria-label="Set as default dictionary source">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                      </svg>
-                    </button>
-                    <span class="source-item-check">✓</span>
-                  </div>
-                </div>
-                <div class="vocab-source-menu-item" data-source="freedictionary" role="button" tabindex="0">
-                  <div class="source-item-text">
-                    <span class="source-item-name">🆓 Free Dictionary API</span>
-                    <span class="source-item-hint">Free dictionary with audio</span>
-                  </div>
-                  <div class="source-item-actions">
-                    <button type="button" class="vocab-source-star-btn" data-source="freedictionary" title="Set as default dictionary source" aria-label="Set as default dictionary source">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                      </svg>
-                    </button>
-                    <span class="source-item-check">✓</span>
-                  </div>
-                </div>
-                <div class="vocab-source-menu-item" data-source="cambridge" role="button" tabindex="0">
-                  <div class="source-item-text">
-                    <span class="source-item-name">
-                      🏛 Cambridge Dictionary
-                      <span class="source-badge-experimental" title="Experimental Feature">🧪</span>
-                    </span>
-                    <span class="source-item-hint">Native UK/US audio & IPA</span>
-                  </div>
-                  <div class="source-item-actions">
-                    <button type="button" class="vocab-source-star-btn" data-source="cambridge" title="Set as default dictionary source" aria-label="Set as default dictionary source">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                      </svg>
-                    </button>
-                    <span class="source-item-check">✓</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Settings Menu -->
             <div class="vocab-settings-menu-wrapper">
               <button id="vocab-settings-menu-btn" class="vocab-settings-menu-btn" type="button" title="Extension Settings" aria-label="Extension Settings">
@@ -1661,6 +1578,20 @@
               </button>
               <div id="vocab-settings-menu-popover" class="vocab-settings-menu-popover" style="display: none;">
                 <div class="vocab-settings-menu-title">Settings</div>
+
+                <div class="vocab-settings-option-item">
+                  <div class="vocab-settings-option-info">
+                    <div class="vocab-settings-option-label-row">
+                      <label for="simple-learn-toggle" class="vocab-settings-option-label">Simple Learn</label>
+                      <div class="tooltip-container">
+                        <span class="help-icon" aria-label="How to use">?</span>
+                        <span class="tooltip-text">Turn on for quick concise definitions (FreeDictionary). Turn off for detailed explanations (Vocabulary.com).</span>
+                      </div>
+                    </div>
+                    <span class="vocab-settings-option-hint">Fast & concise definitions</span>
+                  </div>
+                  <input id="simple-learn-toggle" type="checkbox" class="vocab-checkbox-toggle" />
+                </div>
                 
                 <div class="vocab-settings-option-item">
                   <div class="vocab-settings-option-info">
@@ -1702,12 +1633,6 @@
               </div>
             </div>
           </div>
-          <select id="dictionary-source-select" style="display: none;">
-            <option value="auto">auto</option>
-            <option value="vocabulary">vocabulary</option>
-            <option value="freedictionary">freedictionary</option>
-            <option value="cambridge">cambridge</option>
-          </select>
         </div>
 
         <div id="vocab-history-slider-wrapper" class="vocab-history-slider-wrapper"></div>

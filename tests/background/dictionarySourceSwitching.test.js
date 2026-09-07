@@ -6,13 +6,12 @@ import { createServiceWorkerLookupHandler } from '../../src/background/serviceWo
 import { performDictionaryLookup, createInMemoryLookupCache } from '../../src/background/lookupService.js';
 import { DICTIONARY_SOURCE, normalizeUserSettings } from '../../src/shared/userSettings.js';
 
-test('dictionary source: normalizeUserSettings validates all 4 dictionary sources', () => {
-  assert.equal(normalizeUserSettings({ dictionarySource: 'auto' }).dictionarySource, DICTIONARY_SOURCE.AUTO);
-  assert.equal(normalizeUserSettings({ dictionarySource: 'vocabulary' }).dictionarySource, DICTIONARY_SOURCE.VOCABULARY);
-  assert.equal(normalizeUserSettings({ dictionarySource: 'cambridge' }).dictionarySource, DICTIONARY_SOURCE.CAMBRIDGE);
-  assert.equal(normalizeUserSettings({ dictionarySource: 'freedictionary' }).dictionarySource, DICTIONARY_SOURCE.FREEDICTIONARY);
-  assert.equal(normalizeUserSettings({ dictionarySource: 'UNKNOWN_SOURCE' }).dictionarySource, DICTIONARY_SOURCE.AUTO);
-  assert.equal(normalizeUserSettings({ dictionarySource: null }).dictionarySource, DICTIONARY_SOURCE.AUTO);
+test('dictionary source: normalizeUserSettings validates simpleLearn', () => {
+  assert.equal(normalizeUserSettings({ simpleLearn: true }).simpleLearn, true);
+  assert.equal(normalizeUserSettings({ simpleLearn: false }).simpleLearn, false);
+  assert.equal(normalizeUserSettings({ simpleLearn: 'true' }).simpleLearn, true);
+  assert.equal(normalizeUserSettings({ simpleLearn: 'false' }).simpleLearn, false);
+  assert.equal(normalizeUserSettings({ simpleLearn: null }).simpleLearn, false);
 });
 
 test('service worker lookup handler: direct lookup với nguồn FreeDictionary', async () => {
@@ -76,17 +75,17 @@ test('service worker lookup handler: switching sources returns corresponding sou
   assert.equal(vocabRes.status, 'success');
   assert.equal(vocabRes.data.source, DICTIONARY_SOURCE.VOCABULARY);
 
-  // 2. Switch to Cambridge
-  const cambridgeRes = await handler({
+  // 2. Switch to FreeDictionary
+  const freeDictRes = await handler({
     type: 'LOOKUP_REQUEST',
-    payload: { token: 'apple', source: DICTIONARY_SOURCE.CAMBRIDGE },
+    payload: { token: 'apple', source: DICTIONARY_SOURCE.FREEDICTIONARY },
   });
-  assert.equal(cambridgeRes.status, 'success');
-  assert.equal(cambridgeRes.data.source, DICTIONARY_SOURCE.CAMBRIDGE);
+  assert.equal(freeDictRes.status, 'success');
+  assert.equal(freeDictRes.data.source, DICTIONARY_SOURCE.FREEDICTIONARY);
 
   assert.equal(lookups.length, 2);
   assert.equal(lookups[0].source, DICTIONARY_SOURCE.VOCABULARY);
-  assert.equal(lookups[1].source, DICTIONARY_SOURCE.CAMBRIDGE);
+  assert.equal(lookups[1].source, DICTIONARY_SOURCE.FREEDICTIONARY);
 });
 
 test('lookupService cache partitioning: cache key phân tách theo source (${source}:${headword})', async () => {
@@ -95,8 +94,8 @@ test('lookupService cache partitioning: cache key phân tách theo source (${sou
 
   const mockFetch = async (url) => {
     fetchCount += 1;
-    const isCambridge = url.includes('dictionaryapi.dev') || url.includes('cambridge');
-    if (isCambridge) {
+    const isFreeDict = url.includes('freedictionaryapi.com') || url.includes('dictionaryapi.dev');
+    if (isFreeDict) {
       return {
         ok: true,
         status: 200,
@@ -117,26 +116,26 @@ test('lookupService cache partitioning: cache key phân tách theo source (${sou
     };
   };
 
-  // Tra cứu 'orange' với Cambridge
-  const resultCambridge1 = await performDictionaryLookup({
+  // Tra cứu 'orange' với FreeDictionary
+  const resultFreeDict1 = await performDictionaryLookup({
     headword: 'orange',
-    source: DICTIONARY_SOURCE.CAMBRIDGE,
+    source: DICTIONARY_SOURCE.FREEDICTIONARY,
     fetchImpl: mockFetch,
     cacheStore,
   });
-  assert.equal(resultCambridge1.status, 'success');
-  assert.equal(resultCambridge1.data.cache.hit, false);
+  assert.equal(resultFreeDict1.status, 'success');
+  assert.equal(resultFreeDict1.data.cache.hit, false);
   assert.equal(fetchCount, 1);
 
-  // Tra cứu 'orange' lại với Cambridge -> Cache HIT
-  const resultCambridge2 = await performDictionaryLookup({
+  // Tra cứu 'orange' lại với FreeDictionary -> Cache HIT
+  const resultFreeDict2 = await performDictionaryLookup({
     headword: 'orange',
-    source: DICTIONARY_SOURCE.CAMBRIDGE,
+    source: DICTIONARY_SOURCE.FREEDICTIONARY,
     fetchImpl: mockFetch,
     cacheStore,
   });
-  assert.equal(resultCambridge2.status, 'success');
-  assert.equal(resultCambridge2.data.cache.hit, true);
+  assert.equal(resultFreeDict2.status, 'success');
+  assert.equal(resultFreeDict2.data.cache.hit, true);
   assert.equal(fetchCount, 1); // Không gọi fetch mới
 
   // Đổi nguồn sang Vocabulary -> Cache MISS do khác source key!
@@ -176,15 +175,15 @@ test('lookupFlowOrchestrator: passes requested source and preserves headword and
   await orchestrator.runLookup({
     payload: {
       token: 'galaxy',
-      source: 'cambridge',
+      source: 'freedictionary',
     },
   });
 
   const finalState = orchestrator.getState();
   assert.equal(finalState.status, 'success');
   assert.equal(finalState.headword, 'galaxy');
-  assert.equal(finalState.source, 'cambridge');
-  assert.equal(finalState.data.source, 'cambridge');
+  assert.equal(finalState.source, 'freedictionary');
+  assert.equal(finalState.data.source, 'freedictionary');
 });
 
 test('popupViewModelMapper: preserves headword and source for not-found and error states', async () => {
@@ -193,12 +192,12 @@ test('popupViewModelMapper: preserves headword and source for not-found and erro
   const notFoundVm = mapLookupResultToPopupViewModel({
     status: 'not-found',
     headword: 'nonexistent',
-    source: 'cambridge',
-    data: { token: 'nonexistent', source: 'cambridge' },
+    source: 'freedictionary',
+    data: { token: 'nonexistent', source: 'freedictionary' },
   });
   assert.equal(notFoundVm.state, 'not-found');
   assert.equal(notFoundVm.headword, 'nonexistent');
-  assert.equal(notFoundVm.source, 'cambridge');
+  assert.equal(notFoundVm.source, 'freedictionary');
 
   const errorVm = mapLookupResultToPopupViewModel({
     status: 'error',
