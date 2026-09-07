@@ -6,27 +6,15 @@ import { createAutoPopupSettingsPanel } from '../application/autoPopupSettingsPa
 import { createChromeStorageSettingsAdapter } from '../infrastructure/adapters/chromeStorageSettingsAdapter.js';
 import { createChromeStorageHistoryAdapter } from '../infrastructure/adapters/chromeStorageHistoryAdapter.js';
 import {
-  renderSuccessContent,
-  renderNotFoundContent,
-  renderErrorContent,
-} from '../content/popupRenderer.js';
-import { mapLookupResultToPopupViewModel } from '../application/popupViewModelMapper.js';
-import { isInflectedForm } from '../domain/wordInflectionUtils.js';
-import {
-  playAudioWithFallback,
-  speakWord,
-  stopCurrentAudio,
-} from '../domain/audioPlaybackUtils.js';
-import {
   createHistorySliderElement,
   SOURCE_META,
 } from '../content/historySliderRenderer.js';
 import { createZeroStateElement } from './popupZeroStateRenderer.js';
 import {
-  generateStressSvg,
-  generateEqualizerBarsSvg,
-  PITCH_LEVELS,
-} from '../domain/stressDiagramUtils.js';
+  renderDictionaryContentView,
+  createDomHelper,
+} from '../presentation/dictionaryContentView.js';
+
 
 function renderStatus(targetElement, enabled) {
   if (!targetElement) {
@@ -354,341 +342,26 @@ async function bootstrapPopupRuntime({
       container.setAttribute('aria-busy', 'false');
     }
 
-    function h(tag, props, ...children) {
-      const el = documentObj.createElement(tag);
-      if (props) {
-        for (const [key, value] of Object.entries(props)) {
-          if (key.startsWith('on') && typeof value === 'function') {
-            el.addEventListener(key.slice(2).toLowerCase(), value);
-          } else if (key === 'className') {
-            el.className = value;
-          } else if (key === 'innerHTML') {
-            el.innerHTML = value;
-          } else if (key === 'style' && typeof value === 'object') {
-            Object.assign(el.style, value);
-          } else {
-            el.setAttribute(key, value);
-          }
+    const recentWords = historyStore.getRecentSearchWords(50);
+
+    renderDictionaryContentView({
+      state,
+      container,
+      documentObj,
+      windowObj: globalThis.window,
+      historyWords: recentWords,
+      settingsAdapter: settingsStore,
+      onNavigateWord: (famWord) => {
+        if (searchInput) searchInput.value = famWord;
+        const normalized = (famWord || '').trim().toLowerCase();
+        const wordIdx = recentWords.findIndex((w) => (w || '').trim().toLowerCase() === normalized);
+        if (wordIdx !== -1) {
+          currentSlideIndex = Math.floor(wordIdx / ITEMS_PER_PAGE);
         }
-      }
-      for (const child of children) {
-        if (child == null) continue;
-        if (typeof child === 'string' || typeof child === 'number') {
-          el.appendChild(documentObj.createTextNode(String(child)));
-        } else if (typeof child === 'object') {
-          el.appendChild(child);
-        }
-      }
-      return el;
-    }
-
-    let content = [];
-    let viewModel = null;
-
-    if (state.status === 'success' || state.status === 'not-found' || state.status === 'error') {
-      viewModel = mapLookupResultToPopupViewModel(state);
-      if (state.status === 'success') {
-        content = renderSuccessContent(viewModel);
-      } else if (state.status === 'not-found') {
-        content = renderNotFoundContent(viewModel);
-      } else {
-        content = renderErrorContent(state.error);
-      }
-    } else if (state.status === 'loading') {
-      content = [
-        { type: 'skeleton', value: 'headword' },
-        { type: 'skeleton', value: 'pron' },
-        { type: 'skeleton', value: 'def' },
-        { type: 'skeleton', value: 'def-short' },
-      ];
-    }
-
-    content.forEach((item) => {
-      if (item.type === 'skeleton') {
-        if (item.value === 'headword') {
-          const hwRow = h(
-            'div',
-            { className: 'skeleton-headword-row' },
-            h('div', { className: 'skeleton skeleton-headword' }),
-            h('div', { className: 'skeleton skeleton-circle-btn' })
-          );
-          container.appendChild(hwRow);
-        } else if (item.value === 'pron') {
-          const pronRow = h(
-            'div',
-            { className: 'skeleton-pron-row' },
-            h('div', { className: 'skeleton skeleton-pron' }),
-            h('div', { className: 'skeleton skeleton-circle-btn' })
-          );
-          container.appendChild(pronRow);
-        } else if (item.value === 'def') {
-          const defCard1 = h(
-            'div',
-            { className: 'skeleton-def-card' },
-            h('div', { className: 'skeleton skeleton-tag' }),
-            h('div', { className: 'skeleton skeleton-def' }),
-            h('div', { className: 'skeleton skeleton-def short' })
-          );
-          container.appendChild(defCard1);
-        } else if (item.value === 'def-short') {
-          const defCard2 = h(
-            'div',
-            { className: 'skeleton-def-card' },
-            h('div', { className: 'skeleton skeleton-tag' }),
-            h('div', { className: 'skeleton skeleton-def' })
-          );
-          container.appendChild(defCard2);
-        }
-      } else if (item.type === 'headword') {
-        const cap = item.value.charAt(0).toUpperCase() + item.value.slice(1);
-        const source = viewModel?.source || item.source || 'vocabulary';
-        const defaultUrl = source === 'cambridge'
-          ? `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(viewModel?.headword || item.value || '')}`
-          : `https://www.vocabulary.com/dictionary/${encodeURIComponent(viewModel?.headword || item.value || '')}`;
-        const lookupUrl = viewModel?.lookupUrl || item.lookupUrl || defaultUrl;
-        container.appendChild(
-          h(
-            'p',
-            { className: 'vocab-popup-headword' },
-            h('a', { href: lookupUrl, className: 'head-word', target: '_blank', rel: 'noopener noreferrer' }, cap)
-          )
-        );
-      } else if (item.type === 'pronunciation') {
-        const pronContainer = h('div', { className: 'vocab-popup-pronunciation' });
-        const textValue = typeof item.value === 'string' ? item.value.trim() : '';
-        const audioObj = item.audio || {};
-        const word = (viewModel?.headword || searchInput?.value || '').trim();
-
-        let hasRendered = false;
-
-        const triggerAudioFeedback = (btn) => {
-          if (!btn) return;
-          btn.classList.add('is-playing');
-          setTimeout(() => {
-            btn.classList.remove('is-playing');
-          }, 1200);
-        };
-
-        if (audioObj.us || textValue.includes('US')) {
-          let usText = 'US';
-          const usMatch = textValue.match(/US\s*([^·]+)/);
-          if (usMatch && usMatch[1].trim()) {
-            usText = `US ${usMatch[1].trim()}`;
-          } else if (textValue && !textValue.includes('UK')) {
-            usText = textValue.startsWith('US') ? textValue : `US ${textValue}`;
-          }
-
-          pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${usText} `));
-          pronContainer.appendChild(
-            h('button', {
-              className: 'vocab-popup-audio-btn',
-              title: 'Play US Pronunciation',
-              ariaLabel: 'Play US Pronunciation',
-              innerHTML: speakerSVG,
-              onClick: (e) => {
-                e.stopPropagation();
-                triggerAudioFeedback(e.currentTarget);
-                playAudioWithFallback(audioObj.us, word, 'en-US');
-              },
-            })
-          );
-          hasRendered = true;
-        }
-
-        if (audioObj.uk || textValue.includes('UK')) {
-          let ukText = 'UK';
-          const ukMatch = textValue.match(/UK\s*([^·]+)/);
-          if (ukMatch && ukMatch[1].trim()) {
-            ukText = `UK ${ukMatch[1].trim()}`;
-          } else if (textValue && !textValue.includes('US')) {
-            ukText = textValue.startsWith('UK') ? textValue : `UK ${textValue}`;
-          }
-
-          pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${ukText} `));
-          pronContainer.appendChild(
-            h('button', {
-              className: 'vocab-popup-audio-btn',
-              title: 'Play UK Pronunciation',
-              ariaLabel: 'Play UK Pronunciation',
-              innerHTML: speakerSVG,
-              onClick: (e) => {
-                e.stopPropagation();
-                triggerAudioFeedback(e.currentTarget);
-                playAudioWithFallback(audioObj.uk, word, 'en-GB');
-              },
-            })
-          );
-          hasRendered = true;
-        }
-
-        if (!hasRendered && (textValue || audioObj.us || audioObj.uk)) {
-          if (textValue) {
-            pronContainer.appendChild(h('span', { className: 'vocab-pron-item' }, `${textValue} `));
-          }
-          pronContainer.appendChild(
-            h('button', {
-              className: 'vocab-popup-audio-btn',
-              title: 'Play Pronunciation',
-              ariaLabel: 'Play Pronunciation',
-              innerHTML: speakerSVG,
-              onClick: (e) => {
-                e.stopPropagation();
-                triggerAudioFeedback(e.currentTarget);
-                playAudioWithFallback(audioObj.us || audioObj.uk, word, 'en-US');
-              },
-            })
-          );
-        }
-
-        container.appendChild(pronContainer);
-      } else if (item.type === 'stress-diagram') {
-        const stressData = item.value;
-        if (stressData && stressData.hasStressInfo && Array.isArray(stressData.syllables)) {
-          const wrapper = h('div', { className: 'vocab-stress-wrapper' });
-          let isDiagramOpen = false;
-
-          const card = h('div', {
-            className: 'vocab-stress-card',
-            style: { display: 'none' },
-          });
-          card.innerHTML = `
-            ${generateStressSvg(stressData)}
-            <div class="vocab-stress-legend">
-              <span class="legend-item"><span class="dot-high">●</span> High (ˈ)</span>
-              <span class="legend-item"><span class="dot-mid">●</span> Mid (ˌ)</span>
-              <span class="legend-item"><span class="dot-low">●</span> Unstressed</span>
-            </div>
-          `;
-
-          // Build syllables chain with highlight on stressed syllables
-          const syllableNodes = [];
-          stressData.syllables.forEach((syl, i) => {
-            if (i > 0) {
-              syllableNodes.push(h('span', { className: 'vocab-syl-dot' }, '·'));
-            }
-            const isHigh = syl.level === PITCH_LEVELS.HIGH;
-            const isMid = syl.level === PITCH_LEVELS.MID;
-            const tagClass = isHigh ? 'vocab-syl-high' : isMid ? 'vocab-syl-mid' : 'vocab-syl-low';
-            syllableNodes.push(h('span', { className: `vocab-syl-item ${tagClass}` }, syl.text));
-          });
-
-          const syllablesChain = h('div', { className: 'vocab-syllables-chain' }, ...syllableNodes);
-          const waveIcon = h('span', { className: 'vocab-stress-wave-icon', innerHTML: waveformSVG });
-
-          const pillLeft = h('div', { className: 'vocab-stress-pill-left' }, waveIcon, syllablesChain);
-
-          const eqBars = h('span', {
-            className: 'vocab-eq-bars-container',
-            innerHTML: generateEqualizerBarsSvg(stressData),
-          });
-          const toggleSpan = h('span', { className: 'vocab-stress-toggle-icon' }, '▼');
-
-          const pillRight = h(
-            'div',
-            { className: 'vocab-stress-pill-right' },
-            eqBars,
-            toggleSpan
-          );
-
-          const pillTitle = stressData.stressSummary
-            ? `${stressData.stressSummary} · Click to toggle pitch contour`
-            : 'Click to toggle pitch contour';
-
-          const rhythmPill = h(
-            'div',
-            {
-              className: 'vocab-stress-pill',
-              role: 'button',
-              tabIndex: 0,
-              title: pillTitle,
-              ariaLabel: pillTitle,
-              onClick: (e) => {
-                e.stopPropagation();
-                isDiagramOpen = !isDiagramOpen;
-                card.style.display = isDiagramOpen ? 'flex' : 'none';
-                toggleSpan.textContent = isDiagramOpen ? '▲' : '▼';
-                toggleSpan.style.color = isDiagramOpen ? '#1677C9' : '';
-              },
-            },
-            pillLeft,
-            pillRight
-          );
-
-          wrapper.appendChild(rhythmPill);
-          wrapper.appendChild(card);
-          container.appendChild(wrapper);
-        }
-      } else if (item.type === 'word-family') {
-        const familyList = Array.isArray(item.value) ? item.value : [];
-        if (familyList.length > 0) {
-          const currentHw = (viewModel?.headword || state.headword || '').toLowerCase();
-          const details = h('details', { className: 'vocab-details' });
-          const summary = h(
-            'summary',
-            {},
-            h('span', { className: 'vocab-details-label' }, `✭ Word Family (${familyList.length})`),
-            h('span', { className: 'collapse-icon' }, '▶')
-          );
-          const contentDiv = h('div', { className: 'details-content' });
-          const group = h('div', { className: 'vocab-word-family-group' });
-
-          familyList.forEach((fam) => {
-            const famWord = typeof fam === 'string' ? fam : fam.word;
-            const isInflected = isInflectedForm(famWord, currentHw);
-            const chip = h(
-              'button',
-              {
-                className: isInflected ? 'vocab-family-chip disabled-inflection' : 'vocab-family-chip',
-                title: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
-                ariaLabel: isInflected ? `${famWord} (inflected form)` : `Lookup ${famWord}`,
-                disabled: isInflected,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  if (isInflected) return;
-                  if (searchInput) searchInput.value = famWord;
-                  performSearch(famWord);
-                  renderHistorySlider(famWord);
-                },
-              },
-              famWord
-            );
-            group.appendChild(chip);
-          });
-
-          contentDiv.appendChild(group);
-          details.appendChild(summary);
-          details.appendChild(contentDiv);
-          container.appendChild(details);
-        }
-      } else if (item.type === 'definition') {
-        const defs = Array.isArray(item.value) ? item.value : [item.value];
-        defs.forEach((defHtml) => {
-          if (defHtml) container.appendChild(h('div', { className: 'vocab-popup-definition', innerHTML: defHtml }));
-        });
-      } else if (item.type === 'title') {
-        container.appendChild(h('div', { className: 'vocab-popup-title' }, item.value));
-      } else if (item.type === 'message') {
-        container.appendChild(h('div', { className: 'vocab-popup-message' }, item.value));
-      } else if (item.type === 'searchSuggestions') {
-        if (item.value) {
-          container.appendChild(h('div', { className: 'vocab-popup-search-suggestions', innerHTML: item.value }));
-        }
-      } else if (item.type === 'guidance-list') {
-        const ul = h('ul', { className: 'vocab-popup-guidance-list' });
-        item.value.forEach((g) => ul.appendChild(h('li', {}, g)));
-        container.appendChild(ul);
-      } else if (item.type === 'cta') {
-        container.appendChild(h('div', { className: 'vocab-popup-cta' }, h('button', {}, item.value)));
-      } else if (item.type === 'compliance-footer') {
-        container.appendChild(
-          h(
-            'div',
-            { className: 'vocab-popup-compliance-footer' },
-            h('div', { className: 'vocab-popup-attribution', innerHTML: item.value.attribution }),
-            h('div', { className: 'vocab-popup-permission-disclosure', innerHTML: item.value.disclosure })
-          )
-        );
-      }
+        performSearch(famWord);
+        renderHistorySlider(famWord);
+      },
+      onLayoutChange: () => {},
     });
   }
 

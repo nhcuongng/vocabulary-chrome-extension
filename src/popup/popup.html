@@ -185,11 +185,21 @@
         align-items: center;
         gap: 6px;
         z-index: 60;
+        width: 100%;
+      }
+
+      .search-field-container {
+        position: relative;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        min-width: 0;
       }
 
       .search-input {
+        width: 100%;
         flex: 1;
-        padding: 8px 32px 8px 12px;
+        padding: 8px 30px 8px 12px;
         font-size: 13px;
         border: 1.5px solid var(--border-color);
         border-radius: 8px;
@@ -212,7 +222,9 @@
 
       .clear-btn {
         position: absolute;
-        right: 76px;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
         background: none;
         border: none;
         cursor: pointer;
@@ -222,11 +234,14 @@
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, color 0.2s;
+        z-index: 5;
+        line-height: 1;
       }
 
       .clear-btn:hover {
         background-color: var(--border-color);
+        color: var(--text-color);
       }
 
       .vocab-toolbar-actions {
@@ -1256,10 +1271,20 @@
         border-color: rgba(96, 165, 250, 0.2);
       }
 
+      /* Content Elements & Stepper */
+      .vocab-popup-headword-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 32px;
+        margin: 0 0 6px 0;
+      }
+
       .vocab-popup-headword {
         font-size: 24px;
         font-weight: 700;
-        margin: 0 0 6px;
+        margin: 0;
       }
 
       .vocab-popup-headword .head-word {
@@ -1273,6 +1298,67 @@
 
       .vocab-popup-headword .head-word:hover {
         text-decoration: underline;
+      }
+
+      .vocab-history-stepper {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 2px 4px;
+        user-select: none;
+        flex-shrink: 0;
+      }
+
+      body.dark-mode .vocab-history-stepper {
+        background: #111827;
+        border-color: #374151;
+      }
+
+      .vocab-stepper-btn {
+        background: transparent;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 0;
+        line-height: 1;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .vocab-stepper-btn:hover:not(:disabled) {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+
+      body.dark-mode .vocab-stepper-btn:hover:not(:disabled) {
+        background: #374151;
+        color: #f3f4f6;
+      }
+
+      .vocab-stepper-btn:disabled {
+        opacity: 0.25;
+        cursor: not-allowed;
+      }
+
+      .vocab-stepper-counter {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        padding: 0 3px;
+      }
+
+      body.dark-mode .vocab-stepper-counter {
+        color: #9ca3af;
       }
 
       .vocab-popup-pronunciation {
@@ -1317,7 +1403,568 @@
       .vocab-popup-definition {
         font-size: 14px;
         line-height: 1.5;
-        margin: 10px 0;
+        margin: 8px 0;
+      }
+
+      .vocab-quick-def {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--text-color);
+        margin: 6px 0 10px 0;
+        padding: 6px 8px 6px 10px;
+        min-height: 44px;
+        box-sizing: border-box;
+        background: #f8fafc;
+        border-left: 3px solid #1677C9;
+        border-radius: 0 6px 6px 0;
+      }
+
+      body.dark-mode .vocab-quick-def {
+        background: #111827;
+        color: #f3f4f6;
+        border-left-color: #60a5fa;
+      }
+
+      .vocab-quick-def p {
+        margin: 0;
+      }
+
+      /* Tabbed Interface styles */
+      .vocab-tabs-container {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        background: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 6px 10px;
+        box-sizing: border-box;
+      }
+
+      body.dark-mode .vocab-tabs-container {
+        background: #111827;
+        border-color: #374151;
+      }
+
+      .vocab-tab-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border-bottom: 1px solid var(--border-color);
+        margin: 0;
+        padding: 0 0 2px 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      body.dark-mode .vocab-tab-bar {
+        border-bottom-color: #374151;
+      }
+
+      .vocab-tab-bar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .vocab-tab-list {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .vocab-tab-list::-webkit-scrollbar {
+        display: none;
+      }
+
+      .vocab-tab-btn {
+        background: transparent;
+        border: none;
+        border-bottom: 2.5px solid transparent;
+        margin-bottom: -1px;
+        outline: none;
+        padding: 5px 8px;
+        border-radius: 4px 4px 0 0;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--hint-color);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        white-space: nowrap;
+        user-select: none;
+      }
+
+      .vocab-tab-btn:hover {
+        color: var(--text-color);
+      }
+
+      body.dark-mode .vocab-tab-btn:hover {
+        color: #f3f4f6;
+      }
+
+      .vocab-tab-btn.active {
+        color: #1677C9;
+        border-bottom-color: #1677C9;
+        font-weight: 600;
+      }
+
+      body.dark-mode .vocab-tab-btn.active {
+        color: #60a5fa;
+        border-bottom-color: #60a5fa;
+      }
+
+      .vocab-tab-badge {
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 10px;
+        background: #e5e7eb;
+        color: #4b5563;
+      }
+
+      .vocab-tab-btn.active .vocab-tab-badge {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      body.dark-mode .vocab-tab-badge {
+        background: #374151;
+        color: #9ca3af;
+      }
+
+      body.dark-mode .vocab-tab-btn.active .vocab-tab-badge {
+        background: #1e3a8a;
+        color: #93c5fd;
+      }
+
+      .vocab-tab-reorder-btn {
+        background: transparent;
+        border: none;
+        outline: none;
+        padding: 4px 6px;
+        border-radius: 4px;
+        color: var(--hint-color);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+      }
+
+      .vocab-tab-reorder-btn:hover {
+        background: var(--border-color);
+        color: var(--text-color);
+      }
+
+      body.dark-mode .vocab-tab-reorder-btn:hover {
+        background: #374151;
+        color: #f3f4f6;
+      }
+
+      .vocab-tab-reorder-btn.active {
+        background: #e0f2fe;
+        color: #1677C9;
+      }
+
+      body.dark-mode .vocab-tab-reorder-btn.active {
+        background: #1e3a8a;
+        color: #93c5fd;
+      }
+
+      .vocab-tab-panels {
+        max-height: 240px;
+        overflow-y: auto;
+        padding: 8px 2px 4px 2px;
+        scrollbar-width: thin;
+      }
+
+      .vocab-tab-panel {
+        display: none;
+      }
+
+      .vocab-tab-panel.active {
+        display: block;
+        animation: fadeInTab 0.15s ease-out;
+      }
+
+      @keyframes fadeInTab {
+        from { opacity: 0; transform: translateY(2px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Tabs Modal (Customize Tabs) */
+      .vocab-tabs-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(1px);
+        animation: fadeInTab 0.15s ease-out;
+      }
+
+      body.dark-mode .vocab-tabs-modal-backdrop {
+        background: rgba(0, 0, 0, 0.6);
+      }
+
+      .vocab-tabs-modal {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 320px;
+        padding: 12px 14px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow: hidden;
+      }
+
+      body.dark-mode .vocab-tabs-modal {
+        background: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      }
+
+      .vocab-tabs-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 6px;
+      }
+
+      body.dark-mode .vocab-tabs-modal-header {
+        border-bottom-color: #374151;
+      }
+
+      .vocab-tabs-modal-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      body.dark-mode .vocab-tabs-modal-title {
+        color: #f3f4f6;
+      }
+
+      .vocab-tabs-modal-close-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 4px;
+        color: var(--hint-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .vocab-tabs-modal-close-btn:hover {
+        background: var(--border-color);
+        color: var(--text-color);
+      }
+
+      body.dark-mode .vocab-tabs-modal-close-btn:hover {
+        background: #374151;
+        color: #f3f4f6;
+      }
+
+      .vocab-tabs-modal-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 180px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+        padding: 2px 0;
+        box-sizing: border-box;
+      }
+
+      .vocab-tabs-modal-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 6px 8px;
+        user-select: none;
+        box-sizing: border-box;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+
+      body.dark-mode .vocab-tabs-modal-item {
+        background: #111827;
+        border-color: #374151;
+      }
+
+      .vocab-tabs-modal-item.dragging {
+        opacity: 0.4;
+        background: var(--border-color);
+      }
+
+      body.dark-mode .vocab-tabs-modal-item.dragging {
+        background: #1f2937;
+      }
+
+      .vocab-tabs-modal-item.drag-over {
+        border-color: #1677C9;
+        background: #e0f2fe;
+        outline: 1.5px dashed #1677C9;
+        outline-offset: -1px;
+      }
+
+      body.dark-mode .vocab-tabs-modal-item.drag-over {
+        border-color: #60a5fa;
+        background: #1e293b;
+        outline-color: #60a5fa;
+      }
+
+      .vocab-tabs-modal-item-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vocab-tabs-modal-drag-handle {
+        color: var(--hint-color);
+        cursor: grab;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .vocab-tabs-modal-item-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      body.dark-mode .vocab-tabs-modal-item-label {
+        color: #e5e7eb;
+      }
+
+      .vocab-tabs-modal-item.hidden-tab .vocab-tabs-modal-item-label {
+        color: var(--hint-color);
+        text-decoration: line-through;
+      }
+
+      .vocab-tabs-modal-eye-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        color: #1677C9;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+      }
+
+      body.dark-mode .vocab-tabs-modal-eye-btn {
+        color: #60a5fa;
+      }
+
+      .vocab-tabs-modal-eye-btn:hover {
+        background: var(--border-color);
+      }
+
+      body.dark-mode .vocab-tabs-modal-eye-btn:hover {
+        background: #374151;
+      }
+
+      .vocab-tabs-modal-eye-btn.tab-hidden {
+        color: var(--hint-color);
+      }
+
+      .vocab-tabs-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid var(--border-color);
+        padding-top: 8px;
+        margin-top: 2px;
+      }
+
+      body.dark-mode .vocab-tabs-modal-footer {
+        border-top-color: #374151;
+      }
+
+      .vocab-tabs-modal-reset-btn {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--hint-color);
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .vocab-tabs-modal-reset-btn:hover {
+        background: var(--border-color);
+        color: var(--text-color);
+      }
+
+      body.dark-mode .vocab-tabs-modal-reset-btn {
+        border-color: #4b5563;
+        color: #9ca3af;
+      }
+
+      body.dark-mode .vocab-tabs-modal-reset-btn:hover {
+        background: #374151;
+        color: #f3f4f6;
+        border-color: #6b7280;
+      }
+
+      .vocab-tabs-modal-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .vocab-tabs-modal-save-btn {
+        background: #1677C9;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #ffffff;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+
+      .vocab-tabs-modal-save-btn:hover {
+        background: #0d5ca0;
+      }
+
+      body.dark-mode .vocab-tabs-modal-save-btn {
+        background: #2563eb;
+      }
+
+      body.dark-mode .vocab-tabs-modal-save-btn:hover {
+        background: #1d4ed8;
+      }
+
+      /* Synonyms & Antonyms Section */
+      .vocab-thesaurus-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 2px;
+      }
+
+      .vocab-thesaurus-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 2px 0 2px 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .vocab-thesaurus-section-title.synonyms-title {
+        color: #15803d;
+      }
+
+      .vocab-thesaurus-section-title.antonyms-title {
+        color: #c2410c;
+      }
+
+      body.dark-mode .vocab-thesaurus-section-title.synonyms-title {
+        color: #4ade80;
+      }
+
+      body.dark-mode .vocab-thesaurus-section-title.antonyms-title {
+        color: #fb923c;
+      }
+
+      .vocab-thesaurus-chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .vocab-synonym-chip {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+
+      .vocab-synonym-chip:hover {
+        background: #dcfce7;
+        color: #14532d;
+        border-color: #86efac;
+      }
+
+      body.dark-mode .vocab-synonym-chip {
+        background: #064e3b;
+        color: #a7f3d0;
+        border-color: #047857;
+      }
+
+      body.dark-mode .vocab-synonym-chip:hover {
+        background: #065f46;
+        color: #d1fae5;
+      }
+
+      .vocab-antonym-chip {
+        background: #fff7ed;
+        color: #9a3412;
+        border: 1px solid #fed7aa;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+
+      .vocab-antonym-chip:hover {
+        background: #ffedd5;
+        color: #7c2d12;
+        border-color: #fdba74;
+      }
+
+      body.dark-mode .vocab-antonym-chip {
+        background: #7c2d12;
+        color: #fed7aa;
+        border-color: #9a3412;
+      }
+
+      body.dark-mode .vocab-antonym-chip:hover {
+        background: #9a3412;
+        color: #ffedd5;
       }
 
       /* Details & Summary custom styles */
@@ -1560,13 +2207,15 @@
     <main>
       <div class="search-container">
         <div class="search-input-wrapper">
-          <input id="vocab-search-input" class="search-input" type="text" placeholder="Type an English word to lookup..." autocomplete="off" />
-          <button id="vocab-search-clear" class="clear-btn" style="display: none;" title="Clear search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <div class="search-field-container">
+            <input id="vocab-search-input" class="search-input" type="text" placeholder="Type an English word to lookup..." autocomplete="off" />
+            <button id="vocab-search-clear" class="clear-btn" style="display: none;" title="Clear search">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
           <div class="vocab-toolbar-actions">
             <!-- Settings Menu -->
             <div class="vocab-settings-menu-wrapper">

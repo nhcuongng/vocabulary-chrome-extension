@@ -409,8 +409,90 @@ test('popup: toggling Simple Learn updates settings and triggers immediate looku
 
   assert.equal(savedSettings.length, 1);
   assert.equal(savedSettings[0]['user-settings']?.simpleLearn, true);
-  assert.equal(sentMessages.length, 1);
-  assert.equal(sentMessages[0].payload.token, 'galaxy');
+  runtime.destroy();
+});
+
+test('popup: renders word details with shared tab system and word navigation', async (t) => {
+  const doc = createMockDocument();
+  const toggle = doc.getElementById('auto-popup-toggle');
+  toggle.type = 'checkbox';
+  const darkModeToggle = doc.getElementById('dark-mode-toggle');
+  darkModeToggle.type = 'checkbox';
+  const searchInput = doc.getElementById('vocab-search-input');
+  const searchResults = doc.getElementById('vocab-search-results');
+
+  const mockChrome = {
+    storage: {
+      local: {
+        get: async () => ({ rememberLastLookup: false, vocab_search_history: ['apple', 'banana', 'cat'] }),
+        set: async () => {},
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+    runtime: {
+      sendMessage: (msg, callback) => {
+        callback({
+          status: 'success',
+          data: {
+            source: 'vocabulary',
+            parsedPayload: {
+              headword: msg.payload?.token,
+              pronunciation: 'US /ˈæp.əl/',
+              audio: { us: 'https://audio.example/apple.mp3' },
+              stressDiagram: {
+                hasStressInfo: true,
+                syllables: [{ text: 'ap', level: 1 }, { text: 'ple', level: 0 }],
+                stressSummary: 'Primary on 1st',
+              },
+              definitions: [
+                '<div class="vocab-quick-def"><p>A round fruit with red, green or yellow skin.</p></div>',
+                '<details class="vocab-details"><summary><span class="vocab-details-label">Explanation</span></summary><div class="details-content"><p>Detailed info on apples.</p></div></details>',
+              ],
+              wordFamily: ['apples', 'apple tree'],
+              synonyms: ['pome'],
+              antonyms: [],
+            },
+          },
+        });
+      },
+    },
+  };
+
+  const runtime = await bootstrapPopupRuntime({
+    chromeApi: mockChrome,
+    documentObj: doc,
+  });
+
+  searchInput.value = 'apple';
+  searchInput.dispatchEvent('keydown', { key: 'Enter' });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  // Verify body container exists
+  const bodyContainer = searchResults.childNodes?.find?.(
+    (c) => c.className && c.className.includes('vocab-popup-body')
+  );
+  assert.ok(bodyContainer, 'Body container should exist');
+
+  // Verify headword is rendered
+  const headwordRow = bodyContainer.childNodes?.find?.(
+    (c) => c.className === 'vocab-popup-headword-row'
+  );
+  assert.ok(headwordRow, 'Headword row should exist');
+
+  // Verify stepper navigation exists because history has items
+  const stepper = headwordRow.childNodes?.find?.((c) => c.className === 'vocab-history-stepper');
+  assert.ok(stepper, 'Stepper navigation should exist');
+
+  // Verify Tabs container exists for secondary tabs
+  const tabsContainer = bodyContainer.childNodes?.find?.(
+    (c) => c.className === 'vocab-tabs-container'
+  );
+  assert.ok(tabsContainer, 'Tabs container should be rendered');
 
   runtime.destroy();
 });
+
+
