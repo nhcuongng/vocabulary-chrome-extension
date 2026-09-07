@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.0] - 2026-09-07
+
+### 🚀 Added & Improved (Unified Presentation Layer, Search History & UI Polish)
+- **Unified Dictionary Presentation Layer**:
+  - Created [`src/presentation/dictionaryContentView.js`](file:///home/nhcuong/Projects/personal/vocabulary-chrome-extension/src/presentation/dictionaryContentView.js) to encapsulate complete dictionary rendering logic across both In-page popup and Toolbar popup.
+  - Unified rendering for headwords, audio pronunciations, stress diagrams, primary definition stream, dynamic tabs, thesaurus chips, word family, skeletons, and error/not-found states.
+  - Synchronized CSS styles and Tab Manager across extension surfaces.
+- **Search History Popover & Header Streamlining**:
+  - Refined Toolbar popup header with streamlined "Quick Lookup" branding.
+  - Added dedicated history popover button for quick access to recent search words.
+- **UI Bug Fixes**:
+  - Fixed search clear button (X icon) alignment in Toolbar popup.
+
+---
+
 ## [0.11.0] - 2026-09-07
 
 ### 🚀 Added & Improved (Tabs Customization Modal & Modularization)
