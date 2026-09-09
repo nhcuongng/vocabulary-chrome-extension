@@ -129,6 +129,12 @@ export async function bootstrapContentRuntime({
         triggerIconManager.removeIcon();
         const currentState = orchestrator.getState();
         if (currentState.status !== 'idle') {
+          if (currentState.status === 'success') {
+            const foundWord = currentState.data?.parsedPayload?.headword || currentState.headword;
+            if (foundWord) {
+              historyStore.addSearchWord(foundWord).catch(() => {});
+            }
+          }
           const selection = readSelectionSnapshot(windowObj);
           popupManager.showPopup(currentState, selection.rect, { darkMode });
         } else {
@@ -146,7 +152,7 @@ export async function bootstrapContentRuntime({
       const autoPopupEnabled = autoPopupController.isAutoPopupEnabled();
       if (state.status === 'success') {
         const foundWord = state.data?.parsedPayload?.headword || state.headword;
-        if (foundWord && !isHistoryBrowsing) {
+        if (foundWord && (autoPopupEnabled || isUserInitiated) && !isHistoryBrowsing) {
           historyStore.addSearchWord(foundWord).catch(() => {});
         }
       }
