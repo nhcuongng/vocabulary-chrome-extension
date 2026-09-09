@@ -39,5 +39,14 @@
     "https://www.vocabulary.com/*",
     "https://api.dictionaryapi.dev/*",
     "https://translate.google.com/*"
-  ]
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+V",
+        "mac": "Alt+Shift+V"
+      },
+      "description": "Open Vocabulary lookup popup"
+    }
+  }
 }
