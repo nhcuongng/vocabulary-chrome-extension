@@ -992,6 +992,111 @@
         border-color: #3b82f6;
       }
 
+      /* Part of Speech (POS) Chips */
+      .vocab-pos-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 2px 7px;
+        border-radius: 9999px;
+        margin-right: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        vertical-align: middle;
+        border: 1px solid transparent;
+        user-select: none;
+      }
+      .vocab-pos-chip.vocab-pos-noun {
+        background: #dbeafe;
+        color: #1e40af;
+        border-color: #bfdbfe;
+      }
+      .vocab-pos-chip.vocab-pos-verb {
+        background: #dcfce7;
+        color: #166534;
+        border-color: #bbf7d0;
+      }
+      .vocab-pos-chip.vocab-pos-adjective {
+        background: #fef3c7;
+        color: #92400e;
+        border-color: #fde68a;
+      }
+      .vocab-pos-chip.vocab-pos-adverb {
+        background: #f3e8ff;
+        color: #6b21a8;
+        border-color: #e9d5ff;
+      }
+      .vocab-pos-chip.vocab-pos-pronoun {
+        background: #ccfbf1;
+        color: #115e59;
+        border-color: #99f6e4;
+      }
+      .vocab-pos-chip.vocab-pos-preposition {
+        background: #ffe4e6;
+        color: #9f1239;
+        border-color: #fecdd3;
+      }
+      .vocab-pos-chip.vocab-pos-conjunction {
+        background: #ffedd5;
+        color: #9a3412;
+        border-color: #fed7aa;
+      }
+      .vocab-pos-chip.vocab-pos-interjection,
+      .vocab-pos-chip.vocab-pos-phrase,
+      .vocab-pos-chip.vocab-pos-idiom,
+      .vocab-pos-chip.vocab-pos-other {
+        background: #f1f5f9;
+        color: #334155;
+        border-color: #e2e8f0;
+      }
+
+      body.dark-mode .vocab-pos-chip.vocab-pos-noun {
+        background: rgba(30, 64, 175, 0.35);
+        color: #93c5fd;
+        border-color: rgba(147, 197, 253, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-verb {
+        background: rgba(22, 101, 52, 0.35);
+        color: #86efac;
+        border-color: rgba(134, 239, 172, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-adjective {
+        background: rgba(146, 64, 14, 0.35);
+        color: #fcd34d;
+        border-color: rgba(252, 211, 77, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-adverb {
+        background: rgba(107, 33, 168, 0.35);
+        color: #d8b4fe;
+        border-color: rgba(216, 180, 254, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-pronoun {
+        background: rgba(17, 94, 89, 0.35);
+        color: #5eead4;
+        border-color: rgba(94, 234, 212, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-preposition {
+        background: rgba(159, 18, 57, 0.35);
+        color: #fda4af;
+        border-color: rgba(253, 164, 175, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-conjunction {
+        background: rgba(154, 52, 18, 0.35);
+        color: #fdba74;
+        border-color: rgba(253, 186, 116, 0.35);
+      }
+      body.dark-mode .vocab-pos-chip.vocab-pos-interjection,
+      body.dark-mode .vocab-pos-chip.vocab-pos-phrase,
+      body.dark-mode .vocab-pos-chip.vocab-pos-idiom,
+      body.dark-mode .vocab-pos-chip.vocab-pos-other {
+        background: rgba(51, 65, 85, 0.45);
+        color: #cbd5e1;
+        border-color: rgba(203, 213, 225, 0.25);
+      }
+
       /* Word Family in popup action */
       .vocab-word-family-group {
         display: flex;

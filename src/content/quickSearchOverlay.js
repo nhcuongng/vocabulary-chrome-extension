@@ -171,6 +171,17 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       details.vocab-details .vocab-details-label { display: inline-flex; gap: 4px; align-items: center; background: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 8px; margin-right: 8px; }
       details.vocab-details .details-content { margin-top: 8px; color: #4b5563; font-size: 14px; line-height: 1.5; }
 
+      /* POS Chips */
+      .vocab-pos-chip { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; padding: 2px 7px; border-radius: 9999px; margin-right: 6px; text-transform: uppercase; letter-spacing: 0.5px; vertical-align: middle; border: 1px solid transparent; user-select: none; }
+      .vocab-pos-chip.vocab-pos-noun { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+      .vocab-pos-chip.vocab-pos-verb { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+      .vocab-pos-chip.vocab-pos-adjective { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+      .vocab-pos-chip.vocab-pos-adverb { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+      .vocab-pos-chip.vocab-pos-pronoun { background: #ccfbf1; color: #115e59; border-color: #99f6e4; }
+      .vocab-pos-chip.vocab-pos-preposition { background: #ffe4e6; color: #9f1239; border-color: #fecdd3; }
+      .vocab-pos-chip.vocab-pos-conjunction { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+      .vocab-pos-chip.vocab-pos-interjection, .vocab-pos-chip.vocab-pos-phrase, .vocab-pos-chip.vocab-pos-idiom, .vocab-pos-chip.vocab-pos-other { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+
       .vocab-word-family-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
       .vocab-family-chip { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; font-weight: 500; transition: background 0.15s, color 0.15s; }
       .vocab-family-chip:hover { background: #dcfce7; color: #14532d; border-color: #86efac; }
@@ -244,6 +255,14 @@ export function createQuickSearchOverlay({ documentObj, windowObj, lookupExecuto
       .container.dark-mode .history-chip { background: #374151; color: #d1d5db; }
       .container.dark-mode .history-chip:hover { background: #1e3a8a; color: #bfdbfe; }
       .container.dark-mode .vocab-family-chip { background: #064e3b; color: #a7f3d0; border-color: #047857; }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-noun { background: rgba(30, 64, 175, 0.35); color: #93c5fd; border-color: rgba(147, 197, 253, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-verb { background: rgba(22, 101, 52, 0.35); color: #86efac; border-color: rgba(134, 239, 172, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-adjective { background: rgba(146, 64, 14, 0.35); color: #fcd34d; border-color: rgba(252, 211, 77, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-adverb { background: rgba(107, 33, 168, 0.35); color: #d8b4fe; border-color: rgba(216, 180, 254, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-pronoun { background: rgba(17, 94, 89, 0.35); color: #5eead4; border-color: rgba(94, 234, 212, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-preposition { background: rgba(159, 18, 57, 0.35); color: #fda4af; border-color: rgba(253, 164, 175, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-conjunction { background: rgba(154, 52, 18, 0.35); color: #fdba74; border-color: rgba(253, 186, 116, 0.35); }
+      .container.dark-mode .vocab-pos-chip.vocab-pos-interjection, .container.dark-mode .vocab-pos-chip.vocab-pos-phrase, .container.dark-mode .vocab-pos-chip.vocab-pos-idiom, .container.dark-mode .vocab-pos-chip.vocab-pos-other { background: rgba(51, 65, 85, 0.45); color: #cbd5e1; border-color: rgba(203, 213, 225, 0.25); }
       .container.dark-mode .vocab-family-chip.disabled-inflection { background: #374151; color: #9ca3af; border-color: #4b5563; }
       .container.dark-mode .vocab-family-chip.disabled-inflection:hover { background: #374151; color: #9ca3af; border-color: #4b5563; }
       .container.dark-mode .vocab-source-pill { background: #374151; color: #9ca3af; border-color: #4b5563; }

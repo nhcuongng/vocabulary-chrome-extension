@@ -20,6 +20,7 @@ import {
 } from '../domain/stressDiagramUtils.js';
 import { renderTabsComponent } from '../content/tabs/tabManager.js';
 import { UI_COPY } from '../content/historySliderRenderer.js';
+import { interceptPosInHtml } from '../domain/partOfSpeechUtils.js';
 
 export const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -470,16 +471,17 @@ export function renderDictionaryContentView({
 
       defs.forEach((defHtml) => {
         if (!defHtml) return;
-        if (defHtml.includes('vocab-quick-def') && !defHtml.includes('vocab-details')) {
-          primaryDefHtmls.push(defHtml);
+        const interceptedHtml = interceptPosInHtml(defHtml);
+        if (interceptedHtml.includes('vocab-quick-def') && !interceptedHtml.includes('vocab-details')) {
+          primaryDefHtmls.push(interceptedHtml);
         } else {
           let tabLabel = 'Explanation';
           let badge = '';
 
-          const labelMatch = defHtml.match(/<span[^>]*class=["'][^"']*vocab-details-label[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
+          const labelMatch = interceptedHtml.match(/<span[^>]*class=["'][^"']*vocab-details-label[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
           const rawLabel = labelMatch ? labelMatch[1].replace(/<[^>]*>/g, '').replace(/[✭]/g, '').trim() : '';
 
-          if (rawLabel.toLowerCase().includes('long definition') || defHtml.includes('Long Definition')) {
+          if (rawLabel.toLowerCase().includes('long definition') || interceptedHtml.includes('Long Definition')) {
             tabLabel = 'Explanation';
           } else if (rawLabel) {
             const parenMatch = rawLabel.match(/^(.*?)\s*\((\d+)\)$/);
@@ -491,14 +493,14 @@ export function renderDictionaryContentView({
             } else {
               tabLabel = rawLabel;
             }
-          } else if (defHtml.includes('custom-definition-list')) {
+          } else if (interceptedHtml.includes('custom-definition-list')) {
             tabLabel = 'Definitions';
-            const countMatch = defHtml.match(/\((\d+)\)/);
+            const countMatch = interceptedHtml.match(/\((\d+)\)/);
             if (countMatch) badge = countMatch[1];
           }
 
-          const contentMatch = defHtml.match(/<div[^>]*class=["'][^"']*details-content[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/details>/i);
-          const panelContent = contentMatch ? contentMatch[1].trim() : defHtml;
+          const contentMatch = interceptedHtml.match(/<div[^>]*class=["'][^"']*details-content[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/details>/i);
+          const panelContent = contentMatch ? contentMatch[1].trim() : interceptedHtml;
 
           const existingTab = secondaryTabs.find((t) => t.label.toLowerCase() === tabLabel.toLowerCase());
           if (existingTab) {

@@ -1,3 +1,5 @@
+import { renderPosChipHtml } from '../../domain/partOfSpeechUtils.js';
+
 function stripTags(value) {
   // Strip HTML comments first, then tags with quoted attributes
   return value
@@ -179,9 +181,38 @@ export function parseVocabularyHtml(html) {
       const defMatch = liHtml.match(/<div[^>]*class=["']definition["'][^>]*>([\s\S]*?)<\/div>(?=\s*(?:<div class="defContent"|<\/li>|$))/i);
 
       if (defMatch) {
+        let defRaw = defMatch[1] ?? '';
+        let pos = '';
+
+        // Extract pos from <a class="pos"> or title="verb" etc.
+        const posTagMatch =
+          defRaw.match(/<a[^>]*class=["'][^"']*\bpos\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/i) ||
+          liHtml.match(/<a[^>]*class=["'][^"']*\bpos\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/i) ||
+          liHtml.match(/title=["'](noun|verb|adjective|adverb|pronoun|preposition|conjunction|interjection|phrase|idiom)["']/i);
+
+        if (posTagMatch) {
+          pos = stripTags(decodeBasicEntities(posTagMatch[1]));
+        }
+
+        // Strip <a class="pos">...</a> from defRaw so it does not become text in plainTextDef
+        defRaw = defRaw.replace(/<a[^>]*class=["'][^"']*\bpos\b[^"']*["'][^>]*>[\s\S]*?<\/a>/gi, ' ');
+
         // Sanitize the content of the definition using the existing safe pipeline
-        const sanitizedDef = decodeBasicEntities(defMatch[1] ?? '');
-        const plainTextDef = stripTags(sanitizedDef);
+        const sanitizedDef = decodeBasicEntities(defRaw);
+        let plainTextDef = stripTags(sanitizedDef);
+
+        // If pos was found, ensure plainTextDef doesn't start with the pos text
+        if (pos) {
+          const leadingPosRegex = new RegExp(`^${pos}\\b\\s*`, 'i');
+          plainTextDef = plainTextDef.replace(leadingPosRegex, '');
+        } else {
+          // If pos was not found via tag, check if plainTextDef begins with a known pos word
+          const leadingPosMatch = plainTextDef.match(/^(noun|verb|adjective|adverb|pronoun|preposition|conjunction|interjection|phrase|idiom)\b\s*/i);
+          if (leadingPosMatch) {
+            pos = leadingPosMatch[1];
+            plainTextDef = plainTextDef.slice(leadingPosMatch[0].length);
+          }
+        }
 
         // Extract instances (synonyms / antonyms / types)
         const itemSynonyms = [];
@@ -241,7 +272,9 @@ export function parseVocabularyHtml(html) {
           });
         }
 
-        let liResult = `<li style="margin-bottom: 10px;"><b>${plainTextDef}</b>`;
+        const posChip = pos ? `${renderPosChipHtml(pos)} ` : '';
+
+        let liResult = `<li style="margin-bottom: 10px;">${posChip}<b>${plainTextDef}</b>`;
         if (itemSynonyms.length > 0) {
           const uniqueSyns = [...new Set(itemSynonyms)];
           liResult += `<div style="font-size: 12px; margin-top: 3px; color: #166534;"><span style="font-weight: 600;">Synonyms:</span> ${uniqueSyns.join(', ')}</div>`;

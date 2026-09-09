@@ -1,3 +1,5 @@
+import { renderPosChipHtml } from '../../domain/partOfSpeechUtils.js';
+
 function wrapInCollapse(label, content, isOpen = false) {
   const labelHtml = `<span class="vocab-details-label"><span>✭</span> ${label}</span>`;
   return `
@@ -193,7 +195,7 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
   // 3. Short Definition (Top concise meanings across parts of speech)
   const primaryDefs = [];
   entries.forEach((entry) => {
-    const pos = entry.partOfSpeech ? `(${entry.partOfSpeech}) ` : '';
+    const pos = entry.partOfSpeech ? `${renderPosChipHtml(entry.partOfSpeech)} ` : '';
     const firstDef = entry.senses?.[0]?.definition;
     if (firstDef && primaryDefs.length < 2) {
       primaryDefs.push(`${pos}${firstDef}`);
@@ -210,12 +212,11 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
   const detailedParagraphs = [];
   entries.forEach((entry) => {
     const pos = entry.partOfSpeech || 'General';
-    const posCap = pos.charAt(0).toUpperCase() + pos.slice(1);
     const senses = Array.isArray(entry.senses) ? entry.senses : [];
 
     senses.slice(0, 3).forEach((sense) => {
       if (!sense.definition) return;
-      let text = `<b>${posCap}:</b> ${sense.definition}`;
+      let text = `${renderPosChipHtml(pos)} ${sense.definition}`;
       const example = sense.examples?.[0] || sense.quotes?.[0]?.text;
       if (example) {
         text += ` <span style="font-style: italic; color: var(--hint-color);">"${example}"</span>`;
@@ -247,7 +248,7 @@ export function parseFreeDictionaryApiResponse(json, targetWord = '', source = '
       const defText = sense.definition;
       if (!defText) return;
 
-      let liHtml = `<li style="margin-bottom: 10px;"><b>${defText}</b>`;
+      let liHtml = `<li style="margin-bottom: 10px;">${renderPosChipHtml(pos)} <b>${defText}</b>`;
       const example = sense.examples?.[0] || sense.quotes?.[0]?.text;
       if (example) {
         liHtml += `<div style="font-style: italic; color: var(--hint-color); margin-top: 3px; font-size: 13px;">• ${example}</div>`;

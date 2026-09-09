@@ -138,3 +138,35 @@ test('parser adapter: trích xuất synonyms và antonyms từ cụm Definitions
   assert.ok(parsed.definitions.some((d) => d.includes('Synonyms:') && d.includes('quick') && d.includes('Antonyms:') && d.includes('slow')));
 });
 
+test('parser adapter: bóc tách từ loại <a class="pos">verb</a> thành chip riêng biệt trong định nghĩa', () => {
+  const html = `
+    <h1 class="dynamictext">succeed</h1>
+    <div class="ipa-with-audio">
+      <div class="us-flag-icon"></div>
+      <span class="span-replace-h3">/səkˈsid/</span>
+    </div>
+    <div class="word-definitions">
+      <ol>
+        <li>
+          <div class="definition"><a class="pos">verb</a> attain success or reach a desired goal</div>
+        </li>
+        <li>
+          <div class="definition"><a class="pos">verb</a> be the successor (of)</div>
+        </li>
+      </ol>
+    </div>
+  `;
+
+  const parsed = parseVocabularyHtml(html);
+  assert.equal(parsed.headword, 'succeed');
+  assert.ok(parsed.definitions.some((d) =>
+    d.includes('<span class="vocab-pos-chip vocab-pos-verb">Verb</span>') &&
+    d.includes('<b>attain success or reach a desired goal</b>')
+  ));
+  assert.ok(parsed.definitions.some((d) =>
+    d.includes('<span class="vocab-pos-chip vocab-pos-verb">Verb</span>') &&
+    d.includes('<b>be the successor (of)</b>')
+  ));
+});
+
+
