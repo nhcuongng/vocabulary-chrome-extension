@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   createHistorySliderElement,
+  createHistoryMenuElement,
   UI_COPY,
 } from '../../src/content/historySliderRenderer.js';
 
@@ -161,6 +162,38 @@ test('historySliderRenderer: does not duplicate text content in chips', () => {
   assert.equal(slideContainer.childNodes[0].textContent, 'location');
   assert.equal(slideContainer.childNodes[1].textContent, 'shell');
   assert.equal(slideContainer.childNodes[2].textContent, 'church');
+});
+
+test('historySliderRenderer: createHistoryMenuElement scrolls active word into view when open', async () => {
+  const documentObj = createMockDocument();
+  const words = ['apple', 'banana', 'cherry', 'date'];
+  let scrolledOpts = null;
+
+  // Custom mock element with scrollIntoView
+  const origCreateElement = documentObj.createElement;
+  documentObj.createElement = (tag) => {
+    const el = origCreateElement(tag);
+    el.scrollIntoView = (opts) => {
+      scrolledOpts = opts;
+    };
+    return el;
+  };
+
+  const menu = createHistoryMenuElement({
+    documentObj,
+    allWords: words,
+    currentWord: 'cherry',
+    isOpen: true,
+  });
+
+  assert.equal(menu.childNodes.length, 2);
+  const popover = menu.childNodes[1];
+  assert.equal(popover.className.includes('vocab-history-menu-popover'), true);
+
+  // Wait microtask queue
+  await Promise.resolve();
+
+  assert.deepEqual(scrolledOpts, { block: 'nearest' });
 });
 
 

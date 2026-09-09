@@ -315,6 +315,7 @@ export function createHistoryMenuElement({
 
     const listContainer = createEl('div', { className: 'vocab-history-popover-list' });
 
+    let activeItemEl = null;
     if (validWords.length === 0) {
       const emptyItem = createEl('div', { className: 'vocab-history-popover-empty' }, UI_COPY.NO_RECENT_SEARCHES);
       listContainer.appendChild(emptyItem);
@@ -336,12 +337,33 @@ export function createHistoryMenuElement({
           createEl('span', { className: 'vocab-history-item-index' }, `${idx + 1}.`),
           createEl('span', { className: 'vocab-history-item-word' }, word)
         );
+        if (isActive) {
+          activeItemEl = item;
+        }
         listContainer.appendChild(item);
       });
     }
 
     popover.appendChild(listContainer);
     container.appendChild(popover);
+
+    if (activeItemEl) {
+      const scrollActive = () => {
+        if (typeof activeItemEl.scrollIntoView === 'function') {
+          activeItemEl.scrollIntoView({ block: 'nearest' });
+        } else if (typeof listContainer.scrollTop === 'number' && typeof activeItemEl.offsetTop === 'number') {
+          listContainer.scrollTop = activeItemEl.offsetTop;
+        }
+      };
+
+      if (typeof queueMicrotask === 'function') {
+        queueMicrotask(scrollActive);
+      } else if (typeof setTimeout === 'function') {
+        setTimeout(scrollActive, 0);
+      } else {
+        scrollActive();
+      }
+    }
   }
 
   return container;
