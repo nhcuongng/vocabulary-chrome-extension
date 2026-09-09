@@ -33,7 +33,7 @@ test('compliance catalog: disclosure summary nêu đúng mục đích quyền tr
 
 test('compliance catalog: audit phát hiện quyền dư thừa không có disclosure', () => {
   const aligned = auditManifestPermissions({
-    permissions: ['activeTab', 'scripting', 'storage', 'declarativeNetRequest', 'tts'],
+    permissions: ['activeTab', 'scripting', 'storage', 'declarativeNetRequest', 'tts', 'clipboardRead'],
     hostPermissions: [
       'https://www.vocabulary.com/*',
       'https://api.dictionaryapi.dev/*',
@@ -69,7 +69,7 @@ test('compliance catalog: thiếu disclosure item cũng phải fail alignment', 
 
 test('compliance catalog: build report trả về đầy đủ thông tin release review', () => {
   const alignedReport = buildManifestDisclosureAuditReport({
-    permissions: ['activeTab', 'scripting', 'storage', 'declarativeNetRequest', 'tts'],
+    permissions: ['activeTab', 'scripting', 'storage', 'declarativeNetRequest', 'tts', 'clipboardRead'],
     hostPermissions: [
       'https://www.vocabulary.com/*',
       'https://api.dictionaryapi.dev/*',

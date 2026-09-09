@@ -495,4 +495,153 @@ test('popup: renders word details with shared tab system and word navigation', a
   runtime.destroy();
 });
 
+test('popup: paste button is disabled when clipboard is empty, invalid, or throws error', async (t) => {
+  const doc = createMockDocument();
+  const toggle = doc.getElementById('auto-popup-toggle');
+  toggle.type = 'checkbox';
+  const darkModeToggle = doc.getElementById('dark-mode-toggle');
+  darkModeToggle.type = 'checkbox';
+  const pasteBtn = doc.getElementById('vocab-paste-btn');
+
+  const mockNavigator = {
+    clipboard: {
+      readText: async () => '',
+    },
+  };
+
+  const windowListeners = new Map();
+  const mockWindow = {
+    addEventListener: (type, handler) => {
+      const list = windowListeners.get(type) || [];
+      list.push(handler);
+      windowListeners.set(type, list);
+    },
+    removeEventListener: (type, handler) => {
+      const list = windowListeners.get(type) || [];
+      windowListeners.set(type, list.filter((h) => h !== handler));
+    },
+    dispatchEvent: async (event) => {
+      const list = windowListeners.get(event.type) || [];
+      for (const h of list) await h(event);
+    },
+  };
+
+  const mockChrome = {
+    storage: {
+      local: {
+        get: async () => ({ rememberLastLookup: false }),
+        set: async () => {},
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+    runtime: {
+      sendMessage: () => {},
+    },
+  };
+
+  const runtime = await bootstrapPopupRuntime({
+    chromeApi: mockChrome,
+    documentObj: doc,
+    navigatorObj: mockNavigator,
+    windowObj: mockWindow,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(pasteBtn.disabled, true);
+  assert.equal(pasteBtn.title, 'No valid word in clipboard');
+
+  // Test when clipboard has multi-word sentence
+  mockNavigator.clipboard.readText = async () => 'hello world how are you';
+  await mockWindow.dispatchEvent({ type: 'focus' });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(pasteBtn.disabled, true);
+  assert.equal(pasteBtn.title, 'No valid word in clipboard');
+
+  // Test when readText rejects
+  mockNavigator.clipboard.readText = async () => {
+    throw new Error('Permission denied');
+  };
+  await mockWindow.dispatchEvent({ type: 'focus' });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(pasteBtn.disabled, true);
+  assert.equal(pasteBtn.title, 'No valid word in clipboard');
+
+  runtime.destroy();
+});
+
+test('popup: paste button is enabled with tooltip when clipboard has a valid word, and clicking triggers search', async (t) => {
+  const doc = createMockDocument();
+  const toggle = doc.getElementById('auto-popup-toggle');
+  toggle.type = 'checkbox';
+  const darkModeToggle = doc.getElementById('dark-mode-toggle');
+  darkModeToggle.type = 'checkbox';
+  const searchInput = doc.getElementById('vocab-search-input');
+  const pasteBtn = doc.getElementById('vocab-paste-btn');
+
+  const mockNavigator = {
+    clipboard: {
+      readText: async () => '  Resilience  ',
+    },
+  };
+
+  const mockWindow = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+
+  const sentMessages = [];
+  const mockChrome = {
+    storage: {
+      local: {
+        get: async () => ({ rememberLastLookup: false }),
+        set: async () => {},
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+    runtime: {
+      sendMessage: (msg, callback) => {
+        sentMessages.push(msg);
+        callback({
+          status: 'success',
+          data: {
+            source: 'vocabulary',
+            parsedPayload: {
+              headword: msg.payload?.token,
+              definitions: ['The capacity to recover quickly from difficulties.'],
+            },
+          },
+        });
+      },
+    },
+  };
+
+  const runtime = await bootstrapPopupRuntime({
+    chromeApi: mockChrome,
+    documentObj: doc,
+    navigatorObj: mockNavigator,
+    windowObj: mockWindow,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(pasteBtn.disabled, false);
+  assert.equal(pasteBtn.title, 'Paste "Resilience"');
+
+  // Click the paste button
+  await pasteBtn.dispatchEvent('click');
+
+  assert.equal(searchInput.value, 'resilience');
+  assert.equal(sentMessages.length, 1);
+  assert.equal(sentMessages[0].payload.token, 'resilience');
+
+  runtime.destroy();
+});
+
 

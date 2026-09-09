@@ -26,6 +26,10 @@ export const PERMISSION_DISCLOSURE_ITEMS = [
     rationale: 'Provide native text-to-speech pronunciation as an offline/instant audio fallback.',
   },
   {
+    permission: 'clipboardRead',
+    rationale: 'Read word from clipboard when clicking the paste button in popup.',
+  },
+  {
     permission: 'host:https://www.vocabulary.com/*',
     rationale: 'Send lookup requests and retrieve definitions from Vocabulary.com.',
   },

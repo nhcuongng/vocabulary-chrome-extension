@@ -14,6 +14,7 @@ import {
   renderDictionaryContentView,
   createDomHelper,
 } from '../presentation/dictionaryContentView.js';
+import { validateMvpOneWordToken } from '../shared/wordNormalization.js';
 
 
 function renderStatus(targetElement, enabled) {
@@ -44,6 +45,8 @@ const waveformSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="
 async function bootstrapPopupRuntime({
   chromeApi = globalThis.chrome,
   documentObj = globalThis.document,
+  navigatorObj = globalThis.navigator,
+  windowObj = globalThis.window,
 } = {}) {
   const toggleElement = documentObj.getElementById('auto-popup-toggle');
   const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
@@ -57,6 +60,7 @@ async function bootstrapPopupRuntime({
   const historySliderContainer = documentObj.getElementById('vocab-history-slider-wrapper');
   const searchResultsContainer = documentObj.getElementById('vocab-search-results');
   const zeroStateContainer = documentObj.getElementById('vocab-zero-state-container');
+  const pasteBtn = documentObj.getElementById('vocab-paste-btn');
   const settingsMenuBtn = documentObj.getElementById('vocab-settings-menu-btn');
   const settingsMenuPopover = documentObj.getElementById('vocab-settings-menu-popover');
 
@@ -512,6 +516,60 @@ async function bootstrapPopupRuntime({
     searchClearBtn.addEventListener('click', handleClear);
   }
 
+  const getClipboardText = async () => {
+    try {
+      if (navigatorObj?.clipboard?.readText) {
+        const text = await navigatorObj.clipboard.readText();
+        return typeof text === 'string' ? text.trim() : '';
+      }
+    } catch {
+      // Permission denied or unavailable
+    }
+    return '';
+  };
+
+  const checkAndUpdatePasteButtonState = async () => {
+    if (!pasteBtn) return;
+    const clipText = await getClipboardText();
+    const tokenResult = validateMvpOneWordToken(clipText);
+
+    if (tokenResult.isValid && tokenResult.normalizedToken) {
+      pasteBtn.disabled = false;
+      const displayWord = tokenResult.rawToken.length > 20
+        ? tokenResult.rawToken.slice(0, 17) + '...'
+        : tokenResult.rawToken;
+      pasteBtn.title = `Paste "${displayWord}"`;
+    } else {
+      pasteBtn.disabled = true;
+      pasteBtn.title = 'No valid word in clipboard';
+    }
+  };
+
+  const handlePasteClick = async () => {
+    const clipText = await getClipboardText();
+    const tokenResult = validateMvpOneWordToken(clipText);
+    if (!tokenResult.isValid || !tokenResult.normalizedToken || !searchInput) return;
+
+    const cleanWord = tokenResult.normalizedToken;
+    searchInput.value = cleanWord;
+    renderHistorySlider(cleanWord);
+    performSearch(cleanWord);
+    searchInput.focus();
+  };
+
+  if (pasteBtn) {
+    pasteBtn.addEventListener('click', handlePasteClick);
+  }
+
+  const handleWindowFocus = () => {
+    checkAndUpdatePasteButtonState();
+  };
+  if (typeof windowObj?.addEventListener === 'function') {
+    windowObj.addEventListener('focus', handleWindowFocus);
+  }
+
+  checkAndUpdatePasteButtonState();
+
   if (searchInput) {
     if (typeof globalThis.requestAnimationFrame === 'function') {
       globalThis.requestAnimationFrame(() => {
@@ -551,6 +609,12 @@ async function bootstrapPopupRuntime({
     }
     if (searchClearBtn) {
       searchClearBtn.removeEventListener('click', handleClear);
+    }
+    if (pasteBtn) {
+      pasteBtn.removeEventListener('click', handlePasteClick);
+    }
+    if (typeof windowObj?.removeEventListener === 'function') {
+      windowObj.removeEventListener('focus', handleWindowFocus);
     }
     settingsStore.destroy?.();
     historyStore.destroy?.();

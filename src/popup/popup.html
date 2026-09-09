@@ -261,7 +261,8 @@
       }
 
       .vocab-source-menu-btn,
-      .vocab-settings-menu-btn {
+      .vocab-settings-menu-btn,
+      .vocab-paste-btn {
         background: var(--bg-color);
         border: 1.5px solid var(--border-color);
         cursor: pointer;
@@ -276,10 +277,23 @@
       }
 
       .vocab-source-menu-btn:hover,
-      .vocab-settings-menu-btn:hover {
+      .vocab-settings-menu-btn:hover,
+      .vocab-paste-btn:hover:not(:disabled) {
         background-color: var(--border-color);
         color: #1677C9;
         border-color: #1677C9;
+      }
+
+      .vocab-paste-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      body.dark-mode .vocab-source-menu-btn:hover,
+      body.dark-mode .vocab-settings-menu-btn:hover,
+      body.dark-mode .vocab-paste-btn:hover:not(:disabled) {
+        color: #60a5fa;
+        border-color: #60a5fa;
       }
 
       body.dark-mode .vocab-source-menu-btn:hover,
@@ -2217,6 +2231,14 @@
             </button>
           </div>
           <div class="vocab-toolbar-actions">
+            <!-- Paste from Clipboard Button -->
+            <button id="vocab-paste-btn" class="vocab-paste-btn" type="button" disabled title="No valid word in clipboard" aria-label="Paste from clipboard">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+            </button>
+
             <!-- Settings Menu -->
             <div class="vocab-settings-menu-wrapper">
               <button id="vocab-settings-menu-btn" class="vocab-settings-menu-btn" type="button" title="Extension Settings" aria-label="Extension Settings">

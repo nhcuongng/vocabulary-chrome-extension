@@ -23,7 +23,8 @@
     "scripting",
     "storage",
     "declarativeNetRequest",
-    "tts"
+    "tts",
+    "clipboardRead"
   ],
   "declarative_net_request": {
     "rule_resources": [
