@@ -244,6 +244,38 @@
         color: var(--text-color);
       }
 
+      .search-shortcut-hint {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+        font-size: 10.5px;
+        color: var(--hint-color);
+        padding: 0 2px;
+        margin-top: -2px;
+        user-select: none;
+      }
+
+      .shortcut-kbd {
+        display: inline-block;
+        padding: 1px 4px;
+        font-family: inherit;
+        font-size: 9.5px;
+        font-weight: 600;
+        line-height: 1.2;
+        color: var(--text-color);
+        background-color: rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+      }
+
+      body.dark-mode .shortcut-kbd {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: #4b5563;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+      }
+
       .vocab-toolbar-actions {
         display: flex;
         align-items: center;
@@ -2304,6 +2336,11 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="search-shortcut-hint">
+          <span>Shortcut:</span>
+          <kbd class="shortcut-kbd">Alt</kbd>+<kbd class="shortcut-kbd">Shift</kbd>+<kbd class="shortcut-kbd">V</kbd>
         </div>
 
         <div id="vocab-history-slider-wrapper" class="vocab-history-slider-wrapper"></div>
