@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.14.0] - 2026-09-09
+
+### 🚀 Added & Improved (Keyboard Shortcut for Toolbar Popup & Hint UI)
+- **Default Global Keyboard Shortcut (`_execute_action`)**:
+  - Registered `Alt+Shift+V` (or `Option+Shift+V` on macOS) as the default keyboard shortcut in `manifest.json` to immediately open the Vocabulary lookup popup.
+  - Fully customizable via Chrome's shortcut manager at `chrome://extensions/shortcuts`.
+- **Search Bar Shortcut Hint UI**:
+  - Added a compact, elegant shortcut helper badge (`Shortcut: Alt + Shift + V`) directly below the search input in the toolbar popup.
+  - Styled with semantic `<kbd>` tags and dark/light mode responsive theming.
+
+---
+
 ## [0.13.0] - 2026-09-09
 
 ### 🚀 Added & Improved (Clipboard Paste Button & Search History Refinement)
