@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.13.0] - 2026-09-09
+
+### 🚀 Added & Improved (Clipboard Paste Button & Search History Refinement)
+- **Paste from Clipboard Button in Toolbar Popup**:
+  - Added a dedicated Paste button (`#vocab-paste-btn`) in the Toolbar popup search bar.
+  - Integrated `navigator.clipboard.readText()` to dynamically inspect clipboard text upon popup open/focus.
+  - Automatically validates clipboard text with `validateMvpOneWordToken`:
+    - If a valid English word is present in the clipboard, the button is active and displays a native tooltip preview (e.g. `Paste "resilience"`).
+    - If the clipboard is empty, contains non-words, or permission is unavailable, the button is gracefully disabled with `No valid word in clipboard`.
+  - Clicking the Paste button automatically fills the search input and immediately triggers the dictionary lookup.
+  - Registered transparent `clipboardRead` permission declaration and updated compliance disclosures.
+- **Search History Recording Fix**:
+  - Fixed an issue where simply highlighting/selecting a word on a webpage with `auto-popup` turned off recorded the word into search history.
+  - Search words are now strictly saved to history only when the user explicitly triggers lookup (via clicking the trigger search icon or when `auto-popup` is enabled).
+
+---
+
 ## [0.12.0] - 2026-09-07
 
 ### 🚀 Added & Improved (Unified Presentation Layer, Search History & UI Polish)
