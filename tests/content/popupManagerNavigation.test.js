@@ -245,9 +245,26 @@ test('popupManager: clicking word family chip triggers onLookupWord', () => {
   familyChips[0].dispatchEvent('click');
   assert.deepEqual(lookedUpWords, []);
 
-  // 'creative' is a derivative -> normal chip, clicking triggers lookup
+  // 'creative' is a derivative -> normal chip, clicking opens quick preview popover
   assert.equal(familyChips[1].className, 'vocab-family-chip');
   familyChips[1].dispatchEvent('click');
+  assert.deepEqual(lookedUpWords, []);
+
+  const afterClickElements = [];
+  function collectAll(node) {
+    if (!node) return;
+    afterClickElements.push(node);
+    for (const c of node.childNodes || []) collectAll(c);
+  }
+  collectAll(container);
+
+  const previewPopover = afterClickElements.find((el) => typeof el.className === 'string' && el.className.includes('vocab-quick-preview-popover'));
+  assert.ok(previewPopover, 'Quick preview popover should be opened');
+
+  const expandBtn = afterClickElements.find((el) => typeof el.className === 'string' && el.className.includes('expand-btn'));
+  assert.ok(expandBtn, 'Expand button should be present in preview popover');
+
+  expandBtn.dispatchEvent('click');
   assert.deepEqual(lookedUpWords, ['creative']);
 });
 

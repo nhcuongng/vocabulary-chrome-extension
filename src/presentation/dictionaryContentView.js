@@ -21,6 +21,7 @@ import {
 import { renderTabsComponent } from '../content/tabs/tabManager.js';
 import { UI_COPY } from '../content/historySliderRenderer.js';
 import { interceptPosInHtml } from '../domain/partOfSpeechUtils.js';
+import { showQuickPreviewPopover } from './quickPreviewPopover.js';
 
 export const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -111,11 +112,18 @@ export function renderDictionaryContentView({
   windowObj = globalThis.window,
   historyWords = [],
   settingsAdapter = null,
+  lookupExecutor = null,
   onNavigateWord = null,
   onLayoutChange = null,
   h = null,
 } = {}) {
   if (!container) return;
+
+  if (container._activeQuickPreview) {
+    try {
+      container._activeQuickPreview.close();
+    } catch {}
+  }
 
   const domH = h || createDomHelper(documentObj);
   let viewModel = null;
@@ -545,9 +553,21 @@ export function renderDictionaryContentView({
               onClick: (e) => {
                 e?.stopPropagation?.();
                 if (isInflected) return;
-                if (typeof onNavigateWord === 'function') {
-                  onNavigateWord(famWord);
-                }
+                showQuickPreviewPopover({
+                  targetElement: chip,
+                  word: famWord,
+                  container,
+                  documentObj,
+                  windowObj,
+                  lookupExecutor,
+                  source: viewModel?.source || 'vocabulary',
+                  onExpand: (w) => {
+                    if (typeof onNavigateWord === 'function') {
+                      onNavigateWord(w);
+                    }
+                  },
+                  h: domH,
+                });
               },
             },
             famWord
@@ -587,9 +607,21 @@ export function renderDictionaryContentView({
                 ariaLabel: `Lookup synonym "${synWord}"`,
                 onClick: (e) => {
                   e?.stopPropagation?.();
-                  if (typeof onNavigateWord === 'function') {
-                    onNavigateWord(synWord);
-                  }
+                  showQuickPreviewPopover({
+                    targetElement: chip,
+                    word: synWord,
+                    container,
+                    documentObj,
+                    windowObj,
+                    lookupExecutor,
+                    source: viewModel?.source || 'vocabulary',
+                    onExpand: (w) => {
+                      if (typeof onNavigateWord === 'function') {
+                        onNavigateWord(w);
+                      }
+                    },
+                    h: domH,
+                  });
                 },
               },
               synWord
@@ -617,9 +649,21 @@ export function renderDictionaryContentView({
                 ariaLabel: `Lookup antonym "${antWord}"`,
                 onClick: (e) => {
                   e?.stopPropagation?.();
-                  if (typeof onNavigateWord === 'function') {
-                    onNavigateWord(antWord);
-                  }
+                  showQuickPreviewPopover({
+                    targetElement: chip,
+                    word: antWord,
+                    container,
+                    documentObj,
+                    windowObj,
+                    lookupExecutor,
+                    source: viewModel?.source || 'vocabulary',
+                    onExpand: (w) => {
+                      if (typeof onNavigateWord === 'function') {
+                        onNavigateWord(w);
+                      }
+                    },
+                    h: domH,
+                  });
                 },
               },
               antWord

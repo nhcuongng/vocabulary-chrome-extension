@@ -355,6 +355,7 @@ async function bootstrapPopupRuntime({
       windowObj: globalThis.window,
       historyWords: recentWords,
       settingsAdapter: settingsStore,
+      lookupExecutor,
       onNavigateWord: (famWord) => {
         if (searchInput) searchInput.value = famWord;
         const normalized = (famWord || '').trim().toLowerCase();

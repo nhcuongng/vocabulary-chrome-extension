@@ -71,7 +71,9 @@ export async function bootstrapContentRuntime({
   let dictionarySource = 'vocabulary';
   let autoPopupController = null;
 
-  const lookupExecutor = async ({ headword, source }) => {
+  const lookupExecutor = async (wordOrObj, maybeSource) => {
+    const headword = typeof wordOrObj === 'string' ? wordOrObj : (wordOrObj?.headword || wordOrObj?.token || '');
+    const source = (typeof wordOrObj === 'object' && wordOrObj?.source) ? wordOrObj.source : maybeSource;
     const cleanWord = typeof headword === 'string' ? headword.trim().toLowerCase() : '';
     if (!cleanWord || !/^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
       return {
@@ -112,6 +114,7 @@ export async function bootstrapContentRuntime({
     documentObj,
     windowObj,
     onLookupWord: handlePopupLookupWord,
+    lookupExecutor,
     historyAdapter: historyStore,
     settingsAdapter: settingsStore,
     onSourceChange: (newSource) => {

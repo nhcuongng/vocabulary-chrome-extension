@@ -100,6 +100,7 @@ export function createPopupManager({
   historyAdapter,
   settingsAdapter,
   onSourceChange,
+  lookupExecutor,
 } = {}) {
   let popupElement = null;
   let popupCtrl = null;
@@ -202,6 +203,10 @@ export function createPopupManager({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        if (popupContainer._activeQuickPreview) {
+          popupContainer._activeQuickPreview.close();
+          return;
+        }
         if (isHistoryMenuOpen) {
           isHistoryMenuOpen = false;
           if (lastState) {
@@ -1572,6 +1577,129 @@ export function createPopupManager({
         border-color: #fdba74;
       }
 
+      /* Quick Preview Popover for Synonyms, Antonyms, and Word Family */
+      .vocab-quick-preview-popover {
+        position: absolute;
+        z-index: 120;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        width: 290px;
+        max-width: calc(100% - 16px);
+        padding: 10px 12px;
+        font-family: inherit;
+        font-size: 13px;
+        color: #1f2937;
+        box-sizing: border-box;
+        animation: vocabFadeSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .vocab-quick-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .vocab-quick-preview-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        text-transform: capitalize;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .vocab-quick-preview-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .vocab-quick-preview-btn {
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 3px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+      }
+
+      .vocab-quick-preview-btn:hover {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        border-color: #e2e8f0;
+      }
+
+      .vocab-quick-preview-btn.expand-btn:hover {
+        color: #2563eb;
+        background-color: #eff6ff;
+        border-color: #bfdbfe;
+      }
+
+      .vocab-quick-preview-pron-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .vocab-quick-preview-ipa {
+        font-family: inherit;
+        font-style: italic;
+      }
+
+      .vocab-quick-preview-audio-btn {
+        background: rgba(37, 99, 235, 0.1);
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #2563eb;
+        padding: 0;
+        transition: background-color 0.15s, transform 0.1s;
+      }
+
+      .vocab-quick-preview-audio-btn:hover {
+        background: rgba(37, 99, 235, 0.2);
+        transform: scale(1.08);
+      }
+
+      .vocab-quick-preview-popover .vocab-quick-def {
+        margin: 4px 0 2px 0;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #1f2937;
+        padding: 6px 8px 6px 10px;
+        background: #f8fafc;
+        border-left: 3px solid #1677C9;
+        border-radius: 0 6px 6px 0;
+        max-height: 120px;
+        overflow-y: auto;
+      }
+
+      .vocab-quick-preview-empty {
+        font-size: 12px;
+        font-style: italic;
+        color: #94a3b8;
+      }
+
       /* Dark mode styles */
       .vocab-popup.dark-mode {
         background: #1f2937;
@@ -1828,6 +1956,44 @@ export function createPopupManager({
       .vocab-popup.dark-mode .vocab-antonym-chip:hover {
         background: #9a3412;
         color: #ffedd5;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-popover {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-header {
+        border-bottom-color: #334155;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-title {
+        color: #f8fafc;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-btn {
+        color: #94a3b8;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-btn:hover {
+        background-color: #334155;
+        color: #f8fafc;
+        border-color: #475569;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-btn.expand-btn:hover {
+        color: #60a5fa;
+        background-color: rgba(37, 99, 235, 0.2);
+        border-color: #3b82f6;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-pron-row {
+        color: #94a3b8;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-audio-btn {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-def {
+        color: #cbd5e1;
+      }
+      .vocab-popup.dark-mode .vocab-quick-preview-empty {
+        color: #94a3b8;
       }
       .vocab-popup.dark-mode .vocab-popup-pronunciation,
       .vocab-popup.dark-mode .vocab-popup-audio-btn,
@@ -2362,6 +2528,7 @@ export function createPopupManager({
       windowObj,
       historyWords: allHistoryWords,
       settingsAdapter,
+      lookupExecutor,
       onNavigateWord: (w, opts) => navigateToWord(w, opts),
       onLayoutChange: updatePopupPosition,
       h,
