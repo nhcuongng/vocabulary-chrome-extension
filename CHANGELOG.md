@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.0] - 2026-09-10
+
+### 🚀 Added & Improved (Quick Definition Preview Popover, POS Color Badges & History Navigation)
+- **Quick Definition Preview Popover for Related Word Chips**:
+  - Added an in-place preview popover when clicking/hovering on related word chips (Synonyms, Antonyms, Word Family) in both In-page and Toolbar popups.
+  - Automatically queries the active dictionary engine and presents a concise definition preview card with headword, pronunciation, and primary meaning.
+  - Includes a direct "Expand lookup" button (`#vocab-preview-expand-btn`) to promote the previewed word to full search without loss of context.
+  - Safely unwraps nested `<details>/<summary>` tags in definition text so preview content is immediately visible.
+- **Color-Coded Part-of-Speech Badges**:
+  - Implemented distinct, accessible color-coded badges for part-of-speech tags (`NOUN`, `VERB`, `ADJECTIVE`, `ADVERB`, etc.) across both Definitions and Explanation tab views.
+  - Optimized contrast for seamless visibility in both Light and Dark modes.
+- **Auto Scroll to Active Word in Search History**:
+  - Enhanced recent search history navigation to automatically scroll the active word into view upon opening the history slider or popover.
+
+---
+
 ## [0.14.0] - 2026-09-09
 
 ### 🚀 Added & Improved (Keyboard Shortcut for Toolbar Popup & Hint UI)
