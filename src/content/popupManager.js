@@ -1429,6 +1429,134 @@ export function createPopupManager({
         to { opacity: 1; transform: translateY(0); }
       }
 
+      /* Visual Context / Image Search styles */
+      .vocab-images-panel {
+        padding: 4px 0;
+        min-height: 100px;
+      }
+      .vocab-image-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+        gap: 8px;
+        padding: 4px 0;
+      }
+      .vocab-image-card {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+      .vocab-image-card:hover {
+        transform: scale(1.05);
+        border-color: #1677C9;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      }
+      .vocab-image-thumb {
+        width: 100%;
+        height: 80px;
+        object-fit: contain;
+        display: block;
+        background: #f3f4f6;
+      }
+      .vocab-image-caption {
+        font-size: 11px;
+        font-weight: 500;
+        color: #374151;
+        padding: 4px 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.25;
+        display: block;
+      }
+      .vocab-image-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 4px 2px 0 2px;
+      }
+      .vocab-image-source-tag {
+        font-size: 10px;
+        color: #6b7280;
+        font-weight: 500;
+        opacity: 0.8;
+      }
+      .vocab-image-skeleton-card {
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        border: 1px solid #e5e7eb;
+        padding: 2px;
+      }
+      .vocab-image-skeleton-thumb {
+        width: 100%;
+        height: 75px;
+        border-radius: 4px;
+      }
+      .vocab-image-skeleton-text {
+        width: 70%;
+        height: 10px;
+        border-radius: 3px;
+        margin: 2px 4px 4px 4px;
+      }
+      .vocab-image-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px 12px;
+        gap: 6px;
+      }
+      .vocab-image-empty-icon {
+        font-size: 26px;
+        line-height: 1;
+      }
+      .vocab-image-empty-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .vocab-image-empty-hint {
+        font-size: 11px;
+        color: #6b7280;
+      }
+      .vocab-image-error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 18px 12px;
+        gap: 8px;
+      }
+      .vocab-image-error-msg {
+        font-size: 11.5px;
+        color: #dc2626;
+      }
+      .vocab-image-retry-btn {
+        font-size: 11px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        color: #374151;
+        cursor: pointer;
+        transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .vocab-image-retry-btn:hover {
+        border-color: #1677C9;
+        color: #1677C9;
+      }
+
       /* Part of Speech (POS) Chips */
       .vocab-pos-chip {
         display: inline-flex;
@@ -2155,6 +2283,41 @@ export function createPopupManager({
       .vocab-popup.dark-mode .skeleton {
         background: #374151;
         background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%);
+      }
+      .vocab-popup.dark-mode .vocab-image-card {
+        background: #1f2937;
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-image-card:hover {
+        border-color: #60a5fa;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+      .vocab-popup.dark-mode .vocab-image-thumb {
+        background: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-image-caption {
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-image-skeleton-card {
+        border-color: #374151;
+      }
+      .vocab-popup.dark-mode .vocab-image-empty-title {
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-image-empty-hint {
+        color: #9ca3af;
+      }
+      .vocab-popup.dark-mode .vocab-image-error-msg {
+        color: #f87171;
+      }
+      .vocab-popup.dark-mode .vocab-image-retry-btn {
+        background: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+      }
+      .vocab-popup.dark-mode .vocab-image-retry-btn:hover {
+        border-color: #60a5fa;
+        color: #60a5fa;
       }
     `;
     shadow.appendChild(style);

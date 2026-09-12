@@ -82,6 +82,10 @@ export function renderTabsComponent({
     panelEls.forEach((p, i) => {
       p.className = i === index ? 'vocab-tab-panel active' : 'vocab-tab-panel';
     });
+    const visibleTabs = getVisibleTabs();
+    if (visibleTabs[index] && typeof visibleTabs[index].onActive === 'function') {
+      visibleTabs[index].onActive(panelEls[index], visibleTabs[index]);
+    }
     updatePopupPosition?.();
   }
 
@@ -132,6 +136,10 @@ export function renderTabsComponent({
         panel.appendChild(tabInfo.contentElement);
       } else if (tabInfo.contentHtml) {
         panel.innerHTML = tabInfo.contentHtml;
+      }
+
+      if (isActive && typeof tabInfo.onActive === 'function') {
+        tabInfo.onActive(panel, tabInfo);
       }
 
       tabBtns.push(btn);

@@ -1,11 +1,18 @@
-import { createLookupErrorResponse, LOOKUP_MESSAGE_TYPE, FETCH_AUDIO_MESSAGE_TYPE } from '../shared/lookupContract.js';
+import {
+  createLookupErrorResponse,
+  LOOKUP_MESSAGE_TYPE,
+  FETCH_AUDIO_MESSAGE_TYPE,
+  LOOKUP_VISUAL_IMAGES_MESSAGE_TYPE,
+} from '../shared/lookupContract.js';
 import { createServiceWorkerLookupHandler } from './serviceWorkerLookupHandler.js';
 import { handleFetchAudioMessage } from './audioFetchHandler.js';
+import { defaultVisualImageSearchAdapter } from '../infrastructure/adapters/visualImageSearchAdapter.js';
 
 export function bootstrapServiceWorkerRuntime({
   chromeApi = globalThis.chrome,
   messageHandler = createServiceWorkerLookupHandler(),
   audioHandler = handleFetchAudioMessage,
+  visualImagesHandler = defaultVisualImageSearchAdapter,
 } = {}) {
   const onMessage = chromeApi?.runtime?.onMessage;
 
@@ -24,6 +31,28 @@ export function bootstrapServiceWorkerRuntime({
           if (result !== null && result !== undefined) {
             sendResponse(result);
           }
+        })
+        .catch((error) => {
+          sendResponse({
+            status: 'error',
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+            },
+          });
+        });
+      return true;
+    }
+
+    if (message?.type === LOOKUP_VISUAL_IMAGES_MESSAGE_TYPE) {
+      const keyword = message?.payload?.keyword || '';
+      const limit = message?.payload?.limit || 6;
+      Promise.resolve()
+        .then(() => visualImagesHandler.fetchImagesWithFallback(keyword, limit))
+        .then((result) => {
+          sendResponse({
+            status: 'success',
+            data: result,
+          });
         })
         .catch((error) => {
           sendResponse({

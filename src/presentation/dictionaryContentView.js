@@ -22,6 +22,9 @@ import { renderTabsComponent } from '../content/tabs/tabManager.js';
 import { UI_COPY } from '../content/historySliderRenderer.js';
 import { interceptPosInHtml } from '../domain/partOfSpeechUtils.js';
 import { showQuickPreviewPopover } from './quickPreviewPopover.js';
+import { defaultContextImageSearch } from '../domain/contextImageSearch.js';
+import { defaultVisualImageSearchAdapter } from '../infrastructure/adapters/visualImageSearchAdapter.js';
+import { LOOKUP_VISUAL_IMAGES_MESSAGE_TYPE } from '../shared/lookupContract.js';
 
 export const speakerSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -110,6 +113,7 @@ export function renderDictionaryContentView({
   container,
   documentObj = globalThis.document,
   windowObj = globalThis.window,
+  chromeApi = globalThis.chrome,
   historyWords = [],
   settingsAdapter = null,
   lookupExecutor = null,
@@ -708,6 +712,156 @@ export function renderDictionaryContentView({
       );
     }
   });
+
+  // Append Visual Context / Images Tab if we have a successful word lookup
+  if (state.status === 'success' && currentWord) {
+    const pendingTabs = bodyContainer._pendingTabs || [];
+    const imagesPanel = domH('div', { className: 'vocab-images-panel' });
+    let imagesLoaded = false;
+    let imagesLoading = false;
+
+    const loadImages = async () => {
+      if (imagesLoaded || imagesLoading) return;
+      imagesLoading = true;
+      imagesPanel.replaceChildren();
+
+      // Render Skeleton loader (shimmer animation cards)
+      const skeletonGrid = domH(
+        'div',
+        { className: 'vocab-image-grid skeleton-grid' },
+        ...Array.from({ length: 6 }, () =>
+          domH(
+            'div',
+            { className: 'vocab-image-skeleton-card' },
+            domH('div', { className: 'skeleton vocab-image-skeleton-thumb' }),
+            domH('div', { className: 'skeleton vocab-image-skeleton-text' })
+          )
+        )
+      );
+      imagesPanel.appendChild(skeletonGrid);
+      onLayoutChange?.();
+
+      try {
+        let lookupResult = null;
+        if (typeof chromeApi?.runtime?.sendMessage === 'function') {
+          lookupResult = await new Promise((resolve, reject) => {
+            try {
+              chromeApi.runtime.sendMessage(
+                {
+                  type: LOOKUP_VISUAL_IMAGES_MESSAGE_TYPE,
+                  payload: { keyword: currentWord, limit: 6 },
+                },
+                (response) => {
+                  const lastError = chromeApi.runtime?.lastError;
+                  if (lastError) {
+                    reject(new Error(lastError.message));
+                  } else if (response?.status === 'success') {
+                    resolve(response.data);
+                  } else {
+                    reject(new Error(response?.error?.message || 'Lookup failed'));
+                  }
+                }
+              );
+            } catch (err) {
+              reject(err);
+            }
+          });
+        } else {
+          const fetchFn = windowObj?.fetch ? windowObj.fetch.bind(windowObj) : globalThis.fetch;
+          lookupResult = await defaultVisualImageSearchAdapter.fetchImagesWithFallback(currentWord, 6, fetchFn);
+        }
+
+        imagesLoading = false;
+        imagesLoaded = true;
+        imagesPanel.replaceChildren();
+
+        const images = Array.isArray(lookupResult?.images) ? lookupResult.images : [];
+        const source = lookupResult?.source || 'duckduckgo';
+        const sourceLabel = source === 'wikimedia' ? 'Wikimedia Commons' : 'DuckDuckGo';
+
+        if (images.length > 0) {
+          const grid = domH('div', { className: 'vocab-image-grid' });
+          images.forEach((img) => {
+            const card = domH(
+              'a',
+              {
+                href: img.sourceUrl || img.fullUrl,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                className: 'vocab-image-card',
+                title: img.title || currentWord,
+                onClick: (e) => {
+                  e?.stopPropagation?.();
+                },
+              },
+              domH('img', {
+                src: img.thumbUrl,
+                alt: img.title || currentWord,
+                className: 'vocab-image-thumb',
+                loading: 'lazy',
+              }),
+              domH('span', { className: 'vocab-image-caption' }, img.title || currentWord)
+            );
+            grid.appendChild(card);
+          });
+
+          const footer = domH(
+            'div',
+            { className: 'vocab-image-footer' },
+            domH('span', { className: 'vocab-image-source-tag' }, `via ${sourceLabel}`)
+          );
+
+          imagesPanel.appendChild(grid);
+          imagesPanel.appendChild(footer);
+        } else {
+          // Empty State
+          const emptyState = domH(
+            'div',
+            { className: 'vocab-image-empty-state' },
+            domH('div', { className: 'vocab-image-empty-icon' }, '🖼️'),
+            domH('div', { className: 'vocab-image-empty-title' }, `No visual images found for '${currentWord}'`),
+            domH('div', { className: 'vocab-image-empty-hint' }, 'Try searching a related noun or root word.')
+          );
+          imagesPanel.appendChild(emptyState);
+        }
+      } catch {
+        imagesLoading = false;
+        imagesPanel.replaceChildren();
+        // Error State
+        const retryBtn = domH(
+          'button',
+          {
+            type: 'button',
+            className: 'vocab-image-retry-btn',
+            onClick: (e) => {
+              e?.stopPropagation?.();
+              imagesLoaded = false;
+              loadImages();
+            },
+          },
+          '🔄 Retry'
+        );
+        const errorState = domH(
+          'div',
+          { className: 'vocab-image-error-state' },
+          domH('div', { className: 'vocab-image-error-msg' }, 'Could not load images. Please check your connection.'),
+          retryBtn
+        );
+        imagesPanel.appendChild(errorState);
+      }
+      onLayoutChange?.();
+    };
+
+    pendingTabs.push({
+      id: 'tab-illustrations',
+      label: 'Illustrations',
+      contentElement: imagesPanel,
+      onActive: () => {
+        loadImages();
+      },
+    });
+    bodyContainer._pendingTabs = pendingTabs;
+  }
 
   // Render Tabs Container if we have pending tabs
   renderTabsComponent({
