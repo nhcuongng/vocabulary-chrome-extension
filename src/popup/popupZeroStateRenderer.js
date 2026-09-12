@@ -4,9 +4,11 @@
 
 export const DEFAULT_MICRO_TIPS = [
   '💡 Tip: Select any English word on web pages to look up instantly!',
+  '📘 Tip: Choose Vocabulary.com for rich, human-crafted explanations and real-world context.',
+  '📖 Tip: Choose FreeDictionary for quick academic definitions and UK/US audio pronunciation.',
   '🔊 Tip: Click the speaker icon to hear UK/US pronunciation.',
   '✨ Tip: Click the history chips at the top to quickly review previously looked-up words.',
-  '⚙️ Tip: You can adjust dictionary source priority in the settings menu.',
+  '⚙️ Tip: Toggle between Vocab.com and FreeDict anytime in the top bar or settings menu.',
 ];
 
 /**

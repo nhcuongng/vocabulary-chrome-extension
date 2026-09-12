@@ -16,13 +16,13 @@ export const SOURCE_META = Object.freeze({
     id: 'vocabulary',
     name: '📘 Vocabulary.com',
     shortName: 'Vocab.com',
-    hint: 'Detailed explanations & word family',
+    hint: 'Human-crafted definitions & rich context',
   },
   freedictionary: {
     id: 'freedictionary',
-    name: '⚡ Simple Learn (FreeDict)',
+    name: '📖 FreeDictionary',
     shortName: 'FreeDict',
-    hint: 'Quick, concise definitions with audio',
+    hint: 'Academic definitions with audio pronunciation',
   },
 });
 
@@ -45,8 +45,9 @@ export const UI_COPY = {
   NO_RECENT_SEARCHES: 'No recent searches',
   SEARCH_HISTORY_PLACEHOLDER: 'Filter history...',
   CLOSE_HISTORY: 'Close history',
-  SIMPLE_LEARN_TITLE: 'Simple Learn Mode: ON (FreeDictionary) / OFF (Vocabulary.com)',
-  SIMPLE_LEARN_LABEL: 'Simple Learn',
+  SIMPLE_LEARN_TITLE: 'Dictionary Source: Vocabulary.com (Human-crafted) / FreeDictionary (Academic & Audio)',
+  SIMPLE_LEARN_LABEL: 'Vocab.com',
+  SIMPLE_LEARN_LABEL_FREEDICT: 'FreeDict',
   CLOSE_POPUP: 'Close popup',
   SOURCE_LABEL: 'Source:',
   INFLECTED_FORM_TOOLTIP: (word) => `${word} (inflected form)`,

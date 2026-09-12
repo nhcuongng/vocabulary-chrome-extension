@@ -629,6 +629,9 @@ export function createPopupManager({
       .vocab-simple-learn-toggle-wrapper {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        min-width: 96px;
         gap: 5px;
         background: #f3f4f6;
         padding: 2px 7px;
@@ -639,6 +642,12 @@ export function createPopupManager({
         cursor: pointer;
         user-select: none;
         transition: background-color 0.15s, color 0.15s;
+      }
+      .vocab-simple-learn-label {
+        display: inline-block;
+        min-width: 58px;
+        text-align: center;
+        white-space: nowrap;
       }
       .vocab-simple-learn-toggle-wrapper:hover {
         background: #e5e7eb;
@@ -2494,7 +2503,11 @@ export function createPopupManager({
           }
         },
       },
-      h('span', { className: 'vocab-simple-learn-label' }, UI_COPY.SIMPLE_LEARN_LABEL),
+      h(
+        'span',
+        { className: 'vocab-simple-learn-label' },
+        isSimpleLearn ? UI_COPY.SIMPLE_LEARN_LABEL_FREEDICT : UI_COPY.SIMPLE_LEARN_LABEL
+      ),
       h('span', { className: 'vocab-simple-learn-switch' })
     );
 
