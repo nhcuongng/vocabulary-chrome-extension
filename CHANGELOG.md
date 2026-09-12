@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.16.0] - 2026-09-12
+
+### 🚀 Added & Improved (Visual Context Illustrations Tab & Multi-Source Image Pipeline)
+- **Visual Context Illustrations Tab**:
+  - Integrated a dedicated "Illustrations" tab into the secondary dictionary details interface across both In-page and Toolbar popups.
+  - Implemented **True Lazy-Loading**: Image requests are strictly deferred until the Illustrations tab is clicked/activated by the user.
+  - **Dual Provider Pipeline with Automatic Fallback**:
+    - Queries **DuckDuckGo Image Search** directly from the MV3 Service Worker to retrieve high-relevance web images and illustrations.
+    - Seamlessly falls back to **Wikimedia Commons API** whenever DuckDuckGo results are empty or encounter network constraints.
+  - **Visual Presentation & Media Standards**:
+    - Displayed in a responsive 2–3 column CSS Grid with `object-fit: contain` rendering to prevent image cropping.
+    - Added shimmer skeleton loader animations during network fetch.
+    - Included image hover zoom (`scale(1.05)`), clickable source link out to full resolution in a new tab, and subtle provider source tags (`via DuckDuckGo` / `via Wikimedia Commons`).
+    - Handled empty state (`🖼️ No visual images found for '[word]'`) and network error states with a direct `🔄 Retry` action.
+  - Full support for both Light and Dark modes with Shadow DOM style isolation.
+
+---
+
 ## [0.15.0] - 2026-09-10
 
 ### 🚀 Added & Improved (Quick Definition Preview Popover, POS Color Badges & History Navigation)
