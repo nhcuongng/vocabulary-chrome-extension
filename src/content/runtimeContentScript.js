@@ -6,6 +6,7 @@ import { createChromeStorageHistoryAdapter } from '../infrastructure/adapters/ch
 import { createLookupFlowOrchestrator } from './lookupFlowOrchestrator.js';
 import { createPopupManager } from './popupManager.js';
 import { createTriggerIconManager } from './triggerIconManager.js';
+import { playAudioWithFallback } from '../domain/audioPlaybackUtils.js';
 
 export function ensureEcosystemBridgeElement(documentObj = globalThis.document) {
   if (!documentObj) return null;
@@ -69,6 +70,8 @@ export async function bootstrapContentRuntime({
   let isUserInitiated = false;
   let darkMode = false;
   let dictionarySource = 'vocabulary';
+  let ctrlPronounceEnabled = true;
+  let defaultPronunciation = 'us';
   let autoPopupController = null;
 
   const lookupExecutor = async (wordOrObj, maybeSource) => {
@@ -209,6 +212,8 @@ export async function bootstrapContentRuntime({
     }
     darkMode = Boolean(nextState.darkMode);
     dictionarySource = nextState.simpleLearn ? 'freedictionary' : 'vocabulary';
+    ctrlPronounceEnabled = Boolean(nextState.ctrlPronounceEnabled ?? true);
+    defaultPronunciation = nextState.defaultPronunciation === 'uk' ? 'uk' : 'us';
   });
 
   await autoPopupController.start();
@@ -314,12 +319,59 @@ export async function bootstrapContentRuntime({
     bridgeEl.addEventListener('vocabulary-lookup', handleEcosystemLookupEvent);
   }
 
+  let isControlKeyDown = false;
+  let otherKeyPressedWithControl = false;
+
+  const handleGlobalKeyDown = (e) => {
+    if (e?.key === 'Control') {
+      isControlKeyDown = true;
+      otherKeyPressedWithControl = false;
+    } else if (isControlKeyDown) {
+      otherKeyPressedWithControl = true;
+    }
+  };
+
+  const handleGlobalKeyUp = (e) => {
+    if (e?.key === 'Control') {
+      if (isControlKeyDown && !otherKeyPressedWithControl && ctrlPronounceEnabled) {
+        if (popupManager.isOpen()) {
+          e?.stopPropagation?.();
+          e?.stopImmediatePropagation?.();
+          popupManager.playCurrentAudio(defaultPronunciation);
+        } else {
+          const snapshot = readSelectionSnapshot(windowObj);
+          const rawWord = snapshot?.token || (typeof snapshot?.rawText === 'string' ? snapshot.rawText.trim().toLowerCase() : '');
+          const cleanWord = typeof rawWord === 'string' ? rawWord.trim().toLowerCase() : '';
+          if (cleanWord && /^[a-z]+(?:[-'][a-z]+)*$/.test(cleanWord)) {
+            e?.stopPropagation?.();
+            e?.stopImmediatePropagation?.();
+            playAudioWithFallback({
+              word: cleanWord,
+              accent: defaultPronunciation,
+              windowObj,
+              chromeApi,
+            });
+          }
+        }
+      }
+      isControlKeyDown = false;
+      otherKeyPressedWithControl = false;
+    }
+  };
+
+  if (documentObj?.addEventListener) {
+    documentObj.addEventListener('keydown', handleGlobalKeyDown, true);
+    documentObj.addEventListener('keyup', handleGlobalKeyUp, true);
+  }
+
   globalThis.__vocabularyExtensionContentRuntimeStarted = true;
 
   return {
     started: true,
     dispose: () => {
       bridgeEl?.removeEventListener?.('vocabulary-lookup', handleEcosystemLookupEvent);
+      documentObj?.removeEventListener?.('keydown', handleGlobalKeyDown, true);
+      documentObj?.removeEventListener?.('keyup', handleGlobalKeyUp, true);
       autoPopupController.stop();
       settingsStore.destroy?.();
       popupManager.removePopup();

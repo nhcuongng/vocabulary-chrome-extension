@@ -178,6 +178,34 @@ test('settings adapter: runtime update khi storage thay đổi từ context khá
   assert.equal(observed.at(-1).nextSettings.rememberLastLookup, false);
   assert.equal(observed.at(-1).meta.source, 'external-change');
 
+  // Test ctrlPronounceEnabled external change
+  storageChangeEvent.emit(
+    {
+      'user-settings': {
+        oldValue: { schemaVersion: 2, autoPopupEnabled: false, ctrlPronounceEnabled: true },
+        newValue: { schemaVersion: 2, autoPopupEnabled: false, ctrlPronounceEnabled: false },
+      },
+    },
+    'local',
+  );
+
+  assert.equal(observed.at(-1).nextSettings.ctrlPronounceEnabled, false);
+  assert.equal(observed.at(-1).meta.source, 'external-change');
+
+  // Test defaultPronunciation external change
+  storageChangeEvent.emit(
+    {
+      'user-settings': {
+        oldValue: { schemaVersion: 2, autoPopupEnabled: false, defaultPronunciation: 'us' },
+        newValue: { schemaVersion: 2, autoPopupEnabled: false, defaultPronunciation: 'uk' },
+      },
+    },
+    'local',
+  );
+
+  assert.equal(observed.at(-1).nextSettings.defaultPronunciation, 'uk');
+  assert.equal(observed.at(-1).meta.source, 'external-change');
+
   unsubscribe();
   adapter.destroy();
 });

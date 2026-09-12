@@ -415,6 +415,34 @@
         margin: 0;
       }
 
+      .vocab-select-dropdown {
+        font-size: 11px;
+        font-weight: 500;
+        padding: 3px 6px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+        color: var(--text-color);
+        outline: none;
+        cursor: pointer;
+        transition: border-color 0.15s;
+        max-width: 110px;
+      }
+
+      .vocab-select-dropdown:focus {
+        border-color: #1677C9;
+      }
+
+      body.dark-mode .vocab-select-dropdown {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f3f4f6;
+      }
+
+      body.dark-mode .vocab-select-dropdown:focus {
+        border-color: #60a5fa;
+      }
+
       .vocab-settings-status {
         font-size: 10.5px;
         color: var(--hint-color);
@@ -2603,6 +2631,24 @@
                     <span class="vocab-settings-option-hint">Restore last searched word</span>
                   </div>
                   <input id="remember-last-lookup-toggle" type="checkbox" class="vocab-checkbox-toggle" />
+                </div>
+
+                <div class="vocab-settings-option-item">
+                  <div class="vocab-settings-option-info">
+                    <div class="vocab-settings-option-label-row">
+                      <label for="ctrl-pronounce-select" class="vocab-settings-option-label">Pronounce on Ctrl</label>
+                      <div class="tooltip-container">
+                        <span class="help-icon" aria-label="How to use">?</span>
+                        <span class="tooltip-text">Press Ctrl while selecting or viewing a word to pronounce it. Choose preferred accent or disable.</span>
+                      </div>
+                    </div>
+                    <span class="vocab-settings-option-hint">Instant shortcut pronunciation</span>
+                  </div>
+                  <select id="ctrl-pronounce-select" class="vocab-select-dropdown">
+                    <option value="us">US (American)</option>
+                    <option value="uk">UK (British)</option>
+                    <option value="off">Off</option>
+                  </select>
                 </div>
 
                 <p id="auto-popup-status" class="hint vocab-settings-status" aria-live="polite"></p>

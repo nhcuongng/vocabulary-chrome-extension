@@ -15,6 +15,7 @@ import {
   createDomHelper,
 } from '../presentation/dictionaryContentView.js';
 import { validateMvpOneWordToken } from '../shared/wordNormalization.js';
+import { playAudioWithFallback } from '../domain/audioPlaybackUtils.js';
 
 
 function renderStatus(targetElement, enabled) {
@@ -52,6 +53,7 @@ async function bootstrapPopupRuntime({
   const darkModeToggleElement = documentObj.getElementById('dark-mode-toggle');
   const simpleLearnToggleElement = documentObj.getElementById('simple-learn-toggle');
   const rememberLastLookupToggleElement = documentObj.getElementById('remember-last-lookup-toggle');
+  const ctrlPronounceSelectElement = documentObj.getElementById('ctrl-pronounce-select');
   const statusElement = documentObj.getElementById('auto-popup-status');
   const attributionElement = documentObj.getElementById('attribution');
   const disclosureElement = documentObj.getElementById('disclosure');
@@ -94,6 +96,11 @@ async function bootstrapPopupRuntime({
   let darkMode = false;
   let simpleLearn = false;
   let rememberLastLookup = true;
+  let ctrlPronounceEnabled = true;
+  let defaultPronunciation = 'us';
+  let lastLookupResponse = null;
+  let isControlKeyDown = false;
+  let otherKeyPressedWithControl = false;
   let currentSlideIndex = 0;
   const ITEMS_PER_PAGE = 5;
   let isSettingsMenuOpen = false;
@@ -106,6 +113,17 @@ async function bootstrapPopupRuntime({
     }
   };
 
+  const updateCtrlPronounceSelectValue = (enabled, pron) => {
+    if (!ctrlPronounceSelectElement) return;
+    if (!enabled) {
+      ctrlPronounceSelectElement.value = 'off';
+    } else if (pron === 'uk') {
+      ctrlPronounceSelectElement.value = 'uk';
+    } else {
+      ctrlPronounceSelectElement.value = 'us';
+    }
+  };
+
   const autoPopupController = {
     async start() {
       const settings = await settingsStore.load();
@@ -113,6 +131,8 @@ async function bootstrapPopupRuntime({
       darkMode = Boolean(settings?.darkMode);
       simpleLearn = Boolean(settings?.simpleLearn);
       rememberLastLookup = Boolean(settings?.rememberLastLookup ?? true);
+      ctrlPronounceEnabled = Boolean(settings?.ctrlPronounceEnabled ?? true);
+      defaultPronunciation = settings?.defaultPronunciation === 'uk' ? 'uk' : 'us';
       updateBodyTheme(darkMode);
       darkModeToggleElement.checked = darkMode;
       if (simpleLearnToggleElement) {
@@ -121,6 +141,7 @@ async function bootstrapPopupRuntime({
       if (rememberLastLookupToggleElement) {
         rememberLastLookupToggleElement.checked = rememberLastLookup;
       }
+      updateCtrlPronounceSelectValue(ctrlPronounceEnabled, defaultPronunciation);
     },
     stop() {},
     isAutoPopupEnabled() {
@@ -134,6 +155,12 @@ async function bootstrapPopupRuntime({
     },
     isRememberLastLookup() {
       return rememberLastLookup;
+    },
+    isCtrlPronounceEnabled() {
+      return ctrlPronounceEnabled;
+    },
+    getDefaultPronunciation() {
+      return defaultPronunciation;
     },
     getDictionarySource() {
       return simpleLearn ? 'freedictionary' : 'vocabulary';
@@ -161,6 +188,16 @@ async function bootstrapPopupRuntime({
       }
       await settingsStore.update({ rememberLastLookup });
     },
+    async setCtrlPronounceEnabled(enabled) {
+      ctrlPronounceEnabled = Boolean(enabled);
+      updateCtrlPronounceSelectValue(ctrlPronounceEnabled, defaultPronunciation);
+      await settingsStore.update({ ctrlPronounceEnabled });
+    },
+    async setDefaultPronunciation(val) {
+      defaultPronunciation = val === 'uk' ? 'uk' : 'us';
+      updateCtrlPronounceSelectValue(ctrlPronounceEnabled, defaultPronunciation);
+      await settingsStore.update({ defaultPronunciation });
+    },
     async setDictionarySource(source) {
       simpleLearn = source === 'freedictionary';
       if (simpleLearnToggleElement) {
@@ -174,6 +211,8 @@ async function bootstrapPopupRuntime({
         darkMode = Boolean(nextSettings?.darkMode);
         simpleLearn = Boolean(nextSettings?.simpleLearn);
         rememberLastLookup = Boolean(nextSettings?.rememberLastLookup ?? true);
+        ctrlPronounceEnabled = Boolean(nextSettings?.ctrlPronounceEnabled ?? true);
+        defaultPronunciation = nextSettings?.defaultPronunciation === 'uk' ? 'uk' : 'us';
         updateBodyTheme(darkMode);
         darkModeToggleElement.checked = darkMode;
         if (simpleLearnToggleElement) {
@@ -182,7 +221,8 @@ async function bootstrapPopupRuntime({
         if (rememberLastLookupToggleElement) {
           rememberLastLookupToggleElement.checked = rememberLastLookup;
         }
-        listener({ autoPopupEnabled, darkMode, simpleLearn, rememberLastLookup });
+        updateCtrlPronounceSelectValue(ctrlPronounceEnabled, defaultPronunciation);
+        listener({ autoPopupEnabled, darkMode, simpleLearn, rememberLastLookup, ctrlPronounceEnabled, defaultPronunciation });
       });
     },
   };
@@ -231,6 +271,25 @@ async function bootstrapPopupRuntime({
   };
   if (rememberLastLookupToggleElement) {
     rememberLastLookupToggleElement.addEventListener('change', handleRememberLastLookupChange);
+  }
+
+  if (ctrlPronounceSelectElement) {
+    ctrlPronounceSelectElement.addEventListener('click', (e) => {
+      e?.stopPropagation?.();
+    });
+    ctrlPronounceSelectElement.addEventListener('change', async (e) => {
+      e?.stopPropagation?.();
+      const val = ctrlPronounceSelectElement.value;
+      if (val === 'off') {
+        await autoPopupController.setCtrlPronounceEnabled(false);
+      } else if (val === 'uk') {
+        await autoPopupController.setCtrlPronounceEnabled(true);
+        await autoPopupController.setDefaultPronunciation('uk');
+      } else {
+        await autoPopupController.setCtrlPronounceEnabled(true);
+        await autoPopupController.setDefaultPronunciation('us');
+      }
+    });
   }
 
   // Settings popover event listeners
@@ -435,6 +494,7 @@ async function bootstrapPopupRuntime({
         await historyStore.addSearchWord(canonicalWord).catch(() => {});
         renderHistorySlider(searchInput ? searchInput.value.trim().toLowerCase() : '');
       }
+      lastLookupResponse = response;
       if (searchResultsContainer) {
         renderState(response, searchResultsContainer);
       }
@@ -442,6 +502,7 @@ async function bootstrapPopupRuntime({
       if (requestId !== latestSearchRequestId) {
         return;
       }
+      lastLookupResponse = null;
       if (searchResultsContainer) {
         renderState({ status: 'error', error: { type: 'unknown', message: error.message } }, searchResultsContainer);
       }
@@ -593,10 +654,49 @@ async function bootstrapPopupRuntime({
     }
   }
 
+  const handleGlobalKeyDown = (e) => {
+    if (e?.key === 'Control') {
+      isControlKeyDown = true;
+      otherKeyPressedWithControl = false;
+    } else if (isControlKeyDown) {
+      otherKeyPressedWithControl = true;
+    }
+  };
+
+  const handleGlobalKeyUp = (e) => {
+    if (e?.key === 'Control') {
+      if (isControlKeyDown && !otherKeyPressedWithControl && ctrlPronounceEnabled) {
+        const audioObj = lastLookupResponse?.data?.parsedPayload?.audio || {};
+        const word = lastLookupResponse?.data?.parsedPayload?.headword || (searchInput ? searchInput.value.trim().toLowerCase() : '');
+        if (word) {
+          e?.stopPropagation?.();
+          const accent = defaultPronunciation === 'uk' ? 'uk' : 'us';
+          const targetAudioUrl = accent === 'uk' ? (audioObj.uk || audioObj.us) : (audioObj.us || audioObj.uk);
+          playAudioWithFallback({
+            audioUrl: targetAudioUrl,
+            word,
+            accent,
+            windowObj: typeof window !== 'undefined' ? window : null,
+            chromeApi,
+          });
+        }
+      }
+      isControlKeyDown = false;
+      otherKeyPressedWithControl = false;
+    }
+  };
+
+  if (documentObj?.addEventListener) {
+    documentObj.addEventListener('keydown', handleGlobalKeyDown, true);
+    documentObj.addEventListener('keyup', handleGlobalKeyUp, true);
+  }
+
   const destroy = () => {
     clearTimeout(debounceTimer);
     unsubscribe?.();
     panel.destroy();
+    documentObj?.removeEventListener?.('keydown', handleGlobalKeyDown, true);
+    documentObj?.removeEventListener?.('keyup', handleGlobalKeyUp, true);
     darkModeToggleElement.removeEventListener('change', handleDarkModeChange);
     if (rememberLastLookupToggleElement) {
       rememberLastLookupToggleElement.removeEventListener('change', handleRememberLastLookupChange);

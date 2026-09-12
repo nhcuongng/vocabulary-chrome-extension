@@ -7,6 +7,7 @@ import {
   createHistoryMenuElement,
   UI_COPY,
 } from './historySliderRenderer.js';
+import { playAudioWithFallback } from '../domain/audioPlaybackUtils.js';
 
 
 export function calculateResponsivePopupDimensions(viewport = {}) {
@@ -2614,9 +2615,38 @@ export function createPopupManager({
     }
   }
 
+  function isOpen() {
+    return Boolean(popupElement && popupElement.parentNode && popupCtrl?.isOpen?.());
+  }
+
+  function getCurrentState() {
+    return lastState;
+  }
+
+  function playCurrentAudio(preferredAccent = 'us') {
+    if (!lastState) return false;
+    const audioObj = lastState?.data?.parsedPayload?.audio || {};
+    const word = lastState?.data?.parsedPayload?.headword || lastState?.headword || '';
+    if (!word) return false;
+
+    const accent = (preferredAccent === 'uk' || preferredAccent === 'en-GB' || preferredAccent === 'gb') ? 'uk' : 'us';
+    const targetAudioUrl = accent === 'uk' ? (audioObj.uk || audioObj.us) : (audioObj.us || audioObj.uk);
+
+    playAudioWithFallback({
+      audioUrl: targetAudioUrl,
+      word,
+      accent,
+      windowObj,
+    });
+    return true;
+  }
+
   return {
     showPopup,
     removePopup,
     setCustomWords,
+    isOpen,
+    getCurrentState,
+    playCurrentAudio,
   };
 }

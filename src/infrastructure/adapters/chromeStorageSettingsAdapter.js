@@ -20,6 +20,8 @@ function isSameSettings(left, right) {
     left?.darkMode === right?.darkMode &&
     left?.simpleLearn === right?.simpleLearn &&
     left?.rememberLastLookup === right?.rememberLastLookup &&
+    left?.ctrlPronounceEnabled === right?.ctrlPronounceEnabled &&
+    left?.defaultPronunciation === right?.defaultPronunciation &&
     leftOrder === rightOrder &&
     leftHidden === rightHidden
   );

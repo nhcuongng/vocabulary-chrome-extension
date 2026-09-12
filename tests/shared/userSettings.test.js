@@ -64,3 +64,34 @@ test('normalizeUserSettings & mergeUserSettings: chuẩn hóa và merge remember
   assert.equal(merged.rememberLastLookup, false);
 });
 
+test('normalizeUserSettings & mergeUserSettings: chuẩn hóa và merge ctrlPronounceEnabled', () => {
+  assert.equal(normalizeUserSettings({}).ctrlPronounceEnabled, true);
+  assert.equal(normalizeUserSettings({ ctrlPronounceEnabled: false }).ctrlPronounceEnabled, false);
+  assert.equal(normalizeUserSettings({ ctrlPronounceEnabled: 'false' }).ctrlPronounceEnabled, false);
+  assert.equal(normalizeUserSettings({ ctrlPronounceEnabled: true }).ctrlPronounceEnabled, true);
+  assert.equal(normalizeUserSettings({ ctrlPronounceEnabled: 'true' }).ctrlPronounceEnabled, true);
+
+  const merged = mergeUserSettings(
+    { ctrlPronounceEnabled: true },
+    { ctrlPronounceEnabled: false }
+  );
+  assert.equal(merged.ctrlPronounceEnabled, false);
+});
+
+test('normalizeUserSettings & mergeUserSettings: chuẩn hóa và merge defaultPronunciation', () => {
+  assert.equal(normalizeUserSettings({}).defaultPronunciation, 'us');
+  assert.equal(normalizeUserSettings({ defaultPronunciation: 'uk' }).defaultPronunciation, 'uk');
+  assert.equal(normalizeUserSettings({ defaultPronunciation: 'en-GB' }).defaultPronunciation, 'uk');
+  assert.equal(normalizeUserSettings({ defaultPronunciation: 'gb' }).defaultPronunciation, 'uk');
+  assert.equal(normalizeUserSettings({ defaultPronunciation: 'us' }).defaultPronunciation, 'us');
+  assert.equal(normalizeUserSettings({ defaultPronunciation: 'en-US' }).defaultPronunciation, 'us');
+  assert.equal(normalizeUserSettings({ defaultPronunciation: 'unknown' }).defaultPronunciation, 'us');
+
+  const merged = mergeUserSettings(
+    { defaultPronunciation: 'us' },
+    { defaultPronunciation: 'uk' }
+  );
+  assert.equal(merged.defaultPronunciation, 'uk');
+});
+
+

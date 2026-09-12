@@ -252,3 +252,42 @@ test('auto-popup runtime: selection detection stays active across mode changes (
 
   controller.stop();
 });
+
+test('auto-popup runtime: tracks ctrlPronounceEnabled and defaultPronunciation correctly', async () => {
+  const eventTarget = new FakeEventTarget();
+  const settingsStore = createInMemorySettingsStore({
+    schemaVersion: 2,
+    autoPopupEnabled: true,
+    ctrlPronounceEnabled: true,
+    defaultPronunciation: 'us',
+  });
+
+  const controller = createAutoPopupLookupController({
+    eventTarget,
+    settingsStore,
+    onLookupRequest: () => {},
+    debounceMs: 10,
+    getSnapshot: () => ({ text: 'hello' }),
+  });
+
+  await controller.start();
+
+  assert.equal(controller.isCtrlPronounceEnabled(), true);
+  assert.equal(controller.getDefaultPronunciation(), 'us');
+  assert.equal(controller.getState().ctrlPronounceEnabled, true);
+  assert.equal(controller.getState().defaultPronunciation, 'us');
+
+  // Update settings in store
+  await settingsStore.update({
+    ctrlPronounceEnabled: false,
+    defaultPronunciation: 'uk',
+  });
+
+  assert.equal(controller.isCtrlPronounceEnabled(), false);
+  assert.equal(controller.getDefaultPronunciation(), 'uk');
+  assert.equal(controller.getState().ctrlPronounceEnabled, false);
+  assert.equal(controller.getState().defaultPronunciation, 'uk');
+
+  controller.stop();
+});
+

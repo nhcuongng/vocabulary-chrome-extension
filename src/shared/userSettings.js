@@ -6,12 +6,19 @@ export const DICTIONARY_SOURCE = Object.freeze({
   FREEDICTIONARY: 'freedictionary',
 });
 
+export const PRONUNCIATION_ACCENT = Object.freeze({
+  US: 'us',
+  UK: 'uk',
+});
+
 export const DEFAULT_USER_SETTINGS = Object.freeze({
   schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
   autoPopupEnabled: true,
   darkMode: false,
   simpleLearn: false,
   rememberLastLookup: true,
+  ctrlPronounceEnabled: true,
+  defaultPronunciation: 'us',
   tabOrderPreference: Object.freeze([]),
   hiddenTabsPreference: Object.freeze([]),
 });
@@ -44,6 +51,8 @@ export function normalizeUserSettings(rawValue) {
       darkMode: DEFAULT_USER_SETTINGS.darkMode,
       simpleLearn: DEFAULT_USER_SETTINGS.simpleLearn,
       rememberLastLookup: DEFAULT_USER_SETTINGS.rememberLastLookup,
+      ctrlPronounceEnabled: DEFAULT_USER_SETTINGS.ctrlPronounceEnabled,
+      defaultPronunciation: DEFAULT_USER_SETTINGS.defaultPronunciation,
       tabOrderPreference: DEFAULT_USER_SETTINGS.tabOrderPreference,
       hiddenTabsPreference: DEFAULT_USER_SETTINGS.hiddenTabsPreference,
     };
@@ -61,6 +70,19 @@ export function normalizeUserSettings(rawValue) {
 
   const normalizedRememberLastLookup =
     toBooleanOrNull(rawValue.rememberLastLookup) ?? DEFAULT_USER_SETTINGS.rememberLastLookup;
+
+  const normalizedCtrlPronounceEnabled =
+    toBooleanOrNull(rawValue.ctrlPronounceEnabled) ?? DEFAULT_USER_SETTINGS.ctrlPronounceEnabled;
+
+  let normalizedDefaultPronunciation = DEFAULT_USER_SETTINGS.defaultPronunciation;
+  if (typeof rawValue.defaultPronunciation === 'string') {
+    const cleanPron = rawValue.defaultPronunciation.trim().toLowerCase();
+    if (cleanPron === 'uk' || cleanPron === 'en-gb' || cleanPron === 'gb') {
+      normalizedDefaultPronunciation = 'uk';
+    } else if (cleanPron === 'us' || cleanPron === 'en-us') {
+      normalizedDefaultPronunciation = 'us';
+    }
+  }
 
   let normalizedSimpleLearn = toBooleanOrNull(rawValue.simpleLearn);
   if (normalizedSimpleLearn === null) {
@@ -94,6 +116,8 @@ export function normalizeUserSettings(rawValue) {
     darkMode: normalizedDarkMode,
     simpleLearn: normalizedSimpleLearn,
     rememberLastLookup: normalizedRememberLastLookup,
+    ctrlPronounceEnabled: normalizedCtrlPronounceEnabled,
+    defaultPronunciation: normalizedDefaultPronunciation,
     tabOrderPreference: normalizedTabOrderPreference,
     hiddenTabsPreference: normalizedHiddenTabsPreference,
   };

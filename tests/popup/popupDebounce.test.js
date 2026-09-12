@@ -644,4 +644,65 @@ test('popup: paste button is enabled with tooltip when clipboard has a valid wor
   runtime.destroy();
 });
 
+test('popup: ctrl-pronounce-select updates settings and sets correct option values', async () => {
+  const doc = createMockDocument();
+  const toggle = doc.getElementById('auto-popup-toggle');
+  toggle.type = 'checkbox';
+  const darkModeToggle = doc.getElementById('dark-mode-toggle');
+  darkModeToggle.type = 'checkbox';
+  const ctrlPronSelect = doc.getElementById('ctrl-pronounce-select');
+
+  let savedSettings = null;
+  const mockChrome = {
+    storage: {
+      local: {
+        get: async () => ({
+          schemaVersion: 2,
+          rememberLastLookup: false,
+          ctrlPronounceEnabled: true,
+          defaultPronunciation: 'us',
+        }),
+        set: async (val) => {
+          savedSettings = val;
+        },
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+    runtime: {
+      sendMessage: () => {},
+    },
+  };
+
+  const runtime = await bootstrapPopupRuntime({
+    chromeApi: mockChrome,
+    documentObj: doc,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(ctrlPronSelect.value, 'us');
+
+  // Change to UK
+  ctrlPronSelect.value = 'uk';
+  await ctrlPronSelect.dispatchEvent('change');
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(savedSettings?.['user-settings']?.ctrlPronounceEnabled, true);
+  assert.equal(savedSettings?.['user-settings']?.defaultPronunciation, 'uk');
+
+  // Change to Off
+  ctrlPronSelect.value = 'off';
+  await ctrlPronSelect.dispatchEvent('change');
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(savedSettings?.['user-settings']?.ctrlPronounceEnabled, false);
+
+  runtime.destroy();
+});
+
+
+
 

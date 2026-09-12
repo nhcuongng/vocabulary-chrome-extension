@@ -22,6 +22,8 @@ export function createAutoPopupLookupController({
   let autoPopupEnabled = true;
   let darkMode = false;
   let simpleLearn = false;
+  let ctrlPronounceEnabled = true;
+  let defaultPronunciation = 'us';
   let unsubscribeSettingsStore = null;
   const listeners = new Set();
 
@@ -49,6 +51,8 @@ export function createAutoPopupLookupController({
       autoPopupEnabled,
       darkMode,
       simpleLearn,
+      ctrlPronounceEnabled,
+      defaultPronunciation,
     };
 
     for (const listener of listeners) {
@@ -60,6 +64,8 @@ export function createAutoPopupLookupController({
     autoPopupEnabled = Boolean(settings?.autoPopupEnabled ?? true);
     darkMode = Boolean(settings?.darkMode ?? false);
     simpleLearn = Boolean(settings?.simpleLearn ?? false);
+    ctrlPronounceEnabled = Boolean(settings?.ctrlPronounceEnabled ?? true);
+    defaultPronunciation = settings?.defaultPronunciation === 'uk' ? 'uk' : 'us';
 
     if (runtimeStarted) {
       selectionController.start();
@@ -142,9 +148,13 @@ export function createAutoPopupLookupController({
     subscribe,
     isAutoPopupEnabled: () => autoPopupEnabled,
     isSimpleLearn: () => simpleLearn,
+    isCtrlPronounceEnabled: () => ctrlPronounceEnabled,
+    getDefaultPronunciation: () => defaultPronunciation,
     getState: () => ({
       runtimeStarted,
       autoPopupEnabled,
+      ctrlPronounceEnabled,
+      defaultPronunciation,
       selectionState: selectionController.getState(),
     }),
   };
